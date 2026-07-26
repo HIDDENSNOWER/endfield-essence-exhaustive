@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartTable · 双区多级表头</title>
+    <title>SmartTable · 固定样式</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- 导航栏 -->
+    <!-- 导航栏（搜索 + 主题切换） -->
     <nav class="navbar">
-        <span class="navbar-brand">▣ 属性矩阵</span>
+        <div class="search-bar">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" class="search-input" id="searchInput" placeholder="筛选行或数值...">
+        </div>
         <button class="btn-icon" id="btnToggleTheme" title="切换主题">
             <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -23,36 +28,7 @@
         </button>
     </nav>
 
-    <!-- 操作栏 -->
-    <div class="top-bar">
-        <div class="search-bar">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input type="text" class="search-input" id="searchInput" placeholder="筛选行或数值...">
-        </div>
-        <div class="style-panel" id="stylePanel">
-            <label class="style-label">列宽 <input type="number" id="colWidth" min="30" max="200" value="48"> px</label>
-            <label class="style-label">行高 <input type="number" id="rowHeight" min="20" max="80" value="32"> px</label>
-            <label class="style-label">水平
-                <select id="hAlign">
-                    <option value="left">左</option>
-                    <option value="center" selected>中</option>
-                    <option value="right">右</option>
-                </select>
-            </label>
-            <label class="style-label">垂直
-                <select id="vAlign">
-                    <option value="top">上</option>
-                    <option value="middle" selected>中</option>
-                    <option value="bottom">下</option>
-                </select>
-            </label>
-            <button class="btn-reset-style" id="btnResetStyle">恢复默认</button>
-        </div>
-    </div>
-
-    <!-- 主内容区：左右布局 -->
+    <!-- 主内容区 -->
     <div class="main-layout">
         <!-- 左侧表格区域 -->
         <div class="table-area" id="tableArea">
@@ -82,31 +58,47 @@
 
         <!-- 右侧输入面板 -->
         <aside class="input-panel" id="inputPanel">
-            <div class="panel-title">📝 数据输入</div>
-            
-            <!-- 主分类（第一行） -->
-            <div class="selector-row">
-                <button class="selector-btn" id="btnGroup" title="滚轮切换主分类">强攻</button>
-                <span class="selector-arrow">▾</span>
-            </div>
-            <!-- 提升项（第二行） -->
-            <div class="selector-row">
-                <button class="selector-btn" id="btnRow" title="滚轮切换提升项">攻击提升</button>
-                <span class="selector-arrow">▾</span>
-            </div>
-            <!-- 子列（第三行） -->
-            <div class="selector-row">
-                <button class="selector-btn" id="btnSubCol" title="滚轮切换子列">敏</button>
-                <span class="selector-arrow">▾</span>
+            <div class="panel-title">📝 数据管理</div>
+        
+            <div class="dataset-info">
+                <span class="dataset-label">当前数据集：</span>
+                <span class="dataset-name" id="datasetName">smarttable_data</span>
             </div>
         
+            <div class="form-group">
+                <label>切换数据集</label>
+                <select id="datasetSelect"></select>
+            </div>
+        
+            <div class="action-buttons">
+                <button class="btn btn-sm" id="btnExport">导出</button>
+                <button class="btn btn-sm" id="btnImport">导入</button>
+                <button class="btn btn-sm" id="btnNewDataset">新建</button>
+                <button class="btn btn-sm" id="btnRename">重命名</button>
+                <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
+            </div>
+        
+            <div class="form-group">
+                <label>主分类</label>
+                <select id="inputGroup"></select>
+            </div>
+            <div class="form-group">
+                <label>提升项（行）</label>
+                <select id="inputRow"></select>
+            </div>
+            <div class="form-group">
+                <label>子列</label>
+                <select id="inputSubCol"></select>
+            </div>
             <div class="form-group">
                 <label>数值</label>
                 <input type="number" id="inputValue" placeholder="输入数值" step="any">
             </div>
             <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
-            <button class="btn btn-block btn-clear" id="btnClearAll">清空全部数据</button>
+            <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
             <p class="input-hint" id="inputHint"></p>
+        
+            <input type="file" id="importFile" accept=".json" style="display:none;">
         </aside>
     </div>
 
