@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartTable · 固定样式</title>
+    <title>SmartTable · 完整版</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- 导航栏（搜索 + 主题切换） -->
+    <!-- 导航栏（不变） -->
     <nav class="navbar">
         <div class="search-bar">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -28,48 +28,34 @@
         </button>
     </nav>
 
-    <!-- 主内容区 -->
+    <!-- 主内容区（不变） -->
     <div class="main-layout">
-        <!-- 左侧表格区域 -->
         <div class="table-area" id="tableArea">
             <div class="table-section" id="section1">
                 <div class="section-title">▸ 第一部分（强攻 ~ 残暴）</div>
                 <div class="main-container">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead id="tableHead1"></thead>
-                            <tbody id="tableBody1"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-wrapper"><table><thead id="tableHead1"></thead><tbody id="tableBody1"></tbody></table></div>
                 </div>
             </div>
             <div class="table-section" id="section2">
                 <div class="section-title">▸ 第二部分（附术 ~ 效益）</div>
                 <div class="main-container">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead id="tableHead2"></thead>
-                            <tbody id="tableBody2"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-wrapper"><table><thead id="tableHead2"></thead><tbody id="tableBody2"></tbody></table></div>
                 </div>
             </div>
         </div>
 
-        <!-- 右侧输入面板 -->
+        <!-- 右侧输入面板（调整顺序与标签） -->
         <aside class="input-panel" id="inputPanel">
             <div class="panel-title">📝 数据管理</div>
-        
             <div class="dataset-info">
                 <span class="dataset-label">当前数据集：</span>
                 <span class="dataset-name" id="datasetName">smarttable_data</span>
             </div>
-        
             <div class="form-group">
                 <label>切换数据集</label>
                 <select id="datasetSelect"></select>
             </div>
-        
             <div class="action-buttons">
                 <button class="btn btn-sm" id="btnExport">导出</button>
                 <button class="btn btn-sm" id="btnImport">导入</button>
@@ -77,29 +63,62 @@
                 <button class="btn btn-sm" id="btnRename">重命名</button>
                 <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
             </div>
-        
+            <!-- ★ 顺序改为：主词条 → 副词条 → 词条 -->
             <div class="form-group">
-                <label>主分类</label>
-                <select id="inputGroup"></select>
-            </div>
-            <div class="form-group">
-                <label>提升项（行）</label>
-                <select id="inputRow"></select>
-            </div>
-            <div class="form-group">
-                <label>子列</label>
+                <label>主词条</label>
                 <select id="inputSubCol"></select>
             </div>
             <div class="form-group">
+                <label>副词条</label>
+                <select id="inputRow"></select>
+            </div>
+            <div class="form-group">
+                <label>词条</label>
+                <select id="inputGroup"></select>
+            </div>
+            <div class="form-group">
                 <label>数值</label>
-                <input type="number" id="inputValue" placeholder="输入数值" step="any">
+                <input type="text" id="inputValue" placeholder="输入数值" maxlength="3" pattern="\d{3}" inputmode="numeric">
             </div>
             <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
             <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
             <p class="input-hint" id="inputHint"></p>
-        
             <input type="file" id="importFile" accept=".json" style="display:none;">
         </aside>
+    </div>
+
+    <!-- 数值对比弹窗（不变） -->
+    <div class="modal-overlay" id="modalCompare" style="display:none;">
+        <div class="modal" style="max-width:450px;">
+            <div class="modal-header">
+                <span>📊 数值对比</span>
+                <button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="compareBody"></div>
+            <div class="modal-footer">
+                <button class="btn" id="btnKeepOld">保留旧值</button>
+                <button class="btn btn-primary" id="btnReplaceNew">替换为新值</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 二次确认弹窗 -->
+    <div class="modal-overlay" id="modalConfirm" style="display:none;">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header">
+                <span>⚠️ 操作确认</span>
+                <button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="confirmBody"></div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelConfirm">取消</button>
+                <button class="btn btn-primary" id="btnConfirmAction">确认</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/app.js"></script>
