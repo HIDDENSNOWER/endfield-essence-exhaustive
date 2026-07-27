@@ -239,15 +239,19 @@
                     td.className = '';
                     if (statusClass) td.classList.add(statusClass);
 
+                    if (total === 0 && val !== '') {
+                        td.classList.add('has-value');
+                    }
+
                     let text;
                     if (total === 0) {
                         text = val === '' ? '—' : val;
                     } else {
                         text = val === '' ? '' : val;
-                        if (total > 1) {
+                        if (total === 1) {
+                            text += ` (${acq}/1)`;
+                        } else if (total > 1) {
                             text += ` (${acq}/${total})`;
-                        } else if (total === 1) {
-                            if (acq === 0) text += ' (0/1)';
                         }
                     }
                     if (val === '' && total === 0) {
