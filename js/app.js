@@ -132,6 +132,7 @@
         btnUndo: document.getElementById('btnUndo'),
         btnRedo: document.getElementById('btnRedo'),
         btnRecordClear: document.getElementById('btnRecordClear'),
+        btnClearCell: document.getElementById('btnClearCell'),
     };
 
     function normalizeCell(cell) {
@@ -745,18 +746,24 @@
     
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-        const oldCell = JSON.parse(JSON.stringify(cell)); // 深拷贝旧状态
+        const oldCell = JSON.parse(JSON.stringify(cell)); // 用于撤回
     
         if (cell.t === 0) {
-            cell.t = 1;
-            cell.a = 0;
+            // 新增逻辑：若原本存在数值，视为已获取一次
+            if (cell.v !== '') {
+                cell.t = 1;
+                cell.a = 1;
+                cell.v = '';   // 清除数值
+            } else {
+                cell.t = 1;
+                cell.a = 0;
+            }
         } else {
+            // 已有基质记录，仅增加重复数
             cell.t += 1;
         }
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
-    
-        // 记录历史
         pushHistory(rowIdx, colIndex, oldCell, JSON.parse(JSON.stringify(cell)));
     
         const groupName = ALL_GROUPS[groupIdx].name;
@@ -890,6 +897,8 @@
 
         dom.btnUndo.addEventListener('click', undo);
         dom.btnRedo.addEventListener('click', redo);
+
+        
     }
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -989,6 +998,38 @@
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
         showAlert(`已清除：${rowName} > ${groupName} > ${subName} 的全部属性`, '清除成功');
         dom.recordHint.textContent = '已清除所选单元格属性';
+    }
+
+    function clearCurrentCell() {
+        const subIdx = parseInt(dom.inputSubCol.value);
+        const rowIdx = parseInt(dom.inputRow.value);
+        const groupIdx = parseInt(dom.inputGroup.value);
+        if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+    
+        const colIndex = getColumnIndex(groupIdx, subIdx);
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+    
+        // 如果存在基质记录，禁止清除
+        if (cell.t > 0) {
+            showAlert('该单元格存在基质记录（重复数>0），无法清除数值。', '操作阻止');
+            return;
+        }
+    
+        // 如果已经为空，提示无变化
+        if (cell.v === '') {
+            showAlert('当前单元格无数值，无需清除。', '提示');
+            return;
+        }
+    
+        // 清空数值
+        cell.v = '';
+        state.rows[rowIdx].data[colIndex] = cell;
+        renderAllTables(); saveData();
+        const groupName = ALL_GROUPS[groupIdx].name;
+        const rowName = ROW_NAMES[rowIdx];
+        const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+        showAlert(`已清除单元格：${rowName} > ${groupName} > ${subName} 的数值。`, '清除成功');
+        dom.inputHint.textContent = '当前单元格数值已清除';
     }
 
     // ========== 初始化 ==========
