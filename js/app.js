@@ -38,10 +38,12 @@
         rows: createInitialRows(),
         searchQuery: '',
         theme: 'light',
-        activePanel: 'input'
+        activePanel: 'input',
+        history: [],         // 操作历史 [{ rowIdx, colIndex, oldCell, newCell }]
+        historyIndex: -1     // 当前历史位置
     };
     let pendingApply = null;
-    let confirmCallback = null; // 用于数值对比二次确认
+    let confirmCallback = null;
 
     const dom = {
         tableHead1: document.getElementById('tableHead1'),
@@ -122,6 +124,14 @@
         recordGroup: document.getElementById('recordGroup'),
         btnRecordApply: document.getElementById('btnRecordApply'),
         recordHint: document.getElementById('recordHint'),
+        settingsPanel: document.getElementById('settingsPanel'),
+        colWidthSlider: document.getElementById('colWidthSlider'),
+        rowHeightSlider: document.getElementById('rowHeightSlider'),
+        colWidthValue: document.getElementById('colWidthValue'),
+        rowHeightValue: document.getElementById('rowHeightValue'),
+        btnUndo: document.getElementById('btnUndo'),
+        btnRedo: document.getElementById('btnRedo'),
+        btnRecordClear: document.getElementById('btnRecordClear'),
     };
 
     function normalizeCell(cell) {
@@ -280,6 +290,7 @@
         dom.inputPanel.classList.toggle('active-panel', panelName === 'input');
         dom.statsPanel.classList.toggle('active-panel', panelName === 'stats');
         dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
+        dom.settingsPanel.classList.toggle('active-panel', panelName === 'settings');
         if (panelName === 'stats') renderStats();
     }
 
@@ -506,6 +517,30 @@
         dom.inputHint.textContent = '当前数据集已清空';
     }
 
+    // ========== 设置面板 ==========
+    function initSettings() {
+        const savedStyle = localStorage.getItem('smarttable_style');
+        let colWidth = 36, rowHeight = 24;
+        if (savedStyle) {
+            try {
+                const parsed = JSON.parse(savedStyle);
+                if (parsed.colWidth) colWidth = parsed.colWidth;
+                if (parsed.rowHeight) rowHeight = parsed.rowHeight;
+            } catch(e) {}
+        }
+        dom.colWidthSlider.value = colWidth;
+        dom.rowHeightSlider.value = rowHeight;
+        dom.colWidthValue.textContent = colWidth;
+        dom.rowHeightValue.textContent = rowHeight;
+        applyStyle(colWidth, rowHeight);
+    }
+
+    function applyStyle(colWidth, rowHeight) {
+        document.documentElement.style.setProperty('--col-width', colWidth + 'px');
+        document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
+        localStorage.setItem('smarttable_style', JSON.stringify({ colWidth, rowHeight }));
+    }
+
     // ========== 数值对比 ==========
     function parseTriple(val) { const s = String(val).trim(); return /^\d{3}$/.test(s) ? s.split('').map(Number) : null; }
     function calcSum(arr) { return arr.reduce((a,b)=>a+b,0); }
@@ -707,9 +742,11 @@
         const rowIdx = parseInt(dom.recordRow.value);
         const groupIdx = parseInt(dom.recordGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-
+    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+        const oldCell = JSON.parse(JSON.stringify(cell)); // 深拷贝旧状态
+    
         if (cell.t === 0) {
             cell.t = 1;
             cell.a = 0;
@@ -718,10 +755,15 @@
         }
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
+    
+        // 记录历史
+        pushHistory(rowIdx, colIndex, oldCell, JSON.parse(JSON.stringify(cell)));
+    
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
         dom.recordHint.textContent = `已录入：${rowName} > ${groupName} > ${subName} (重复${cell.t}, 拥有${cell.a})`;
+        updateUndoRedoButtons();
     }
 
     // 滚轮切换
@@ -828,9 +870,125 @@
             }
         });
 
+        dom.btnRecordClear.addEventListener('click', clearCellRecord);
+
+        // 设置事件
+        dom.colWidthSlider.addEventListener('input', function() {
+            const val = parseInt(this.value);
+            dom.colWidthValue.textContent = val;
+            applyStyle(val, parseInt(dom.rowHeightSlider.value));
+        });
+        dom.rowHeightSlider.addEventListener('input', function() {
+            const val = parseInt(this.value);
+            dom.rowHeightValue.textContent = val;
+            applyStyle(parseInt(dom.colWidthSlider.value), val);
+        });
+
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             if (!localStorage.getItem(STORAGE_KEY_THEME)) applyTheme(e.matches ? 'dark' : 'light');
         });
+
+        dom.btnUndo.addEventListener('click', undo);
+        dom.btnRedo.addEventListener('click', redo);
+    }
+
+    // 保存操作记录（仅用于录入面板的基质变化）
+    function pushHistory(rowIdx, colIndex, oldCell, newCell) {
+        // 清除当前位置之后的历史（如果之前有重做再操作新的，则丢弃后续）
+        state.history = state.history.slice(0, state.historyIndex + 1);
+        state.history.push({ rowIdx, colIndex, oldCell: JSON.parse(JSON.stringify(oldCell)), newCell: JSON.parse(JSON.stringify(newCell)) });
+        // 只保留最近20条
+        if (state.history.length > 20) {
+            state.history.shift();
+        } else {
+            state.historyIndex++;
+        }
+        updateUndoRedoButtons();
+    }
+
+    // 获取单元格对应的名称
+    function getCellNames(rowIdx, colIndex) {
+        let groupIdx = 0, remaining = colIndex;
+        for (let i = 0; i < ALL_GROUPS.length; i++) {
+            const subLen = ALL_GROUPS[i].sub.length;
+            if (remaining < subLen) {
+                return {
+                    rowName: ROW_NAMES[rowIdx],
+                    groupName: ALL_GROUPS[i].name,
+                    subName: ALL_GROUPS[i].sub[remaining]
+                };
+            }
+            remaining -= subLen;
+        }
+        return { rowName: '?', groupName: '?', subName: '?' };
+    }
+
+    // 执行撤回
+    function undo() {
+        if (state.historyIndex < 0) return;
+        const record = state.history[state.historyIndex];
+        // 恢复旧状态
+        state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.oldCell));
+        state.historyIndex--;
+        renderAllTables(); saveData();
+        updateUndoRedoButtons();
+        // 显示撤回弹窗
+        const names = getCellNames(record.rowIdx, record.colIndex);
+        const oldT = record.oldCell.t, oldA = record.oldCell.a;
+        const newT = record.newCell.t, newA = record.newCell.a;
+        showAlert(
+            `已撤回：${names.rowName} > ${names.groupName} > ${names.subName} (重复${newT} → ${oldT}, 拥有${newA} → ${oldA})`,
+            '撤回成功'
+        );
+    }
+
+    // 执行重做
+    function redo() {
+        if (state.historyIndex >= state.history.length - 1) return;
+        state.historyIndex++;
+        const record = state.history[state.historyIndex];
+        state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.newCell));
+        renderAllTables(); saveData();
+        updateUndoRedoButtons();
+        const names = getCellNames(record.rowIdx, record.colIndex);
+        const oldT = record.oldCell.t, oldA = record.oldCell.a;
+        const newT = record.newCell.t, newA = record.newCell.a;
+        showAlert(
+            `已重做：${names.rowName} > ${names.groupName} > ${names.subName} (重复${oldT} → ${newT}, 拥有${oldA} → ${newA})`,
+            '重做成功'
+        );
+    }
+
+    // 更新按钮状态
+    function updateUndoRedoButtons() {
+        dom.btnUndo.disabled = state.historyIndex < 0;
+        dom.btnRedo.disabled = state.historyIndex >= state.history.length - 1;
+    }
+
+    // 清除指定词条组单元格的全部属性
+    function clearCellRecord() {
+        const subIdx = parseInt(dom.recordSubCol.value);
+        const rowIdx = parseInt(dom.recordRow.value);
+        const groupIdx = parseInt(dom.recordGroup.value);
+        if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
+        const colIndex = getColumnIndex(groupIdx, subIdx);
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+
+        // 保存旧状态用于撤回（如果已启用撤回功能）
+        const oldCell = JSON.parse(JSON.stringify(cell));
+
+        // 重置为默认空状态
+        state.rows[rowIdx].data[colIndex] = defaultCellMeta();
+        renderAllTables(); saveData();
+
+        // 如果已有撤回历史功能，可调用 pushHistory(rowIdx, colIndex, oldCell, defaultCellMeta());
+        // 此处直接提示
+        const groupName = ALL_GROUPS[groupIdx].name;
+        const rowName = ROW_NAMES[rowIdx];
+        const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+        showAlert(`已清除：${rowName} > ${groupName} > ${subName} 的全部属性`, '清除成功');
+        dom.recordHint.textContent = '已清除所选单元格属性';
     }
 
     // ========== 初始化 ==========
@@ -849,6 +1007,7 @@
         bindEvents();
         renderAllTables();
         switchPanel('input');
+        initSettings(); // 初始化设置值
         localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
         dom.inputHint.textContent = '准备就绪';
     }

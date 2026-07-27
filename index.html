@@ -1,29 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartTable · 基质录入</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="search-bar">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input type="text" class="search-input" id="searchInput" placeholder="筛选行或数值...">
         </div>
         <button class="btn-icon" id="btnToggleTheme" title="切换主题">
             <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
-            <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="display:none;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
         </button>
     </nav>
@@ -35,13 +44,23 @@
             <div class="table-section" id="section1">
                 <div class="section-title">▸ 第一部分（强攻 ~ 残暴）</div>
                 <div class="main-container">
-                    <div class="table-wrapper"><table><thead id="tableHead1"></thead><tbody id="tableBody1"></tbody></table></div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead id="tableHead1"></thead>
+                            <tbody id="tableBody1"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             <div class="table-section" id="section2">
                 <div class="section-title">▸ 第二部分（附术 ~ 效益）</div>
                 <div class="main-container">
-                    <div class="table-wrapper"><table><thead id="tableHead2"></thead><tbody id="tableBody2"></tbody></table></div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead id="tableHead2"></thead>
+                            <tbody id="tableBody2"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -50,19 +69,30 @@
         <nav class="sidebar" id="sidebar">
             <button class="sidebar-btn active" data-panel="input" title="数据管理">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
             </button>
             <button class="sidebar-btn" data-panel="stats" title="统计信息">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="14"/>
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
             </button>
             <button class="sidebar-btn" data-panel="record" title="录入面板">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+            </button>
+            <button class="sidebar-btn" data-panel="settings" title="设置">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
             </button>
         </nav>
@@ -132,8 +162,28 @@
                     <label>词条</label>
                     <select id="recordGroup"></select>
                 </div>
+                <div class="action-buttons" style="margin-bottom: 8px;">
+                    <button class="btn btn-sm" id="btnUndo" title="撤回" disabled>撤回</button>
+                    <button class="btn btn-sm" id="btnRedo" title="重做" disabled>重做</button>
+                </div>
+                <!-- 录入与清除按钮 -->
                 <button class="btn btn-primary btn-block" id="btnRecordApply">录入</button>
+                <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
                 <p class="input-hint" id="recordHint"></p>
+            </aside>
+            <!-- 设置面板 -->
+            <aside class="settings-panel" id="settingsPanel">
+                <div class="panel-title">⚙️ 设置</div>
+                <div class="form-group">
+                    <label>列宽 (30-60px)</label>
+                    <input type="range" id="colWidthSlider" min="30" max="60" value="36">
+                    <span class="range-value" id="colWidthValue">36</span>
+                </div>
+                <div class="form-group">
+                    <label>行高 (20-40px)</label>
+                    <input type="range" id="rowHeightSlider" min="20" max="40" value="24">
+                    <span class="range-value" id="rowHeightValue">24</span>
+                </div>
             </aside>
         </div>
     </div>
@@ -141,18 +191,30 @@
     <!-- 数值对比弹窗（保持不变） -->
     <div class="modal-overlay" id="modalCompare" style="display:none;">
         <div class="modal" style="max-width:450px;">
-            <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare"
+                    style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg></button></div>
             <div class="modal-body" id="compareBody"></div>
-            <div class="modal-footer"><button class="btn" id="btnKeepOld">保留旧值</button><button class="btn btn-primary" id="btnReplaceNew">替换为新值</button></div>
+            <div class="modal-footer"><button class="btn" id="btnKeepOld">保留旧值</button><button class="btn btn-primary"
+                    id="btnReplaceNew">替换为新值</button></div>
         </div>
     </div>
 
     <!-- 二次确认弹窗 -->
     <div class="modal-overlay" id="modalConfirm" style="display:none;">
         <div class="modal" style="max-width:420px;">
-            <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm"
+                    style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg></button></div>
             <div class="modal-body" id="confirmBody"></div>
-            <div class="modal-footer"><button class="btn btn-success" id="btnCancelConfirm">取消</button><button class="btn btn-danger" id="btnConfirmAction">确认</button></div>
+            <div class="modal-footer"><button class="btn btn-success" id="btnCancelConfirm">取消</button><button
+                    class="btn btn-danger" id="btnConfirmAction">确认</button></div>
         </div>
     </div>
 
@@ -162,7 +224,11 @@
             <div class="modal-header">
                 <span>ℹ️ 录入提示</span>
                 <button class="btn-icon btn-sm" id="btnCloseFullAcquire" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body" id="fullAcquireBody"></div>
@@ -178,7 +244,11 @@
             <div class="modal-header">
                 <span>⚠️ 非法输入</span>
                 <button class="btn-icon btn-sm" id="btnCloseIllegal" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body" id="illegalBody"></div>
@@ -193,7 +263,11 @@
             <div class="modal-header">
                 <span>新建数据集</span>
                 <button class="btn-icon btn-sm" id="btnCloseNewDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body">
@@ -212,11 +286,16 @@
             <div class="modal-header">
                 <span>重命名数据集</span>
                 <button class="btn-icon btn-sm" id="btnCloseRenameDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span id="renameOldName"></span></p>
+                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span
+                        id="renameOldName"></span></p>
                 <input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
             </div>
             <div class="modal-footer">
@@ -232,7 +311,11 @@
             <div class="modal-header">
                 <span>删除数据集</span>
                 <button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body">
@@ -251,7 +334,11 @@
             <div class="modal-header">
                 <span id="alertTitle">提示</span>
                 <button class="btn-icon btn-sm" id="btnCloseAlert" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body" id="alertBody"></div>
@@ -267,7 +354,11 @@
             <div class="modal-header">
                 <span id="confirmDialogTitle">确认</span>
                 <button class="btn-icon btn-sm" id="btnCloseConfirmDialog" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
             <div class="modal-body" id="confirmDialogBody"></div>
@@ -280,4 +371,5 @@
 
     <script src="js/app.js"></script>
 </body>
+
 </html>
