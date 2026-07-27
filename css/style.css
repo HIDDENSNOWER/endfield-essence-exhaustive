@@ -70,7 +70,7 @@ body {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     line-height: 1.4;
-    min-height: 100vh;
+    height: 100vh;
     transition: background-color 0.2s, color 0.2s;
     display: flex; flex-direction: column;
     overflow: hidden;
