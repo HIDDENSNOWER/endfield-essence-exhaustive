@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartTable · 完整版</title>
+    <title>SmartTable · 基质录入</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- 导航栏（不变） -->
+    <!-- 导航栏 -->
     <nav class="navbar">
         <div class="search-bar">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -28,8 +28,9 @@
         </button>
     </nav>
 
-    <!-- 主内容区（不变） -->
+    <!-- 主布局 -->
     <div class="main-layout">
+        <!-- 左侧表格区 -->
         <div class="table-area" id="tableArea">
             <div class="table-section" id="section1">
                 <div class="section-title">▸ 第一部分（强攻 ~ 残暴）</div>
@@ -45,81 +46,237 @@
             </div>
         </div>
 
-        <!-- 右侧输入面板（调整顺序与标签） -->
-        <aside class="input-panel" id="inputPanel">
-            <div class="panel-title">📝 数据管理</div>
-            <div class="dataset-info">
-                <span class="dataset-label">当前数据集：</span>
-                <span class="dataset-name" id="datasetName">smarttable_data</span>
-            </div>
-            <div class="form-group">
-                <label>切换数据集</label>
-                <select id="datasetSelect"></select>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-sm" id="btnExport">导出</button>
-                <button class="btn btn-sm" id="btnImport">导入</button>
-                <button class="btn btn-sm" id="btnNewDataset">新建</button>
-                <button class="btn btn-sm" id="btnRename">重命名</button>
-                <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
-            </div>
-            <!-- ★ 顺序改为：主词条 → 副词条 → 词条 -->
-            <div class="form-group">
-                <label>主词条</label>
-                <select id="inputSubCol"></select>
-            </div>
-            <div class="form-group">
-                <label>副词条</label>
-                <select id="inputRow"></select>
-            </div>
-            <div class="form-group">
-                <label>词条</label>
-                <select id="inputGroup"></select>
-            </div>
-            <div class="form-group">
-                <label>数值</label>
-                <input type="text" id="inputValue" placeholder="输入数值" maxlength="3" pattern="\d{3}" inputmode="numeric">
-            </div>
-            <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
-            <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
-            <p class="input-hint" id="inputHint"></p>
-            <input type="file" id="importFile" accept=".json" style="display:none;">
-        </aside>
+        <!-- 右侧边栏 -->
+        <nav class="sidebar" id="sidebar">
+            <button class="sidebar-btn active" data-panel="input" title="数据管理">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+            </button>
+            <button class="sidebar-btn" data-panel="stats" title="统计信息">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+            </button>
+            <button class="sidebar-btn" data-panel="record" title="录入面板">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+            </button>
+        </nav>
+
+        <!-- 面板容器 -->
+        <div class="panel-container" id="panelContainer">
+            <!-- 数据管理面板 -->
+            <aside class="input-panel active-panel" id="inputPanel">
+                <div class="panel-title">📝 数据管理</div>
+                <div class="dataset-info">
+                    <span class="dataset-label">当前数据集：</span>
+                    <span class="dataset-name" id="datasetName">默认数据集</span>
+                </div>
+                <div class="form-group">
+                    <label>切换数据集</label>
+                    <select id="datasetSelect"></select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-sm" id="btnExport">导出</button>
+                    <button class="btn btn-sm" id="btnImport">导入</button>
+                    <button class="btn btn-sm" id="btnNewDataset">新建</button>
+                    <button class="btn btn-sm" id="btnRename">重命名</button>
+                    <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
+                </div>
+                <!-- 新增标题 -->
+                <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
+                <div class="form-group">
+                    <label>主属性</label>
+                    <select id="inputSubCol"></select>
+                </div>
+                <div class="form-group">
+                    <label>副属性</label>
+                    <select id="inputRow"></select>
+                </div>
+                <div class="form-group">
+                    <label>词条</label>
+                    <select id="inputGroup"></select>
+                </div>
+                <div class="form-group">
+                    <label>数值</label>
+                    <input type="text" id="inputValue" placeholder="输入数值" maxlength="3" inputmode="numeric">
+                </div>
+                <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
+                <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
+                <p class="input-hint" id="inputHint"></p>
+                <input type="file" id="importFile" accept=".json" style="display:none;">
+            </aside>
+
+            <!-- 统计面板 -->
+            <aside class="stats-panel" id="statsPanel">
+                <div class="panel-title">📊 统计信息</div>
+                <div id="statsContent" class="stats-content"></div>
+            </aside>
+
+            <!-- 录入面板 -->
+            <aside class="record-panel" id="recordPanel">
+                <div class="panel-title">📥 录入面板</div>
+                <div class="form-group">
+                    <label>主属性</label>
+                    <select id="recordSubCol"></select>
+                </div>
+                <div class="form-group">
+                    <label>副属性</label>
+                    <select id="recordRow"></select>
+                </div>
+                <div class="form-group">
+                    <label>词条</label>
+                    <select id="recordGroup"></select>
+                </div>
+                <button class="btn btn-primary btn-block" id="btnRecordApply">录入</button>
+                <p class="input-hint" id="recordHint"></p>
+            </aside>
+        </div>
     </div>
 
-    <!-- 数值对比弹窗（不变） -->
+    <!-- 数值对比弹窗（保持不变） -->
     <div class="modal-overlay" id="modalCompare" style="display:none;">
         <div class="modal" style="max-width:450px;">
-            <div class="modal-header">
-                <span>📊 数值对比</span>
-                <button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
+            <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
             <div class="modal-body" id="compareBody"></div>
-            <div class="modal-footer">
-                <button class="btn" id="btnKeepOld">保留旧值</button>
-                <button class="btn btn-primary" id="btnReplaceNew">替换为新值</button>
-            </div>
+            <div class="modal-footer"><button class="btn" id="btnKeepOld">保留旧值</button><button class="btn btn-primary" id="btnReplaceNew">替换为新值</button></div>
         </div>
     </div>
 
     <!-- 二次确认弹窗 -->
-<div class="modal-overlay" id="modalConfirm" style="display:none;">
-    <div class="modal" style="max-width:420px;">
-        <div class="modal-header">
-            <span>⚠️ 操作确认</span>
-            <button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </div>
-        <div class="modal-body" id="confirmBody"></div>
-        <div class="modal-footer">
-            <button class="btn btn-success" id="btnCancelConfirm">取消</button>
-            <button class="btn btn-danger" id="btnConfirmAction">确认</button>
+    <div class="modal-overlay" id="modalConfirm" style="display:none;">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body" id="confirmBody"></div>
+            <div class="modal-footer"><button class="btn btn-success" id="btnCancelConfirm">取消</button><button class="btn btn-danger" id="btnConfirmAction">确认</button></div>
         </div>
     </div>
-</div>
+
+    <!-- 全部获取提示弹窗 -->
+    <div class="modal-overlay" id="modalFullAcquire" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>ℹ️ 录入提示</span>
+                <button class="btn-icon btn-sm" id="btnCloseFullAcquire" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="fullAcquireBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnConfirmFullAcquire">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 非法输入提示弹窗 -->
+    <div class="modal-overlay" id="modalIllegalInput" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>⚠️ 非法输入</span>
+                <button class="btn-icon btn-sm" id="btnCloseIllegal" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="illegalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnConfirmIllegal">确定</button>
+            </div>
+        </div>
+    </div>
+    <!-- 新建数据集弹窗 -->
+    <div class="modal-overlay" id="modalNewDataset" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>新建数据集</span>
+                <button class="btn-icon btn-sm" id="btnCloseNewDataset" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="newDatasetName" placeholder="请输入数据集名称" maxlength="50" style="width:100%;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelNewDataset">取消</button>
+                <button class="btn btn-primary" id="btnConfirmNewDataset">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重命名数据集弹窗 -->
+    <div class="modal-overlay" id="modalRenameDataset" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>重命名数据集</span>
+                <button class="btn-icon btn-sm" id="btnCloseRenameDataset" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span id="renameOldName"></span></p>
+                <input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelRenameDataset">取消</button>
+                <button class="btn btn-primary" id="btnConfirmRenameDataset">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除数据集弹窗 -->
+    <div class="modal-overlay" id="modalDeleteDataset" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>删除数据集</span>
+                <button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除数据集 “<span id="deleteDatasetName"></span>” 吗？此操作不可撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelDeleteDataset">取消</button>
+                <button class="btn btn-danger" id="btnConfirmDeleteDataset">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用提示弹窗 -->
+    <div class="modal-overlay" id="modalAlert" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span id="alertTitle">提示</span>
+                <button class="btn-icon btn-sm" id="btnCloseAlert" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="alertBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnConfirmAlert">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用确认弹窗 -->
+    <div class="modal-overlay" id="modalConfirmDialog" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span id="confirmDialogTitle">确认</span>
+                <button class="btn-icon btn-sm" id="btnCloseConfirmDialog" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="confirmDialogBody"></div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelConfirmDialog">取消</button>
+                <button class="btn btn-primary" id="btnConfirmConfirmDialog">确认</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/app.js"></script>
 </body>

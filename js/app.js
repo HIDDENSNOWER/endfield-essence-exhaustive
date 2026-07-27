@@ -1,6 +1,6 @@
 (function() {
     const STORAGE_KEY_THEME = 'smarttable_theme';
-    const DEFAULT_STORAGE_KEY = 'smarttable_data';
+    const DEFAULT_STORAGE_KEY = '默认数据集';
     const DATASET_LIST_KEY = 'smarttable_dataset_list';
     let STORAGE_KEY_DATA = DEFAULT_STORAGE_KEY;
 
@@ -30,16 +30,18 @@
         '源石技艺提升', '治疗效率提升', '终结技效率提升'
     ];
 
-    function createEmptyRowData() { return new Array(70).fill(''); }
+    function defaultCellMeta() { return { v: '', t: 0, a: 0 }; }
+    function createEmptyRowData() { return new Array(70).fill(null).map(() => defaultCellMeta()); }
     function createInitialRows() { return ROW_NAMES.map(name => ({ name, data: createEmptyRowData() })); }
 
     let state = {
         rows: createInitialRows(),
         searchQuery: '',
-        theme: 'light'
+        theme: 'light',
+        activePanel: 'input'
     };
     let pendingApply = null;
-    let confirmCallback = null;
+    let confirmCallback = null; // 用于数值对比二次确认
 
     const dom = {
         tableHead1: document.getElementById('tableHead1'),
@@ -75,7 +77,58 @@
         btnCancelConfirm: document.getElementById('btnCancelConfirm'),
         btnConfirmAction: document.getElementById('btnConfirmAction'),
         btnCloseConfirm: document.getElementById('btnCloseConfirm'),
+        modalFullAcquire: document.getElementById('modalFullAcquire'),
+        fullAcquireBody: document.getElementById('fullAcquireBody'),
+        btnCloseFullAcquire: document.getElementById('btnCloseFullAcquire'),
+        btnConfirmFullAcquire: document.getElementById('btnConfirmFullAcquire'),
+        modalIllegalInput: document.getElementById('modalIllegalInput'),
+        illegalBody: document.getElementById('illegalBody'),
+        btnCloseIllegal: document.getElementById('btnCloseIllegal'),
+        btnConfirmIllegal: document.getElementById('btnConfirmIllegal'),
+        modalNewDataset: document.getElementById('modalNewDataset'),
+        newDatasetName: document.getElementById('newDatasetName'),
+        btnCancelNewDataset: document.getElementById('btnCancelNewDataset'),
+        btnConfirmNewDataset: document.getElementById('btnConfirmNewDataset'),
+        btnCloseNewDataset: document.getElementById('btnCloseNewDataset'),
+        modalRenameDataset: document.getElementById('modalRenameDataset'),
+        renameOldName: document.getElementById('renameOldName'),
+        renameDatasetName: document.getElementById('renameDatasetName'),
+        btnCancelRenameDataset: document.getElementById('btnCancelRenameDataset'),
+        btnConfirmRenameDataset: document.getElementById('btnConfirmRenameDataset'),
+        btnCloseRenameDataset: document.getElementById('btnCloseRenameDataset'),
+        modalDeleteDataset: document.getElementById('modalDeleteDataset'),
+        deleteDatasetName: document.getElementById('deleteDatasetName'),
+        btnCancelDeleteDataset: document.getElementById('btnCancelDeleteDataset'),
+        btnConfirmDeleteDataset: document.getElementById('btnConfirmDeleteDataset'),
+        btnCloseDeleteDataset: document.getElementById('btnCloseDeleteDataset'),
+        modalAlert: document.getElementById('modalAlert'),
+        alertTitle: document.getElementById('alertTitle'),
+        alertBody: document.getElementById('alertBody'),
+        btnCloseAlert: document.getElementById('btnCloseAlert'),
+        btnConfirmAlert: document.getElementById('btnConfirmAlert'),
+        modalConfirmDialog: document.getElementById('modalConfirmDialog'),
+        confirmDialogTitle: document.getElementById('confirmDialogTitle'),
+        confirmDialogBody: document.getElementById('confirmDialogBody'),
+        btnCancelConfirmDialog: document.getElementById('btnCancelConfirmDialog'),
+        btnConfirmConfirmDialog: document.getElementById('btnConfirmConfirmDialog'),
+        btnCloseConfirmDialog: document.getElementById('btnCloseConfirmDialog'),
+        sidebarBtns: document.querySelectorAll('.sidebar-btn'),
+        inputPanel: document.getElementById('inputPanel'),
+        statsPanel: document.getElementById('statsPanel'),
+        statsContent: document.getElementById('statsContent'),
+        recordPanel: document.getElementById('recordPanel'),
+        recordSubCol: document.getElementById('recordSubCol'),
+        recordRow: document.getElementById('recordRow'),
+        recordGroup: document.getElementById('recordGroup'),
+        btnRecordApply: document.getElementById('btnRecordApply'),
+        recordHint: document.getElementById('recordHint'),
     };
+
+    function normalizeCell(cell) {
+        if (typeof cell === 'object' && cell !== null && 'v' in cell && 't' in cell && 'a' in cell) return cell;
+        if (typeof cell === 'string' || typeof cell === 'number') return { v: cell === '' ? '' : String(cell), t: 0, a: 0 };
+        return defaultCellMeta();
+    }
 
     // ========== 主题 ==========
     function applyTheme(theme) {
@@ -98,7 +151,10 @@
         if (!q) return state.rows;
         return state.rows.filter(row => {
             if (row.name.toLowerCase().includes(q)) return true;
-            return row.data.some(cell => String(cell).toLowerCase().includes(q));
+            return row.data.some(cell => {
+                const c = normalizeCell(cell);
+                return String(c.v).toLowerCase().includes(q);
+            });
         });
     }
 
@@ -154,11 +210,43 @@
                 group.sub.forEach((subName, subIdx) => {
                     const td = document.createElement('td');
                     const colIndex = groups.slice(0, groupIdx).reduce((s,g) => s + g.sub.length, 0) + subIdx + colOffset;
-                    const val = row.data[colIndex];
-                    td.textContent = val === '' ? '—' : val;
-                    if (val === '') td.classList.add('empty-value');
+                    const cell = normalizeCell(row.data[colIndex]);
+                    const val = cell.v;
+                    const total = cell.t || 0;
+                    const acq = cell.a || 0;
+
+                    let statusClass = '';
+                    if (total === 0) {
+                        statusClass = '';
+                    } else if (acq === 0) {
+                        statusClass = 'status-none';
+                    } else if (acq < total) {
+                        statusClass = 'status-partial';
+                    } else {
+                        statusClass = 'status-full';
+                    }
+                    td.className = '';
+                    if (statusClass) td.classList.add(statusClass);
+
+                    let text;
+                    if (total === 0) {
+                        text = val === '' ? '—' : val;
+                    } else {
+                        text = val === '' ? '' : val;
+                        if (total > 1) {
+                            text += ` (${acq}/${total})`;
+                        } else if (total === 1) {
+                            if (acq === 0) text += ' (0/1)';
+                        }
+                    }
+                    if (val === '' && total === 0) {
+                        td.classList.add('empty-value');
+                    }
+                    td.textContent = text;
                     td.classList.add(globalIdx % 2 === 0 ? 'group-even' : 'group-odd');
-                    if (subIdx === group.sub.length - 1 && groupIdx < groups.length - 1) td.classList.add('border-group-right');
+                    if (subIdx === group.sub.length - 1 && groupIdx < groups.length - 1) {
+                        td.classList.add('border-group-right');
+                    }
                     tr.appendChild(td);
                 });
             });
@@ -169,6 +257,65 @@
         renderTablePart(dom.tableHead1, dom.tableBody1, GROUP1, 0, COLS1);
         renderTablePart(dom.tableHead2, dom.tableBody2, GROUP2, COLS1, COLS2);
     }
+
+    // ========== 统计面板 ==========
+    function renderStats() {
+        const rows = state.rows;
+        let html = '<table><thead><tr><th>副属性</th><th>已填单元格</th></tr></thead><tbody>';
+        rows.forEach(row => {
+            const filled = row.data.filter(cell => {
+                const c = normalizeCell(cell);
+                return c.v !== '' && c.v !== null;
+            }).length;
+            html += `<tr><td style="text-align:left;font-weight:500">${row.name}</td><td>${filled}</td></tr>`;
+        });
+        html += '</tbody></table><p style="margin-top:10px; font-size:0.72rem; color:var(--text-tertiary)">统计当前数据集非空单元格数量。</p>';
+        dom.statsContent.innerHTML = html;
+    }
+
+    // ========== 面板切换 ==========
+    function switchPanel(panelName) {
+        state.activePanel = panelName;
+        dom.sidebarBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.panel === panelName));
+        dom.inputPanel.classList.toggle('active-panel', panelName === 'input');
+        dom.statsPanel.classList.toggle('active-panel', panelName === 'stats');
+        dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
+        if (panelName === 'stats') renderStats();
+    }
+
+    // ========== 弹窗辅助 ==========
+    function openModal(modalEl) {
+        modalEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closeModal(modalEl) {
+        modalEl.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    function showAlert(message, title = '提示') {
+        dom.alertTitle.textContent = title;
+        dom.alertBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${message}</p>`;
+        openModal(dom.modalAlert);
+    }
+    function closeAlert() { closeModal(dom.modalAlert); }
+    function showConfirmDialog(message, onConfirm, onCancel, title = '确认') {
+        dom.confirmDialogTitle.textContent = title;
+        dom.confirmDialogBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${message}</p>`;
+        window.__dialogConfirmCallback = onConfirm;
+        window.__dialogCancelCallback = onCancel;
+        openModal(dom.modalConfirmDialog);
+    }
+    function closeConfirmDialog() { closeModal(dom.modalConfirmDialog); }
+    function showIllegalModal(reason) {
+        dom.illegalBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.6;">${reason}</p>`;
+        openModal(dom.modalIllegalInput);
+    }
+    function closeIllegalModal() { closeModal(dom.modalIllegalInput); }
+    function showFullAcquireModal(message) {
+        dom.fullAcquireBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${message}</p>`;
+        openModal(dom.modalFullAcquire);
+    }
+    function closeFullAcquireModal() { closeModal(dom.modalFullAcquire); }
 
     // ========== 数据集管理 ==========
     function getDatasetList() { try { return JSON.parse(localStorage.getItem(DATASET_LIST_KEY)) || []; } catch(e) { return []; } }
@@ -202,7 +349,12 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name && Array.isArray(parsed[0].data)) {
-                    state.rows = parsed; addDatasetKey(STORAGE_KEY_DATA); return true;
+                    state.rows = parsed.map(row => ({
+                        name: row.name,
+                        data: row.data.map(cell => normalizeCell(cell))
+                    }));
+                    addDatasetKey(STORAGE_KEY_DATA);
+                    return true;
                 }
             }
         } catch(e) {}
@@ -217,6 +369,22 @@
         a.click(); URL.revokeObjectURL(a.href);
         dom.inputHint.textContent = '数据集已导出';
     }
+
+    function proceedImport(data, newKey) {
+        state.rows = data.map(row => ({
+            name: row.name,
+            data: row.data.map(cell => normalizeCell(cell))
+        }));
+        STORAGE_KEY_DATA = newKey;
+        localStorage.setItem(newKey, JSON.stringify(state.rows));
+        addDatasetKey(newKey);
+        updateDatasetDisplay();
+        updateDatasetSelect();
+        renderAllTables();
+        dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
+        localStorage.setItem('smarttable_current_dataset', newKey);
+    }
+
     function importData(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -225,64 +393,113 @@
                 if (Array.isArray(data) && data.length > 0 && data[0].name && Array.isArray(data[0].data)) {
                     const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
                     const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
-                    if (getDatasetList().includes(newKey) && !confirm(`数据集"${newKey}"已存在，是否覆盖？`)) return;
-                    state.rows = data;
-                    STORAGE_KEY_DATA = newKey;
-                    localStorage.setItem(newKey, JSON.stringify(data));
-                    addDatasetKey(newKey);
-                    updateDatasetDisplay(); updateDatasetSelect();
-                    renderAllTables();
-                    dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
-                    localStorage.setItem('smarttable_current_dataset', newKey);
-                } else alert('文件格式不正确。');
-            } catch(err) { alert('解析文件失败。'); }
+                    if (getDatasetList().includes(newKey)) {
+                        showConfirmDialog(`数据集 "${newKey}" 已存在，是否覆盖？`, () => {
+                            proceedImport(data, newKey);
+                        }, null, '覆盖确认');
+                    } else {
+                        proceedImport(data, newKey);
+                    }
+                } else {
+                    showAlert('文件格式不正确。', '导入失败');
+                }
+            } catch(err) {
+                showAlert('解析文件失败，请检查文件内容。', '导入失败');
+            }
         };
         reader.readAsText(file);
     }
     function triggerImport() { dom.importFile.click(); }
+
     function createNewDataset() {
-        const name = prompt('请输入新数据集名称（字母、数字、下划线）：');
-        if (!name || !/^[a-zA-Z0-9_]+$/.test(name)) { if(name!==null) alert('名称无效。'); return; }
-        if (getDatasetList().includes(name)) { alert('名称已存在。'); return; }
+        dom.newDatasetName.value = '';
+        openModal(dom.modalNewDataset);
+        setTimeout(() => dom.newDatasetName.focus(), 100);
+    }
+    function confirmNewDataset() {
+        const name = dom.newDatasetName.value.trim();
+        if (!name) {
+            showAlert('数据集名称不能为空。');
+            return;
+        }
+        if (getDatasetList().includes(name)) {
+            showAlert('该数据集名称已存在，请使用其他名称。');
+            return;
+        }
         const empty = createInitialRows();
         localStorage.setItem(name, JSON.stringify(empty));
         addDatasetKey(name);
         STORAGE_KEY_DATA = name;
         state.rows = JSON.parse(JSON.stringify(empty));
-        updateDatasetDisplay(); updateDatasetSelect();
+        updateDatasetDisplay();
+        updateDatasetSelect();
         renderAllTables();
+        closeModal(dom.modalNewDataset);
         dom.inputHint.textContent = `已创建新数据集: ${name}`;
         localStorage.setItem('smarttable_current_dataset', name);
     }
+
     function renameDataset() {
-        const newName = prompt('新名称（字母、数字、下划线）：', STORAGE_KEY_DATA);
-        if (!newName || !/^[a-zA-Z0-9_]+$/.test(newName)) { if(newName!==null) alert('名称无效。'); return; }
-        if (newName === STORAGE_KEY_DATA) return;
-        if (getDatasetList().includes(newName)) { alert('名称已存在。'); return; }
+        dom.renameOldName.textContent = STORAGE_KEY_DATA;
+        dom.renameDatasetName.value = '';
+        openModal(dom.modalRenameDataset);
+        setTimeout(() => dom.renameDatasetName.focus(), 100);
+    }
+    function confirmRenameDataset() {
+        const newName = dom.renameDatasetName.value.trim();
+        if (!newName) {
+            showAlert('新名称不能为空。');
+            return;
+        }
+        if (newName === STORAGE_KEY_DATA) {
+            closeModal(dom.modalRenameDataset);
+            return;
+        }
+        if (getDatasetList().includes(newName)) {
+            showAlert('该名称已存在，请使用其他名称。');
+            return;
+        }
         const data = localStorage.getItem(STORAGE_KEY_DATA);
         localStorage.setItem(newName, data || '[]');
         removeDatasetKey(STORAGE_KEY_DATA);
         STORAGE_KEY_DATA = newName;
         addDatasetKey(newName);
         saveData();
-        updateDatasetDisplay(); updateDatasetSelect();
+        updateDatasetDisplay();
+        updateDatasetSelect();
+        closeModal(dom.modalRenameDataset);
         dom.inputHint.textContent = `已重命名为: ${newName}`;
         localStorage.setItem('smarttable_current_dataset', newName);
     }
+
     function deleteDataset() {
         const list = getDatasetList();
-        if (list.length <= 1) { alert('至少保留一个数据集。'); return; }
-        if (!confirm(`确定删除数据集"${STORAGE_KEY_DATA}"吗？`)) return;
-        localStorage.removeItem(STORAGE_KEY_DATA);
-        removeDatasetKey(STORAGE_KEY_DATA);
-        const newKey = getDatasetList()[0] || DEFAULT_STORAGE_KEY;
+        if (list.length <= 1) {
+            showAlert('至少需要保留一个数据集。', '无法删除');
+            return;
+        }
+        dom.deleteDatasetName.textContent = STORAGE_KEY_DATA;
+        openModal(dom.modalDeleteDataset);
+    }
+    function confirmDeleteDataset() {
+        const currentKey = STORAGE_KEY_DATA;
+        localStorage.removeItem(currentKey);
+        removeDatasetKey(currentKey);
+        const remaining = getDatasetList();
+        const newKey = remaining[0] || DEFAULT_STORAGE_KEY;
         STORAGE_KEY_DATA = newKey;
-        if (!loadData()) { state.rows = createInitialRows(); saveData(); }
-        updateDatasetDisplay(); updateDatasetSelect();
+        if (!loadData()) {
+            state.rows = createInitialRows();
+            saveData();
+        }
+        updateDatasetDisplay();
+        updateDatasetSelect();
         renderAllTables();
+        closeModal(dom.modalDeleteDataset);
         dom.inputHint.textContent = `已删除，切换至: ${newKey}`;
         localStorage.setItem('smarttable_current_dataset', newKey);
     }
+
     function clearAllData() {
         state.rows.forEach(row => row.data = createEmptyRowData());
         renderAllTables(); saveData();
@@ -303,30 +520,19 @@
 
     function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName) {
         const oldT = parseTriple(oldVal), newT = parseTriple(newVal);
-        if (!oldT || !newT) {
-            applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName);
-            return;
-        }
-    
+        if (!oldT || !newT) { applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName); return; }
         const sug = getSuggestion(oldT, newT);
-    
-        // ★ 根据推荐结果动态设置按钮样式
         const btnKeep = dom.btnKeepOld;
         const btnReplace = dom.btnReplaceNew;
-        // 重置为基础按钮样式
         btnKeep.className = 'btn';
         btnReplace.className = 'btn';
         if (sug.keepOld) {
-            // 推荐保留旧值 → 保留按钮绿色，替换按钮灰色边框
             btnKeep.classList.add('btn-success');
             btnReplace.classList.add('btn-outline-gray');
         } else {
-            // 推荐替换为新值 → 替换按钮绿色，保留按钮灰色边框
             btnReplace.classList.add('btn-success');
             btnKeep.classList.add('btn-outline-gray');
         }
-    
-        // 生成对比弹窗内容
         dom.compareBody.innerHTML = `
             <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
                 <div style="text-align:center">
@@ -345,41 +551,36 @@
             <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; text-align:center; font-size:0.85rem; color:var(--accent-primary)">
                 💡 建议：${sug.reason} → ${sug.keepOld ? '保留旧值' : '替换为新值'}
             </div>`;
-    
         pendingApply = { rowIdx, colIndex, newVal, groupName, rowName, subName, suggestion: sug };
-        dom.modalCompare.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        openModal(dom.modalCompare);
     }
+
     function closeCompareModal() {
-        dom.modalCompare.style.display = 'none';
-        document.body.style.overflow = '';
+        closeModal(dom.modalCompare);
         pendingApply = null;
     }
 
     function applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName) {
-        state.rows[rowIdx].data[colIndex] = newVal === '' ? '' : Number(newVal);
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+        cell.v = newVal === '' ? '' : String(newVal);
+        state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
         dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
     }
 
-    // ========== 二次确认弹窗 ==========
     function showConfirmModal(message, reason, onConfirm) {
         dom.confirmBody.innerHTML = `
             <p style="font-size:0.9rem; color:var(--text-primary); margin-bottom:8px;">${message}</p>
-            <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; font-size:0.8rem; color:var(--text-secondary);">
-                ${reason}
-            </div>
+            <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; font-size:0.8rem; color:var(--text-secondary);">${reason}</div>
             <p style="font-size:0.8rem; color:var(--text-tertiary); margin-top:10px;">是否仍要执行此操作？</p>
         `;
         confirmCallback = onConfirm;
-        dom.modalCompare.style.display = 'none';
-        dom.modalConfirm.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        closeModal(dom.modalCompare);
+        openModal(dom.modalConfirm);
     }
 
     function closeConfirmModal() {
-        dom.modalConfirm.style.display = 'none';
-        document.body.style.overflow = '';
+        closeModal(dom.modalConfirm);
         confirmCallback = null;
     }
 
@@ -422,14 +623,22 @@
         }
     }
 
-    // ========== 输入功能 ==========
+    // ========== 下拉框填充与联动 ==========
     function populateDropdowns() {
-        dom.inputRow.innerHTML = ROW_NAMES.map((n,i) => `<option value="${i}">${n}</option>`).join('');
-        dom.inputGroup.innerHTML = ALL_GROUPS.map((g,i) => `<option value="${i}">${g.name}</option>`).join('');
+        const rowOpts = ROW_NAMES.map((n,i) => `<option value="${i}">${n}</option>`).join('');
+        const groupOpts = ALL_GROUPS.map((g,i) => `<option value="${i}">${g.name}</option>`).join('');
+        dom.inputRow.innerHTML = rowOpts;
+        dom.inputGroup.innerHTML = groupOpts;
+        dom.recordRow.innerHTML = rowOpts;
+        dom.recordGroup.innerHTML = groupOpts;
         updateSubColOptions(0);
+        updateRecordSubColOptions(0);
     }
     function updateSubColOptions(groupIdx) {
         dom.inputSubCol.innerHTML = ALL_GROUPS[groupIdx].sub.map((s,i) => `<option value="${i}">${s}</option>`).join('');
+    }
+    function updateRecordSubColOptions(groupIdx) {
+        dom.recordSubCol.innerHTML = ALL_GROUPS[groupIdx].sub.map((s,i) => `<option value="${i}">${s}</option>`).join('');
     }
     function getColumnIndex(groupIdx, subIdx) {
         let col = 0;
@@ -437,37 +646,85 @@
         return col + subIdx;
     }
 
-    // ★ 修改：应用前校验
+    // ========== 数据管理面板应用 ==========
     function applyValue() {
         const value = dom.inputValue.value.trim();
-        // 验证：非空时必须为三位数字
-        if (value !== '' && !/^\d{3}$/.test(value)) {
-            alert('非法输入！请输入三位数字（000-999），不能包含其他字符。');
+        if (value === '') {
+            dom.inputHint.textContent = '输入为空，未做更改。';
+            return;
+        }
+        if (!/^\d{3}$/.test(value)) {
+            showIllegalModal('非法输入：请输入恰好三位数字（000-999）。<br>原因：数值只能为三位纯数字，且不能为空。');
             dom.inputValue.focus();
             return;
         }
+
         const subIdx = parseInt(dom.inputSubCol.value);
         const rowIdx = parseInt(dom.inputRow.value);
         const groupIdx = parseInt(dom.inputGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
 
         const colIndex = getColumnIndex(groupIdx, subIdx);
-        const oldVal = state.rows[rowIdx].data[colIndex];
-        const newVal = value === '' ? '' : Number(value);
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+
+        if (cell.t > 0) {
+            if (cell.a >= cell.t) {
+                const groupName = ALL_GROUPS[groupIdx].name;
+                const rowName = ROW_NAMES[rowIdx];
+                const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+                showFullAcquireModal(`当前重复词条组合（${rowName} - ${groupName} - ${subName}）已全部获取，请停止录入。`);
+                return;
+            }
+            cell.a += 1;
+            state.rows[rowIdx].data[colIndex] = cell;
+            renderAllTables(); saveData();
+            const groupName = ALL_GROUPS[groupIdx].name;
+            const rowName = ROW_NAMES[rowIdx];
+            const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+            dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
+            return;
+        }
+
+        const oldVal = cell.v;
+        const newVal = value;
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
 
-        if (oldVal !== '' && oldVal !== null && oldVal !== undefined && newVal !== '') {
-            if (parseTriple(oldVal) && parseTriple(newVal)) {
-                showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName);
-                return;
-            }
+        if (oldVal !== '' && parseTriple(oldVal) && parseTriple(newVal)) {
+            showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName);
+            return;
         }
-        applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName);
+        cell.v = String(newVal);
+        state.rows[rowIdx].data[colIndex] = cell;
+        renderAllTables(); saveData();
+        dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
     }
 
-    // ========== 滚轮选择 ==========
+    // ========== 录入面板 ==========
+    function applyRecord() {
+        const subIdx = parseInt(dom.recordSubCol.value);
+        const rowIdx = parseInt(dom.recordRow.value);
+        const groupIdx = parseInt(dom.recordGroup.value);
+        if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
+        const colIndex = getColumnIndex(groupIdx, subIdx);
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+        if (cell.t === 0) {
+            cell.t = 1;
+            cell.a = 0;
+        } else {
+            cell.t += 1;
+        }
+        state.rows[rowIdx].data[colIndex] = cell;
+        renderAllTables(); saveData();
+        const groupName = ALL_GROUPS[groupIdx].name;
+        const rowName = ROW_NAMES[rowIdx];
+        const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+        dom.recordHint.textContent = `已录入：${rowName} > ${groupName} > ${subName} (重复${cell.t}, 拥有${cell.a})`;
+    }
+
+    // 滚轮切换
     function enableWheelSelect(el) {
         el.addEventListener('wheel', function(e) {
             e.preventDefault();
@@ -486,35 +743,90 @@
         dom.btnToggleTheme.addEventListener('click', toggleTheme);
         dom.searchInput.addEventListener('input', () => { state.searchQuery = dom.searchInput.value; renderAllTables(); });
         dom.inputGroup.addEventListener('change', () => updateSubColOptions(parseInt(dom.inputGroup.value)));
-        enableWheelSelect(dom.inputSubCol);
-        enableWheelSelect(dom.inputRow);
-        enableWheelSelect(dom.inputGroup);
-        enableWheelSelect(dom.datasetSelect);
+        dom.recordGroup.addEventListener('change', () => updateRecordSubColOptions(parseInt(dom.recordGroup.value)));
 
-        // 过滤非数字输入（可选）
-        dom.inputValue.addEventListener('input', function() {
-            this.value = this.value.replace(/\D/g, '').slice(0, 3);
-        });
+        [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup, dom.datasetSelect].forEach(enableWheelSelect);
+
+        dom.inputValue.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0,3); });
 
         dom.btnApplyValue.addEventListener('click', applyValue);
-        dom.btnClearAll.addEventListener('click', () => { if(confirm('清空当前数据集？')) clearAllData(); });
+        dom.btnClearAll.addEventListener('click', () => {
+            showConfirmDialog('确定要清空当前数据集的所有数值吗？', clearAllData, null, '清空确认');
+        });
+        dom.btnRecordApply.addEventListener('click', applyRecord);
+
+        dom.sidebarBtns.forEach(btn => btn.addEventListener('click', () => switchPanel(btn.dataset.panel)));
+
         dom.datasetSelect.addEventListener('change', () => switchDataset(dom.datasetSelect.value));
         dom.btnExport.addEventListener('click', exportData);
         dom.btnImport.addEventListener('click', triggerImport);
         dom.importFile.addEventListener('change', e => { if(e.target.files[0]){ importData(e.target.files[0]); e.target.value=''; } });
-        dom.btnNewDataset.addEventListener('click', createNewDataset);
-        dom.btnRename.addEventListener('click', renameDataset);
-        dom.btnDeleteDataset.addEventListener('click', deleteDataset);
 
+        // 数据集操作弹窗事件
+        dom.btnNewDataset.addEventListener('click', createNewDataset);
+        dom.btnConfirmNewDataset.addEventListener('click', confirmNewDataset);
+        dom.btnCancelNewDataset.addEventListener('click', () => closeModal(dom.modalNewDataset));
+        dom.btnCloseNewDataset.addEventListener('click', () => closeModal(dom.modalNewDataset));
+        dom.modalNewDataset.addEventListener('click', function(e) { if (e.target === this) closeModal(dom.modalNewDataset); });
+        dom.newDatasetName.addEventListener('keydown', function(e) { if (e.key === 'Enter') confirmNewDataset(); });
+
+        dom.btnRename.addEventListener('click', renameDataset);
+        dom.btnConfirmRenameDataset.addEventListener('click', confirmRenameDataset);
+        dom.btnCancelRenameDataset.addEventListener('click', () => closeModal(dom.modalRenameDataset));
+        dom.btnCloseRenameDataset.addEventListener('click', () => closeModal(dom.modalRenameDataset));
+        dom.modalRenameDataset.addEventListener('click', function(e) { if (e.target === this) closeModal(dom.modalRenameDataset); });
+        dom.renameDatasetName.addEventListener('keydown', function(e) { if (e.key === 'Enter') confirmRenameDataset(); });
+
+        dom.btnDeleteDataset.addEventListener('click', deleteDataset);
+        dom.btnConfirmDeleteDataset.addEventListener('click', confirmDeleteDataset);
+        dom.btnCancelDeleteDataset.addEventListener('click', () => closeModal(dom.modalDeleteDataset));
+        dom.btnCloseDeleteDataset.addEventListener('click', () => closeModal(dom.modalDeleteDataset));
+        dom.modalDeleteDataset.addEventListener('click', function(e) { if (e.target === this) closeModal(dom.modalDeleteDataset); });
+
+        // 数值对比与二次确认
         dom.btnKeepOld.addEventListener('click', executeKeepOld);
         dom.btnReplaceNew.addEventListener('click', executeReplaceNew);
         dom.btnCloseCompare.addEventListener('click', () => { closeCompareModal(); dom.inputHint.textContent = '已取消'; });
         dom.modalCompare.addEventListener('click', function(e) { if(e.target === this) closeCompareModal(); });
 
-        dom.btnCancelConfirm.addEventListener('click', () => { closeConfirmModal(); dom.modalCompare.style.display = 'flex'; });
+        dom.btnCancelConfirm.addEventListener('click', () => { closeConfirmModal(); openModal(dom.modalCompare); });
         dom.btnConfirmAction.addEventListener('click', executeConfirmedAction);
-        dom.btnCloseConfirm.addEventListener('click', () => { closeConfirmModal(); dom.modalCompare.style.display = 'flex'; });
-        dom.modalConfirm.addEventListener('click', function(e) { if(e.target === this) { closeConfirmModal(); dom.modalCompare.style.display = 'flex'; } });
+        dom.btnCloseConfirm.addEventListener('click', () => { closeConfirmModal(); openModal(dom.modalCompare); });
+        dom.modalConfirm.addEventListener('click', function(e) { if(e.target === this) { closeConfirmModal(); openModal(dom.modalCompare); } });
+
+        // 全获取提示
+        dom.btnConfirmFullAcquire.addEventListener('click', closeFullAcquireModal);
+        dom.btnCloseFullAcquire.addEventListener('click', closeFullAcquireModal);
+        dom.modalFullAcquire.addEventListener('click', function(e) { if(e.target === this) closeFullAcquireModal(); });
+
+        // 非法输入
+        dom.btnConfirmIllegal.addEventListener('click', closeIllegalModal);
+        dom.btnCloseIllegal.addEventListener('click', closeIllegalModal);
+        dom.modalIllegalInput.addEventListener('click', function(e) { if(e.target === this) closeIllegalModal(); });
+
+        // 通用弹窗
+        dom.btnConfirmAlert.addEventListener('click', closeAlert);
+        dom.btnCloseAlert.addEventListener('click', closeAlert);
+        dom.modalAlert.addEventListener('click', function(e) { if(e.target === this) closeAlert(); });
+
+        dom.btnConfirmConfirmDialog.addEventListener('click', () => {
+            closeConfirmDialog();
+            if (typeof window.__dialogConfirmCallback === 'function') window.__dialogConfirmCallback();
+        });
+        dom.btnCancelConfirmDialog.addEventListener('click', () => {
+            closeConfirmDialog();
+            if (typeof window.__dialogCancelCallback === 'function') window.__dialogCancelCallback();
+        });
+        dom.btnCloseConfirmDialog.addEventListener('click', () => {
+            closeConfirmDialog();
+            if (typeof window.__dialogCancelCallback === 'function') window.__dialogCancelCallback();
+        });
+        dom.modalConfirmDialog.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfirmDialog();
+                if (typeof window.__dialogCancelCallback === 'function') window.__dialogCancelCallback();
+            }
+        });
 
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             if (!localStorage.getItem(STORAGE_KEY_THEME)) applyTheme(e.matches ? 'dark' : 'light');
@@ -536,6 +848,7 @@
         populateDropdowns();
         bindEvents();
         renderAllTables();
+        switchPanel('input');
         localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
         dom.inputHint.textContent = '准备就绪';
     }
