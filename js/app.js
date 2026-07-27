@@ -303,8 +303,30 @@
 
     function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName) {
         const oldT = parseTriple(oldVal), newT = parseTriple(newVal);
-        if (!oldT || !newT) { applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName); return; }
+        if (!oldT || !newT) {
+            applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName);
+            return;
+        }
+    
         const sug = getSuggestion(oldT, newT);
+    
+        // ★ 根据推荐结果动态设置按钮样式
+        const btnKeep = dom.btnKeepOld;
+        const btnReplace = dom.btnReplaceNew;
+        // 重置为基础按钮样式
+        btnKeep.className = 'btn';
+        btnReplace.className = 'btn';
+        if (sug.keepOld) {
+            // 推荐保留旧值 → 保留按钮绿色，替换按钮灰色边框
+            btnKeep.classList.add('btn-success');
+            btnReplace.classList.add('btn-outline-gray');
+        } else {
+            // 推荐替换为新值 → 替换按钮绿色，保留按钮灰色边框
+            btnReplace.classList.add('btn-success');
+            btnKeep.classList.add('btn-outline-gray');
+        }
+    
+        // 生成对比弹窗内容
         dom.compareBody.innerHTML = `
             <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
                 <div style="text-align:center">
@@ -323,6 +345,7 @@
             <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; text-align:center; font-size:0.85rem; color:var(--accent-primary)">
                 💡 建议：${sug.reason} → ${sug.keepOld ? '保留旧值' : '替换为新值'}
             </div>`;
+    
         pendingApply = { rowIdx, colIndex, newVal, groupName, rowName, subName, suggestion: sug };
         dom.modalCompare.style.display = 'flex';
         document.body.style.overflow = 'hidden';

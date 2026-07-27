@@ -198,3 +198,24 @@ tbody tr:hover td { background-color: var(--bg-hover) !important; }
     .main-layout { flex-direction: column; }
     .input-panel { width: 100%; border-left: none; border-top: 1px solid var(--border-default); }
 }
+/* 绿色成功按钮 */
+.btn-success {
+    background-color: var(--success-primary, #1a7f37);
+    border-color: var(--success-primary, #1a7f37);
+    color: #fff;
+    font-weight: 600;
+}
+.btn-success:hover {
+    filter: brightness(1.15);
+}
+/* 灰色边框按钮（非推荐操作） */
+.btn-outline-gray {
+    background-color: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.btn-outline-gray:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-emphasis);
+}
