@@ -46,6 +46,9 @@
     let confirmCallback = null;
     let clearAllTimer = null; // 用于倒计时
     let clearErrorTimer = null;
+    let deleteConfirmTimer = null;   // 删除确认倒计时
+    let deleteErrorTimer = null;     // 删除错误提示倒计时
+    let highlightedCellElement = null;   // 当前高亮的单元格
 
     const dom = {
         tableHead1: document.getElementById('tableHead1'),
@@ -171,6 +174,27 @@
         errorCountdown: document.getElementById('errorCountdown'),
         btnCloseClearError: document.getElementById('btnCloseClearError'),
         btnForceCloseError: document.getElementById('btnForceCloseError'),
+        // 删除确认弹窗
+        modalDeleteConfirm: document.getElementById('modalDeleteConfirm'),
+        deleteConfirmBody: document.getElementById('deleteConfirmBody'),
+        deleteConfirmDatasetName: document.getElementById('deleteConfirmDatasetName'),
+        deleteConfirmCountdown: document.getElementById('deleteConfirmCountdown'),
+        deleteConfirmInput: document.getElementById('deleteConfirmInput'),
+        btnCancelDeleteConfirm: document.getElementById('btnCancelDeleteConfirm'),
+        btnConfirmDeleteAction: document.getElementById('btnConfirmDeleteAction'),
+        btnCloseDeleteConfirm: document.getElementById('btnCloseDeleteConfirm'),
+
+        // 删除错误弹窗
+        modalDeleteError: document.getElementById('modalDeleteError'),
+        deleteErrorCountdown: document.getElementById('deleteErrorCountdown'),
+        btnCloseDeleteError: document.getElementById('btnCloseDeleteError'),
+        btnForceCloseDeleteError: document.getElementById('btnForceCloseDeleteError'),
+
+        modalExport: document.getElementById('modalExport'),
+        exportFileName: document.getElementById('exportFileName'),
+        btnCancelExport: document.getElementById('btnCancelExport'),
+        btnConfirmExport: document.getElementById('btnConfirmExport'),
+        btnCloseExport: document.getElementById('btnCloseExport'),
     };
 
     function normalizeCell(cell) {
@@ -266,6 +290,7 @@
             return;
         }
         filteredRows.forEach(row => {
+            const originalIndex = state.rows.indexOf(row);   // ★ 新增行
             const tr = document.createElement('tr');
             const tdName = document.createElement('td');
             tdName.textContent = row.name;
@@ -280,6 +305,11 @@
                     const total = cell.t || 0;
                     const acq = cell.a || 0;
 
+                    td.dataset.rowindex = originalIndex;
+                    td.dataset.colindex = colIndex;
+
+                    tr.appendChild(td);
+                    
                     let statusClass = '';
                     if (total === 0) {
                         statusClass = '';
@@ -325,6 +355,28 @@
     function renderAllTables() {
         renderTablePart(dom.tableHead1, dom.tableBody1, GROUP1, 0, COLS1);
         renderTablePart(dom.tableHead2, dom.tableBody2, GROUP2, COLS1, COLS2);
+    }
+
+    function updateHighlightedCell() {
+        // 移除旧高亮
+        if (highlightedCellElement) {
+            highlightedCellElement.classList.remove('cell-highlight-blink');
+            highlightedCellElement = null;
+        }
+        // 仅在数据管理面板激活时高亮
+        if (state.activePanel !== 'input') return;
+    
+        const subIdx = parseInt(dom.inputSubCol.value);
+        const rowIdx = parseInt(dom.inputRow.value);
+        const groupIdx = parseInt(dom.inputGroup.value);
+        if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+    
+        const colIndex = getColumnIndex(groupIdx, subIdx);
+        const cell = document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`);
+        if (cell) {
+            cell.classList.add('cell-highlight-blink');
+            highlightedCellElement = cell;
+        }
     }
 
     // ========== 统计面板 ==========
@@ -431,13 +483,37 @@
         return false;
     }
     function exportData() {
+        // 生成默认文件名
+        const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
+        dom.exportFileName.value = defaultName;
+        openModal(dom.modalExport);
+        setTimeout(() => dom.exportFileName.focus(), 100);
+    }
+
+    function doExport() {
+        let fileName = dom.exportFileName.value.trim();
+        if (!fileName) {
+            // 如果用户清空了输入框，使用默认规则
+            fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
+        }
+        // 确保文件名以 .json 结尾
+        if (!fileName.endsWith('.json')) {
+            fileName += '.json';
+        }
+    
         const dataStr = JSON.stringify(state.rows, null, 2);
-        const blob = new Blob([dataStr], {type:'application/json'});
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
-        a.click(); URL.revokeObjectURL(a.href);
-        dom.inputHint.textContent = '数据集已导出';
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    
+        closeModal(dom.modalExport);
+        dom.inputHint.textContent = `已导出：${fileName}`;
     }
 
     function proceedImport(data, newKey) {
@@ -548,8 +624,8 @@
             showAlert('至少需要保留一个数据集。', '无法删除');
             return;
         }
-        dom.deleteDatasetName.textContent = STORAGE_KEY_DATA;
-        openModal(dom.modalDeleteDataset);
+        // 打开专用删除确认弹窗，而不是之前的通用确认弹窗
+        openDeleteConfirmModal();
     }
     function confirmDeleteDataset() {
         const currentKey = STORAGE_KEY_DATA;
@@ -1063,6 +1139,42 @@
             if (e.target === this) closeClearErrorModal();
         });
 
+        // 删除确认弹窗事件
+        dom.btnCancelDeleteConfirm.addEventListener('click', closeDeleteConfirmModal);
+        dom.btnCloseDeleteConfirm.addEventListener('click', closeDeleteConfirmModal);
+        dom.modalDeleteConfirm.addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteConfirmModal();
+        });
+        dom.btnConfirmDeleteAction.addEventListener('click', executeDeleteAction);
+
+        // 删除错误弹窗事件
+        dom.btnForceCloseDeleteError.addEventListener('click', closeDeleteErrorModal);
+        dom.btnCloseDeleteError.addEventListener('click', closeDeleteErrorModal);
+        dom.modalDeleteError.addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteErrorModal();
+        });
+
+        // 实时检测删除确认输入（可选，但为了体验，可添加）
+        dom.deleteConfirmInput.addEventListener('input', function() {
+            // 无需额外动作，因为确认按钮仅依赖倒计时
+        });
+
+        // 导出弹窗事件
+        dom.btnCancelExport.addEventListener('click', () => closeModal(dom.modalExport));
+        dom.btnCloseExport.addEventListener('click', () => closeModal(dom.modalExport));
+        dom.modalExport.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(dom.modalExport);
+        });
+        dom.btnConfirmExport.addEventListener('click', doExport);
+        // 支持回车导出
+        dom.exportFileName.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doExport();
+        });
+
+        dom.inputSubCol.addEventListener('change', updateHighlightedCell);
+        dom.inputRow.addEventListener('change', updateHighlightedCell);
+        dom.inputGroup.addEventListener('change', updateHighlightedCell);
+
     }   //domover结尾
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -1470,6 +1582,79 @@
         }
         closeModal(dom.modalClearError);
     }
+
+    // ========== 删除数据集专用确认弹窗 ==========
+    function openDeleteConfirmModal() {
+        // 获取当前数据集名称并显示在弹窗中
+        dom.deleteConfirmDatasetName.textContent = STORAGE_KEY_DATA;
+        dom.deleteConfirmInput.value = '';
+        dom.deleteConfirmCountdown.textContent = '15';
+        dom.btnConfirmDeleteAction.disabled = true;
+
+        openModal(dom.modalDeleteConfirm);
+        if (deleteConfirmTimer) clearInterval(deleteConfirmTimer);
+        let seconds = 15;
+        deleteConfirmTimer = setInterval(() => {
+            seconds--;
+            dom.deleteConfirmCountdown.textContent = seconds;
+            checkDeleteConfirmButton();
+            if (seconds <= 0) {
+                clearInterval(deleteConfirmTimer);
+                deleteConfirmTimer = null;
+                checkDeleteConfirmButton();
+            }
+        }, 1000);
+    }
+
+    function checkDeleteConfirmButton() {
+        const timeUp = parseInt(dom.deleteConfirmCountdown.textContent) <= 0;
+        dom.btnConfirmDeleteAction.disabled = !timeUp;
+    }
+
+    function closeDeleteConfirmModal() {
+        if (deleteConfirmTimer) {
+            clearInterval(deleteConfirmTimer);
+            deleteConfirmTimer = null;
+        }
+        closeModal(dom.modalDeleteConfirm);
+    }
+
+    function executeDeleteAction() {
+        if (dom.deleteConfirmInput.value.trim() !== '我确认删除') {
+            closeDeleteConfirmModal();
+            openDeleteErrorModal();
+            return;
+        }
+        closeDeleteConfirmModal();
+        // 调用原有的删除确认函数（执行真正的删除）
+        confirmDeleteDataset();
+    }
+
+    // ========== 删除错误提示弹窗 ==========
+    function openDeleteErrorModal() {
+        dom.deleteErrorCountdown.textContent = '5';
+        openModal(dom.modalDeleteError);
+
+        if (deleteErrorTimer) clearInterval(deleteErrorTimer);
+        let seconds = 5;
+        deleteErrorTimer = setInterval(() => {
+            seconds--;
+            dom.deleteErrorCountdown.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(deleteErrorTimer);
+                deleteErrorTimer = null;
+                closeModal(dom.modalDeleteError);
+            }
+        }, 1000);
+    }
+
+    function closeDeleteErrorModal() {
+        if (deleteErrorTimer) {
+            clearInterval(deleteErrorTimer);
+            deleteErrorTimer = null;
+        }
+        closeModal(dom.modalDeleteError);
+    }    
 
     // ========== 初始化 ==========
     function init() {

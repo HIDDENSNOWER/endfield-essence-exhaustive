@@ -65,6 +65,7 @@
     --status-full-bg: #2e5a3b;
     --text-cell: #e6edf3;           /* 暗色单元格文字默认色 */
     --cell-font-size: 12px;
+    --modal-input-bg: #0a0e14;
 }
 
 * {
@@ -421,6 +422,7 @@ tbody td:first-child:hover {
     font-size: 0.72rem;
     padding: 4px 6px;
     justify-content: center;
+    white-space: nowrap;      /* ★ 新增：禁止文字换行 */
 }
 
 .form-group {
@@ -762,4 +764,30 @@ table td {
     flex-shrink: 0;
     font-size: 0.7rem;
     padding: 3px 8px;
+}
+
+/* 弹窗内的输入框与下拉框背景优化 */
+.modal-body input,
+.modal-body select {
+    background-color: var(--modal-input-bg, var(--bg-primary));
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+
+.modal-body select {
+    /* 下拉箭头颜色适配（部分浏览器支持） */
+    color-scheme: var(--color-scheme, normal);
+}
+
+/* 单元格闪烁高亮 */
+@keyframes blink-border {
+    0%, 100% { outline-color: var(--accent-primary); }
+    50% { outline-color: transparent; }
+}
+.cell-highlight-blink {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    animation: blink-border 1.2s infinite;
+    z-index: 5;
+    position: relative;
 }
