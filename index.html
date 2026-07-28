@@ -133,9 +133,23 @@
                 </div>
                 <div class="form-group">
                     <label>数值</label>
-                    <input type="text" id="inputValue" placeholder="输入数值" maxlength="3" inputmode="numeric">
+                    <div class="triple-input-column">
+                        <div class="triple-input-item">
+                            <span class="triple-label">主属性</span>
+                            <input type="text" class="triple-input" id="inputVal1" placeholder="0-9" maxlength="1" inputmode="numeric">
+                        </div>
+                        <div class="triple-input-item">
+                            <span class="triple-label">副属性</span>
+                            <input type="text" class="triple-input" id="inputVal2" placeholder="0-9" maxlength="1" inputmode="numeric">
+                        </div>
+                        <div class="triple-input-item">
+                            <span class="triple-label">词条</span>
+                            <input type="text" class="triple-input" id="inputVal3" placeholder="0-9" maxlength="1" inputmode="numeric">
+                        </div>
+                    </div>
                 </div>
                 <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
+                <button class="btn btn-block btn-clear" id="btnClearCell">清除当前单元格</button>
                 <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
                 <p class="input-hint" id="inputHint"></p>
                 <input type="file" id="importFile" accept=".json" style="display:none;">

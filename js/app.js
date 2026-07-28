@@ -54,7 +54,11 @@
         btnToggleTheme: document.getElementById('btnToggleTheme'),
         iconSun: document.getElementById('icon-sun'),
         iconMoon: document.getElementById('icon-moon'),
-        inputValue: document.getElementById('inputValue'),
+
+        inputVal1: document.getElementById('inputVal1'),
+        inputVal2: document.getElementById('inputVal2'),
+        inputVal3: document.getElementById('inputVal3'),
+
         btnApplyValue: document.getElementById('btnApplyValue'),
         btnClearAll: document.getElementById('btnClearAll'),
         inputHint: document.getElementById('inputHint'),
@@ -688,25 +692,32 @@
 
     // ========== 数据管理面板应用 ==========
     function applyValue() {
-        const value = dom.inputValue.value.trim();
-        if (value === '') {
+        const v1 = dom.inputVal1.value.trim();
+        const v2 = dom.inputVal2.value.trim();
+        const v3 = dom.inputVal3.value.trim();
+    
+        // 三个都为空 -> 不操作
+        if (v1 === '' && v2 === '' && v3 === '') {
             dom.inputHint.textContent = '输入为空，未做更改。';
             return;
         }
-        if (!/^\d{3}$/.test(value)) {
-            showIllegalModal('非法输入：请输入恰好三位数字（000-999）。<br>原因：数值只能为三位纯数字，且不能为空。');
-            dom.inputValue.focus();
+    
+        // 任一为空或组合后不是三位数字 -> 非法
+        const combined = v1 + v2 + v3;
+        if (!/^\d{3}$/.test(combined)) {
+            showIllegalModal('非法输入：每个输入框必须填入一位数字（0‑9），不能有空或其它字符。');
             return;
         }
-
+    
         const subIdx = parseInt(dom.inputSubCol.value);
         const rowIdx = parseInt(dom.inputRow.value);
         const groupIdx = parseInt(dom.inputGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-
+    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-
+    
+        // 基质处理
         if (cell.t > 0) {
             if (cell.a >= cell.t) {
                 const groupName = ALL_GROUPS[groupIdx].name;
@@ -722,23 +733,37 @@
             const rowName = ROW_NAMES[rowIdx];
             const subName = ALL_GROUPS[groupIdx].sub[subIdx];
             dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
+            resetTripleInputs();   // ★ 成功则重置
             return;
         }
-
+    
+        // 无基质记录，处理数值
         const oldVal = cell.v;
-        const newVal = value;
+        const newVal = combined;
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
-
+    
         if (oldVal !== '' && parseTriple(oldVal) && parseTriple(newVal)) {
+            // 有旧值且都是三位数，弹出对比弹窗
             showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName);
-            return;
+            // 注意：对比结果可能是保留旧值或替换新值，需要在替换成功时重置输入框，我们在 executeReplaceNew 中处理
+        } else {
+            // 直接覆盖
+            cell.v = String(newVal);
+            state.rows[rowIdx].data[colIndex] = cell;
+            renderAllTables(); saveData();
+            dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
+            resetTripleInputs();
         }
-        cell.v = String(newVal);
+    }
+    function applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName) {
+        const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+        cell.v = newVal === '' ? '' : String(newVal);
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
         dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
+        resetTripleInputs();   // ★
     }
 
     // ========== 录入面板 ==========
@@ -800,7 +825,7 @@
 
         [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup, dom.datasetSelect].forEach(enableWheelSelect);
 
-        dom.inputValue.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0,3); });
+        //dom.inputValue.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0,3); });
 
         dom.btnApplyValue.addEventListener('click', applyValue);
         dom.btnClearAll.addEventListener('click', () => {
@@ -902,7 +927,12 @@
         dom.btnUndo.addEventListener('click', undo);
         dom.btnRedo.addEventListener('click', redo);
 
-        
+        dom.btnClearCell.addEventListener('click', clearCurrentCell);
+
+        enableTripleInputScroll(dom.inputVal1);
+        enableTripleInputScroll(dom.inputVal2);
+        enableTripleInputScroll(dom.inputVal3);
+
     }
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -1036,6 +1066,40 @@
         dom.inputHint.textContent = '当前单元格数值已清除';
     }
 
+    // 将三个输入框重置为 '1'
+    function resetTripleInputs() {
+        dom.inputVal1.value = '1';
+        dom.inputVal2.value = '1';
+        dom.inputVal3.value = '1';
+    }
+
+    function enableTripleInputScroll(inputEl) {
+        inputEl.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const cur = this.value.trim();
+            let num = parseInt(cur);
+            if (cur === '' || isNaN(num) || num === 0) {
+                // 当前为空或0，根据滚动方向从1或9开始
+                num = e.deltaY > 0 ? 9 : 1;
+            } else {
+                if (e.deltaY > 0) {
+                    // 向下滚动：数字递减，到1时跳到9，跳过0
+                    num = num === 1 ? 9 : num - 1;
+                } else {
+                    // 向上滚动：数字递增，到9时跳到1
+                    num = num === 9 ? 1 : num + 1;
+                }
+            }
+            this.value = num;
+            this.dispatchEvent(new Event('input', { bubbles: true }));
+        }, { passive: false });
+    
+        inputEl.addEventListener('input', function() {
+            // 仍允许手动输入单个数字（包括0）
+            this.value = this.value.replace(/\D/g, '').slice(0, 1);
+        });
+    }
+
     // ========== 初始化 ==========
     function init() {
         loadTheme();
@@ -1051,6 +1115,7 @@
         populateDropdowns();
         bindEvents();
         renderAllTables();
+        resetTripleInputs();
         switchPanel('input');
         initSettings(); // 初始化设置值
         localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);

@@ -662,3 +662,40 @@ table td {
     color: var(--text-primary) !important;
     /* 白天黑，夜晚白 */
 }
+
+.triple-input-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.triple-input-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.triple-label {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+}
+.triple-input {
+    flex: 1;
+    padding: 5px 4px;
+    font-size: 0.85rem;
+    text-align: center;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+}
+.triple-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.15);
+}
+.triple-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.15);
+}
