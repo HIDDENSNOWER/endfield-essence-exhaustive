@@ -137,6 +137,20 @@
         btnRedo: document.getElementById('btnRedo'),
         btnRecordClear: document.getElementById('btnRecordClear'),
         btnClearCell: document.getElementById('btnClearCell'),
+        // 颜色配置
+        previewHasValue: document.getElementById('previewHasValue'),
+        pickerHasValue: document.getElementById('pickerHasValue'),
+        inputHasValue: document.getElementById('inputHasValue'),
+        previewStatusNone: document.getElementById('previewStatusNone'),
+        pickerStatusNone: document.getElementById('pickerStatusNone'),
+        inputStatusNone: document.getElementById('inputStatusNone'),
+        previewStatusPartial: document.getElementById('previewStatusPartial'),
+        pickerStatusPartial: document.getElementById('pickerStatusPartial'),
+        inputStatusPartial: document.getElementById('inputStatusPartial'),
+        previewStatusFull: document.getElementById('previewStatusFull'),
+        pickerStatusFull: document.getElementById('pickerStatusFull'),
+        inputStatusFull: document.getElementById('inputStatusFull'),
+        btnResetColors: document.getElementById('btnResetColors'),
     };
 
     function normalizeCell(cell) {
@@ -145,6 +159,16 @@
         return defaultCellMeta();
     }
 
+    const COLOR_MAP = {
+        hasValue: { var: '--has-value-bg', defaultLight: '#c8e6c9', defaultDark: '#2a4a35', preview: 'previewHasValue', picker: 'pickerHasValue', input: 'inputHasValue' },
+        statusNone: { var: '--status-none-bg', defaultLight: '#cfd8dc', defaultDark: '#3a3f47', preview: 'previewStatusNone', picker: 'pickerStatusNone', input: 'inputStatusNone' },
+        statusPartial: { var: '--status-partial-bg', defaultLight: '#ffe0b2', defaultDark: '#5a4a28', preview: 'previewStatusPartial', picker: 'pickerStatusPartial', input: 'inputStatusPartial' },
+        statusFull: { var: '--status-full-bg', defaultLight: '#a5d6a7', defaultDark: '#2e5a3b', preview: 'previewStatusFull', picker: 'pickerStatusFull', input: 'inputStatusFull' },
+    };
+    
+    const STORAGE_KEY_COLORS = 'smarttable_user_colors'; // 存储格式：{ light: { hasValue: '#xxx', ... }, dark: {...} }
+    let userColorData = { light: {}, dark: {} };
+
     // ========== 主题 ==========
     function applyTheme(theme) {
         state.theme = theme;
@@ -152,6 +176,7 @@
         dom.iconSun.style.display = theme === 'dark' ? 'none' : '';
         dom.iconMoon.style.display = theme === 'dark' ? '' : 'none';
         localStorage.setItem(STORAGE_KEY_THEME, theme);
+        syncColorUI();   // 新增：主题切换后更新颜色显示
     }
     function toggleTheme() { applyTheme(state.theme === 'light' ? 'dark' : 'light'); }
     function loadTheme() {
@@ -933,6 +958,42 @@
         enableTripleInputScroll(dom.inputVal2);
         enableTripleInputScroll(dom.inputVal3);
 
+        // 颜色设置事件
+        const colorKeys = ['hasValue', 'statusNone', 'statusPartial', 'statusFull'];
+        colorKeys.forEach(key => {
+            const cfg = COLOR_MAP[key];
+            // 色盘变化
+            dom[cfg.picker].addEventListener('input', (e) => {
+                handleColorChange(key, e.target.value);
+            });
+            // 输入框变化（失去焦点时）
+            dom[cfg.input].addEventListener('change', (e) => {
+                handleColorChange(key, e.target.value.trim());
+            });
+            // 模式切换按钮
+            const modeBtns = document.querySelectorAll(`.mode-toggle[data-target="${key}"]`);
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => toggleColorMode(key));
+            });
+        });
+
+        // 重置颜色按钮
+        dom.btnResetColors.addEventListener('click', resetAllColors);
+
+        // 主题切换时，同步颜色UI
+        // 在原有 toggleTheme 函数末尾添加 syncColorUI();
+        // 修改 toggleTheme 函数：
+        const originalToggleTheme = toggleTheme;
+        toggleTheme = function() {
+            originalToggleTheme();
+            syncColorUI();
+        };
+
+        // 初始化时加载用户颜色并同步
+        // 在 init 函数末尾（initSettings() 调用之后）添加：
+        loadUserColors();
+        syncColorUI();
+
     }
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -1098,6 +1159,123 @@
             // 仍允许手动输入单个数字（包括0）
             this.value = this.value.replace(/\D/g, '').slice(0, 1);
         });
+    }
+
+    // 判断当前是否为暗色模式
+    function isDarkTheme() { return state.theme === 'dark'; }
+
+    // 获取某个颜色类型在当前主题下的默认值
+    function getDefaultColor(key) {
+        const cfg = COLOR_MAP[key];
+        return isDarkTheme() ? cfg.defaultDark : cfg.defaultLight;
+    }
+
+    // 从 :root 读取当前 CSS 变量值
+    function getCurrentCSSColor(varName) {
+        const rootStyle = getComputedStyle(document.documentElement);
+        return rootStyle.getPropertyValue(varName).trim() || '';
+    }
+
+    // 十六进制转 RGB 字符串
+    function hexToRgbString(hex) {
+        if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex;
+        const r = parseInt(hex.slice(1,3), 16);
+        const g = parseInt(hex.slice(3,5), 16);
+        const b = parseInt(hex.slice(5,7), 16);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // RGB 字符串转十六进制（兼容 rgb(r,g,b) 格式）
+    function rgbStringToHex(rgb) {
+        const match = rgb.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+        if (!match) return null;
+        const toHex = (n) => {
+            const num = parseInt(n);
+            if (num < 0 || num > 255) return null;
+            return num.toString(16).padStart(2, '0');
+        };
+        const r = toHex(match[1]), g = toHex(match[2]), b = toHex(match[3]);
+        return r && g && b ? `#${r}${g}{b}` : null;
+    }
+
+    function saveUserColors() {
+        localStorage.setItem(STORAGE_KEY_COLORS, JSON.stringify(userColorData));
+    }
+    
+    function loadUserColors() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_COLORS);
+            if (saved) {
+                userColorData = JSON.parse(saved);
+            }
+        } catch(e) {}
+    }
+    
+    // 应用一个颜色变量
+    function applyColorVariable(key, value) {
+        document.documentElement.style.setProperty(COLOR_MAP[key].var, value);
+        // 同步更新预览和输入框显示
+        const cfg = COLOR_MAP[key];
+        const preview = dom[cfg.preview];
+        const input = dom[cfg.input];
+        const picker = dom[cfg.picker];
+        preview.style.backgroundColor = value;
+        picker.value = value;
+        input.value = value; // 默认 HEX 模式，由切换按钮控制显示格式
+    }
+    
+    // 更新所有颜色配置到界面
+    function syncColorUI() {
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        Object.keys(COLOR_MAP).forEach(key => {
+            const savedColor = userColorData[currentTheme]?.[key];
+            const currentColor = savedColor || getDefaultColor(key);
+            applyColorVariable(key, currentColor);
+        });
+    }
+
+    // 切换输入模式
+    function toggleColorMode(targetKey) {
+        const cfg = COLOR_MAP[targetKey];
+        const inputEl = dom[cfg.input];
+        const currentVal = inputEl.value.trim();
+        const isHex = currentVal.startsWith('#');
+        if (isHex) {
+            // 转为 RGB 显示
+            const rgb = hexToRgbString(currentVal);
+            inputEl.value = rgb;
+        } else {
+            // 尝试转为 HEX
+            const hex = rgbStringToHex(currentVal);
+            if (hex) {
+                inputEl.value = hex;
+            }
+        }
+    }
+
+    // 当输入框或色盘改变时调用
+    function handleColorChange(key, newColor) {
+        // 规范化：如果是 RGB 则转为 HEX 存储
+        let hex = newColor;
+        if (newColor.startsWith('rgb')) {
+            const converted = rgbStringToHex(newColor);
+            if (converted) hex = converted;
+        }
+        // 更新 CSS 变量
+        applyColorVariable(key, hex);
+        // 存储用户颜色
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
+        userColorData[currentTheme][key] = hex;
+        saveUserColors();
+    }
+
+    function resetAllColors() {
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        userColorData[currentTheme] = {}; // 清除当前主题的自定义颜色
+        saveUserColors();
+        syncColorUI();
+        showAlert('颜色已恢复为默认值', '设置已重置');
     }
 
     // ========== 初始化 ==========

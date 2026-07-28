@@ -188,6 +188,8 @@
             <!-- 设置面板 -->
             <aside class="settings-panel" id="settingsPanel">
                 <div class="panel-title">⚙️ 设置</div>
+            
+                <!-- 列宽/行高 -->
                 <div class="form-group">
                     <label>列宽 (30-60px)</label>
                     <input type="range" id="colWidthSlider" min="30" max="60" value="36">
@@ -198,6 +200,57 @@
                     <input type="range" id="rowHeightSlider" min="20" max="40" value="24">
                     <span class="range-value" id="rowHeightValue">24</span>
                 </div>
+            
+                <hr style="margin: 12px 0; border-color: var(--border-muted);">
+            
+                <!-- 单元格颜色自定义 -->
+                <div class="panel-title" style="font-size:0.85rem;">🎨 单元格颜色</div>
+            
+                <!-- 有数值无基质 -->
+                <div class="color-config-item">
+                    <label class="color-config-label">有数值无基质</label>
+                    <div class="color-config-row">
+                        <span class="color-preview" id="previewHasValue"></span>
+                        <input type="color" id="pickerHasValue" class="color-picker" title="色盘">
+                        <input type="text" id="inputHasValue" class="color-text-input" placeholder="#c8e6c9" maxlength="20">
+                        <button class="btn btn-sm mode-toggle" data-target="hasValue">HEX</button>
+                    </div>
+                </div>
+            
+                <!-- 未获取 -->
+                <div class="color-config-item">
+                    <label class="color-config-label">未获取</label>
+                    <div class="color-config-row">
+                        <span class="color-preview" id="previewStatusNone"></span>
+                        <input type="color" id="pickerStatusNone" class="color-picker" title="色盘">
+                        <input type="text" id="inputStatusNone" class="color-text-input" placeholder="#cfd8dc" maxlength="20">
+                        <button class="btn btn-sm mode-toggle" data-target="statusNone">HEX</button>
+                    </div>
+                </div>
+            
+                <!-- 部分获取 -->
+                <div class="color-config-item">
+                    <label class="color-config-label">部分获取</label>
+                    <div class="color-config-row">
+                        <span class="color-preview" id="previewStatusPartial"></span>
+                        <input type="color" id="pickerStatusPartial" class="color-picker" title="色盘">
+                        <input type="text" id="inputStatusPartial" class="color-text-input" placeholder="#ffe0b2" maxlength="20">
+                        <button class="btn btn-sm mode-toggle" data-target="statusPartial">HEX</button>
+                    </div>
+                </div>
+            
+                <!-- 全部获取 -->
+                <div class="color-config-item">
+                    <label class="color-config-label">全部获取</label>
+                    <div class="color-config-row">
+                        <span class="color-preview" id="previewStatusFull"></span>
+                        <input type="color" id="pickerStatusFull" class="color-picker" title="色盘">
+                        <input type="text" id="inputStatusFull" class="color-text-input" placeholder="#a5d6a7" maxlength="20">
+                        <button class="btn btn-sm mode-toggle" data-target="statusFull">HEX</button>
+                    </div>
+                </div>
+            
+                <button class="btn btn-sm btn-block" id="btnResetColors" style="margin-top: 10px;">重置颜色</button>
             </aside>
         </div>
     </div>
