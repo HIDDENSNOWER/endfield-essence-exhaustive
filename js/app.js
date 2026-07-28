@@ -151,6 +151,14 @@
         pickerStatusFull: document.getElementById('pickerStatusFull'),
         inputStatusFull: document.getElementById('inputStatusFull'),
         btnResetColors: document.getElementById('btnResetColors'),
+        previewTextLight: document.getElementById('previewTextLight'),
+        pickerTextLight: document.getElementById('pickerTextLight'),
+        inputTextLight: document.getElementById('inputTextLight'),
+        previewTextDark: document.getElementById('previewTextDark'),
+        pickerTextDark: document.getElementById('pickerTextDark'),
+        inputTextDark: document.getElementById('inputTextDark'),
+        fontSizeSlider: document.getElementById('fontSizeSlider'),
+        fontSizeValue: document.getElementById('fontSizeValue'),
     };
 
     function normalizeCell(cell) {
@@ -164,6 +172,11 @@
         statusNone: { var: '--status-none-bg', defaultLight: '#cfd8dc', defaultDark: '#3a3f47', preview: 'previewStatusNone', picker: 'pickerStatusNone', input: 'inputStatusNone' },
         statusPartial: { var: '--status-partial-bg', defaultLight: '#ffe0b2', defaultDark: '#5a4a28', preview: 'previewStatusPartial', picker: 'pickerStatusPartial', input: 'inputStatusPartial' },
         statusFull: { var: '--status-full-bg', defaultLight: '#a5d6a7', defaultDark: '#2e5a3b', preview: 'previewStatusFull', picker: 'pickerStatusFull', input: 'inputStatusFull' },
+    }
+
+    const TEXT_COLOR_MAP = {
+        textLight: { var: '--text-cell', defaultLight: '#1f2328', defaultDark: '#1f2328', preview: 'previewTextLight', picker: 'pickerTextLight', input: 'inputTextLight', theme: 'light' },
+        textDark:  { var: '--text-cell', defaultLight: '#e6edf3', defaultDark: '#e6edf3', preview: 'previewTextDark', picker: 'pickerTextDark', input: 'inputTextDark', theme: 'dark' }
     };
     
     const STORAGE_KEY_COLORS = 'smarttable_user_colors'; // 存储格式：{ light: { hasValue: '#xxx', ... }, dark: {...} }
@@ -994,6 +1007,35 @@
         loadUserColors();
         syncColorUI();
 
+        ['textLight', 'textDark'].forEach(key => {
+            const cfg = TEXT_COLOR_MAP[key];
+            // 色盘
+            dom[cfg.picker].addEventListener('input', (e) => {
+                handleTextColorChange(key, e.target.value);
+            });
+            // 输入框
+            dom[cfg.input].addEventListener('change', (e) => {
+                handleTextColorChange(key, e.target.value.trim());
+            });
+            // 模式切换按钮
+            const modeBtns = document.querySelectorAll(`.mode-toggle[data-target="${key}"]`);
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const inputEl = dom[cfg.input];
+                    const currentVal = inputEl.value.trim();
+                    const isHex = currentVal.startsWith('#');
+                    if (isHex) {
+                        inputEl.value = hexToRgbString(currentVal);
+                    } else {
+                        const hex = rgbStringToHex(currentVal);
+                        if (hex) inputEl.value = hex;
+                    }
+                });
+            });
+        });
+
+        dom.fontSizeSlider.addEventListener('input', applyFontStyle);
+
     }
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -1227,11 +1269,17 @@
     // 更新所有颜色配置到界面
     function syncColorUI() {
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        // 同步背景颜色
         Object.keys(COLOR_MAP).forEach(key => {
             const savedColor = userColorData[currentTheme]?.[key];
             const currentColor = savedColor || getDefaultColor(key);
             applyColorVariable(key, currentColor);
         });
+        // 同步字体颜色：根据当前主题应用对应的文字颜色
+        const textKey = currentTheme === 'dark' ? 'textDark' : 'textLight';
+        const textColor = userColorData[currentTheme]?.[textKey] || (currentTheme === 'dark' ? '#e6edf3' : '#1f2328');
+        applyColorVariableForText(textKey, textColor);
+        loadFontStyle();
     }
 
     // 切换输入模式
@@ -1274,8 +1322,56 @@
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
         userColorData[currentTheme] = {}; // 清除当前主题的自定义颜色
         saveUserColors();
-        syncColorUI();
+        syncColorUI(); // 会同时加载默认字体颜色
         showAlert('颜色已恢复为默认值', '设置已重置');
+    }
+
+    function applyColorVariableForText(key, value) {
+        document.documentElement.style.setProperty('--text-cell', value);
+        const cfg = TEXT_COLOR_MAP[key];
+        const preview = dom[cfg.preview];
+        const input = dom[cfg.input];
+        const picker = dom[cfg.picker];
+        preview.style.backgroundColor = value;
+        picker.value = value;
+        input.value = value;
+    }
+
+    function handleTextColorChange(key, newColor) {
+        let hex = newColor;
+        if (newColor.startsWith('rgb')) {
+            const converted = rgbStringToHex(newColor);
+            if (converted) hex = converted;
+        }
+        applyColorVariableForText(key, hex);
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
+        userColorData[currentTheme][key] = hex;
+        saveUserColors();
+    }
+
+    // 应用字号设置
+    function applyFontStyle() {
+        const root = document.documentElement;
+        const size = dom.fontSizeSlider.value + 'px';
+        root.style.setProperty('--cell-font-size', size);
+        dom.fontSizeValue.textContent = dom.fontSizeSlider.value;
+
+        // 保存到 userColorData
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
+        userColorData[currentTheme].fontSize = size;
+        saveUserColors();
+    }
+
+    // 加载字号设置
+    function loadFontStyle() {
+        const currentTheme = isDarkTheme() ? 'dark' : 'light';
+        const saved = userColorData[currentTheme] || {};
+        const fontSize = saved.fontSize || '12px';
+        dom.fontSizeSlider.value = parseInt(fontSize);
+        dom.fontSizeValue.textContent = parseInt(fontSize);
+        applyFontStyle();
     }
 
     // ========== 初始化 ==========
