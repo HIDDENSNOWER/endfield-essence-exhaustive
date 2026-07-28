@@ -121,31 +121,23 @@
                 <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
                 <div class="form-group">
                     <label>主属性</label>
-                    <select id="inputSubCol"></select>
+                    <div class="select-input-row">
+                        <select id="inputSubCol"></select>
+                        <input type="text" class="triple-input" id="inputVal1" placeholder="1" maxlength="1" inputmode="numeric">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>副属性</label>
-                    <select id="inputRow"></select>
+                    <div class="select-input-row">
+                        <select id="inputRow"></select>
+                        <input type="text" class="triple-input" id="inputVal2" placeholder="1" maxlength="1" inputmode="numeric">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>词条</label>
-                    <select id="inputGroup"></select>
-                </div>
-                <div class="form-group">
-                    <label>数值</label>
-                    <div class="triple-input-column">
-                        <div class="triple-input-item">
-                            <span class="triple-label">主属性</span>
-                            <input type="text" class="triple-input" id="inputVal1" placeholder="0-9" maxlength="1" inputmode="numeric">
-                        </div>
-                        <div class="triple-input-item">
-                            <span class="triple-label">副属性</span>
-                            <input type="text" class="triple-input" id="inputVal2" placeholder="0-9" maxlength="1" inputmode="numeric">
-                        </div>
-                        <div class="triple-input-item">
-                            <span class="triple-label">词条</span>
-                            <input type="text" class="triple-input" id="inputVal3" placeholder="0-9" maxlength="1" inputmode="numeric">
-                        </div>
+                    <div class="select-input-row">
+                        <select id="inputGroup"></select>
+                        <input type="text" class="triple-input" id="inputVal3" placeholder="1" maxlength="1" inputmode="numeric">
                     </div>
                 </div>
                 <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
@@ -467,6 +459,46 @@
             <div class="modal-footer">
                 <button class="btn" id="btnCancelConfirmDialog">取消</button>
                 <button class="btn btn-primary" id="btnConfirmConfirmDialog">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空数据集专用确认弹窗 -->
+    <div class="modal-overlay" id="modalClearAll" style="display:none;">
+        <div class="modal" style="max-width:430px;">
+            <div class="modal-header">
+                <span>⚠️ 清空确认</span>
+                <button class="btn-icon btn-sm" id="btnCloseClearAll" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="clearAllBody">
+                <p>你现在确定，真的要清空当前数据集的所有数值吗？</p>
+                <p style="color: var(--danger-primary); font-weight:600; margin:10px 0;">点击“确认”后无法撤销！！</p>
+                <p>在倒计时 <strong id="clearAllCountdown">15</strong> 秒后，在以下输入框中输入 <strong>“我确认清空”</strong>，才能确认清空！！</p>
+                <input type="text" id="clearAllInput" placeholder="请输入：我确认清空" style="width:100%; margin-top:8px;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelClearAll">取消</button>
+                <button class="btn btn-danger" id="btnConfirmClearAll" disabled>确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空操作输入错误提示弹窗 -->
+    <div class="modal-overlay" id="modalClearError" style="display:none;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span>⚠️ 输入有误</span>
+                <button class="btn-icon btn-sm" id="btnCloseClearError" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>输入有误！正在取消清空操作，请等待 <strong id="errorCountdown">5</strong> 秒后自动关闭弹窗。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnForceCloseError">立即关闭</button>
             </div>
         </div>
     </div>

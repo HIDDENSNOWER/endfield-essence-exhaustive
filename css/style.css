@@ -525,10 +525,22 @@ tbody td:first-child:hover {
     color: var(--text-tertiary);
 }
 
-/* 三联数值输入框 */
-.triple-input-row {
+.select-input-row {
     display: flex;
     gap: 6px;
+    width: 100%;               /* 确保与按钮等宽 */
+}
+.select-input-row select {
+    flex: 2 1 0;               /* 比例2，可收缩，基础0 */
+    min-width: 0;              /* 允许内容截断 */
+    /* 保持其他已有样式（边框、内边距、字体等）不变 */
+}
+.select-input-row .triple-input {
+    flex: 1 1 0;               /* 比例1，可收缩，基础0 */
+    min-width: 0;
+    text-align: center;
+    /* 重置可能存在的固定宽度样式 */
+    width: auto;
 }
 
 .triple-input {

@@ -44,6 +44,8 @@
     };
     let pendingApply = null;
     let confirmCallback = null;
+    let clearAllTimer = null; // 用于倒计时
+    let clearErrorTimer = null;
 
     const dom = {
         tableHead1: document.getElementById('tableHead1'),
@@ -159,6 +161,16 @@
         inputTextDark: document.getElementById('inputTextDark'),
         fontSizeSlider: document.getElementById('fontSizeSlider'),
         fontSizeValue: document.getElementById('fontSizeValue'),
+        modalClearAll: document.getElementById('modalClearAll'),
+        clearAllCountdown: document.getElementById('clearAllCountdown'),
+        clearAllInput: document.getElementById('clearAllInput'),
+        btnCancelClearAll: document.getElementById('btnCancelClearAll'),
+        btnConfirmClearAll: document.getElementById('btnConfirmClearAll'),
+        btnCloseClearAll: document.getElementById('btnCloseClearAll'),
+        modalClearError: document.getElementById('modalClearError'),
+        errorCountdown: document.getElementById('errorCountdown'),
+        btnCloseClearError: document.getElementById('btnCloseClearError'),
+        btnForceCloseError: document.getElementById('btnForceCloseError'),
     };
 
     function normalizeCell(cell) {
@@ -866,9 +878,7 @@
         //dom.inputValue.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0,3); });
 
         dom.btnApplyValue.addEventListener('click', applyValue);
-        dom.btnClearAll.addEventListener('click', () => {
-            showConfirmDialog('确定要清空当前数据集的所有数值吗？', clearAllData, null, '清空确认');
-        });
+        dom.btnClearAll.addEventListener('click', openClearAllModal);
         dom.btnRecordApply.addEventListener('click', applyRecord);
 
         dom.sidebarBtns.forEach(btn => btn.addEventListener('click', () => switchPanel(btn.dataset.panel)));
@@ -1036,7 +1046,24 @@
 
         dom.fontSizeSlider.addEventListener('input', applyFontStyle);
 
-    }
+        // 清空确认弹窗事件
+        dom.btnCancelClearAll.addEventListener('click', closeClearAllModal);
+        dom.btnCloseClearAll.addEventListener('click', closeClearAllModal);
+        dom.modalClearAll.addEventListener('click', function(e) {
+            if (e.target === this) closeClearAllModal();
+        });
+        dom.btnConfirmClearAll.addEventListener('click', executeClearAll);
+        // 输入框实时检测
+        dom.clearAllInput.addEventListener('input', checkClearAllButton);
+
+        // 错误弹窗事件
+        dom.btnForceCloseError.addEventListener('click', closeClearErrorModal);
+        dom.btnCloseClearError.addEventListener('click', closeClearErrorModal);
+        dom.modalClearError.addEventListener('click', function(e) {
+            if (e.target === this) closeClearErrorModal();
+        });
+
+    }   //domover结尾
 
     // 保存操作记录（仅用于录入面板的基质变化）
     function pushHistory(rowIdx, colIndex, oldCell, newCell) {
@@ -1372,6 +1399,76 @@
         dom.fontSizeSlider.value = parseInt(fontSize);
         dom.fontSizeValue.textContent = parseInt(fontSize);
         applyFontStyle();
+    }
+
+    function openClearAllModal() {
+        dom.clearAllInput.value = '';
+        dom.clearAllCountdown.textContent = '15';
+        dom.btnConfirmClearAll.disabled = true; // 初始禁用
+    
+        openModal(dom.modalClearAll);
+        if (clearAllTimer) clearInterval(clearAllTimer);
+        let seconds = 15;
+        clearAllTimer = setInterval(() => {
+            seconds--;
+            dom.clearAllCountdown.textContent = seconds;
+            checkClearAllButton();
+            if (seconds <= 0) {
+                clearInterval(clearAllTimer);
+                clearAllTimer = null;
+                checkClearAllButton();
+            }
+        }, 1000);
+    }
+    
+    function checkClearAllButton() {
+        const timeUp = parseInt(dom.clearAllCountdown.textContent) <= 0;
+        dom.btnConfirmClearAll.disabled = !timeUp; // 不再检查输入
+    }
+    
+    function closeClearAllModal() {
+        if (clearAllTimer) {
+            clearInterval(clearAllTimer);
+            clearAllTimer = null;
+        }
+        closeModal(dom.modalClearAll);
+    }
+    
+    function executeClearAll() {
+        // 检查输入是否正确
+        if (dom.clearAllInput.value.trim() !== '我确认清空') {
+            closeClearAllModal();   // 关闭原确认弹窗
+            openClearErrorModal();  // 打开错误提示弹窗
+            return;
+        }
+        // 输入正确，执行清空
+        closeClearAllModal();
+        clearAllData();
+    }
+
+    function openClearErrorModal() {
+        dom.errorCountdown.textContent = '5';
+        openModal(dom.modalClearError);
+    
+        if (clearErrorTimer) clearInterval(clearErrorTimer);
+        let seconds = 5;
+        clearErrorTimer = setInterval(() => {
+            seconds--;
+            dom.errorCountdown.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(clearErrorTimer);
+                clearErrorTimer = null;
+                closeModal(dom.modalClearError);
+            }
+        }, 1000);
+    }
+    
+    function closeClearErrorModal() {
+        if (clearErrorTimer) {
+            clearInterval(clearErrorTimer);
+            clearErrorTimer = null;
+        }
+        closeModal(dom.modalClearError);
     }
 
     // ========== 初始化 ==========
