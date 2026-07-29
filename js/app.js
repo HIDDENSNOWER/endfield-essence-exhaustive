@@ -309,7 +309,7 @@
                     td.dataset.colindex = colIndex;
 
                     tr.appendChild(td);
-                    
+
                     let statusClass = '';
                     if (total === 0) {
                         statusClass = '';
@@ -355,6 +355,7 @@
     function renderAllTables() {
         renderTablePart(dom.tableHead1, dom.tableBody1, GROUP1, 0, COLS1);
         renderTablePart(dom.tableHead2, dom.tableBody2, GROUP2, COLS1, COLS2);
+        updateHighlightedCell();
     }
 
     function updateHighlightedCell() {
@@ -363,12 +364,24 @@
             highlightedCellElement.classList.remove('cell-highlight-blink');
             highlightedCellElement = null;
         }
-        // 仅在数据管理面板激活时高亮
-        if (state.activePanel !== 'input') return;
     
-        const subIdx = parseInt(dom.inputSubCol.value);
-        const rowIdx = parseInt(dom.inputRow.value);
-        const groupIdx = parseInt(dom.inputGroup.value);
+        // 根据当前激活面板获取对应的选择器
+        let subSelect, rowSelect, groupSelect;
+        if (state.activePanel === 'input') {
+            subSelect = dom.inputSubCol;
+            rowSelect = dom.inputRow;
+            groupSelect = dom.inputGroup;
+        } else if (state.activePanel === 'record') {
+            subSelect = dom.recordSubCol;
+            rowSelect = dom.recordRow;
+            groupSelect = dom.recordGroup;
+        } else {
+            return; // 其他面板不高亮
+        }
+    
+        const subIdx = parseInt(subSelect.value);
+        const rowIdx = parseInt(rowSelect.value);
+        const groupIdx = parseInt(groupSelect.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
     
         const colIndex = getColumnIndex(groupIdx, subIdx);
@@ -403,6 +416,7 @@
         dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
         dom.settingsPanel.classList.toggle('active-panel', panelName === 'settings');
         if (panelName === 'stats') renderStats();
+        updateHighlightedCell();
     }
 
     // ========== 弹窗辅助 ==========
@@ -1175,7 +1189,12 @@
         dom.inputRow.addEventListener('change', updateHighlightedCell);
         dom.inputGroup.addEventListener('change', updateHighlightedCell);
 
-    }   //domover结尾
+        // 为输入面板和录入面板的选择器绑定高亮更新
+        [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup].forEach(select => {
+            select.addEventListener('change', updateHighlightedCell);
+        });
+
+    }   //bind结尾
 
     // 保存操作记录（仅用于录入面板的基质变化）
     function pushHistory(rowIdx, colIndex, oldCell, newCell) {
