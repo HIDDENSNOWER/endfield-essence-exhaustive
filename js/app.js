@@ -195,6 +195,8 @@
         btnCancelExport: document.getElementById('btnCancelExport'),
         btnConfirmExport: document.getElementById('btnConfirmExport'),
         btnCloseExport: document.getElementById('btnCloseExport'),
+
+        btnForceRefresh: document.getElementById('btnForceRefresh'),
     };
 
     function normalizeCell(cell) {
@@ -1192,6 +1194,13 @@
         // 为输入面板和录入面板的选择器绑定高亮更新
         [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup].forEach(select => {
             select.addEventListener('change', updateHighlightedCell);
+        });
+
+        dom.btnForceRefresh.addEventListener('click', () => {
+            // 强制清空缓存并重新加载页面
+            window.location.reload(true);
+            // 如果浏览器不支持 reload(true)，使用以下备选方案：
+            // location.href = location.href.split('?')[0] + '?_=' + Date.now();
         });
 
     }   //bind结尾

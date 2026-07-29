@@ -791,3 +791,16 @@ table td {
     z-index: 5;
     position: relative;
 }
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;            /* 按钮之间的小间距 */
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 搜索栏和按钮组分居左右 */
+    /* 其他属性保持不变 */
+}
