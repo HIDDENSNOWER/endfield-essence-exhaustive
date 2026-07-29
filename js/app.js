@@ -39,16 +39,18 @@
         searchQuery: '',
         theme: 'light',
         activePanel: 'input',
-        history: [],         // 操作历史 [{ rowIdx, colIndex, oldCell, newCell }]
-        historyIndex: -1     // 当前历史位置
+        history: [],
+        historyIndex: -1
     };
     let pendingApply = null;
     let confirmCallback = null;
-    let clearAllTimer = null; // 用于倒计时
+    let clearAllTimer = null;
     let clearErrorTimer = null;
-    let deleteConfirmTimer = null;   // 删除确认倒计时
-    let deleteErrorTimer = null;     // 删除错误提示倒计时
-    let highlightedCellElement = null;   // 当前高亮的单元格
+    let deleteConfirmTimer = null;
+    let deleteErrorTimer = null;
+    let highlightedCellElement = null;
+    let statsSortBy = 'totalMatrix';
+    let statsSortOrder = 'desc';
 
     const dom = {
         tableHead1: document.getElementById('tableHead1'),
@@ -142,7 +144,6 @@
         btnRedo: document.getElementById('btnRedo'),
         btnRecordClear: document.getElementById('btnRecordClear'),
         btnClearCell: document.getElementById('btnClearCell'),
-        // 颜色配置
         previewHasValue: document.getElementById('previewHasValue'),
         pickerHasValue: document.getElementById('pickerHasValue'),
         inputHasValue: document.getElementById('inputHasValue'),
@@ -174,7 +175,6 @@
         errorCountdown: document.getElementById('errorCountdown'),
         btnCloseClearError: document.getElementById('btnCloseClearError'),
         btnForceCloseError: document.getElementById('btnForceCloseError'),
-        // 删除确认弹窗
         modalDeleteConfirm: document.getElementById('modalDeleteConfirm'),
         deleteConfirmBody: document.getElementById('deleteConfirmBody'),
         deleteConfirmDatasetName: document.getElementById('deleteConfirmDatasetName'),
@@ -183,20 +183,17 @@
         btnCancelDeleteConfirm: document.getElementById('btnCancelDeleteConfirm'),
         btnConfirmDeleteAction: document.getElementById('btnConfirmDeleteAction'),
         btnCloseDeleteConfirm: document.getElementById('btnCloseDeleteConfirm'),
-
-        // 删除错误弹窗
         modalDeleteError: document.getElementById('modalDeleteError'),
         deleteErrorCountdown: document.getElementById('deleteErrorCountdown'),
         btnCloseDeleteError: document.getElementById('btnCloseDeleteError'),
         btnForceCloseDeleteError: document.getElementById('btnForceCloseDeleteError'),
-
         modalExport: document.getElementById('modalExport'),
         exportFileName: document.getElementById('exportFileName'),
         btnCancelExport: document.getElementById('btnCancelExport'),
         btnConfirmExport: document.getElementById('btnConfirmExport'),
         btnCloseExport: document.getElementById('btnCloseExport'),
-
         btnForceRefresh: document.getElementById('btnForceRefresh'),
+        btnOpenSettings: document.getElementById('btnOpenSettings'),
     };
 
     function normalizeCell(cell) {
@@ -210,14 +207,14 @@
         statusNone: { var: '--status-none-bg', defaultLight: '#cfd8dc', defaultDark: '#3a3f47', preview: 'previewStatusNone', picker: 'pickerStatusNone', input: 'inputStatusNone' },
         statusPartial: { var: '--status-partial-bg', defaultLight: '#ffe0b2', defaultDark: '#5a4a28', preview: 'previewStatusPartial', picker: 'pickerStatusPartial', input: 'inputStatusPartial' },
         statusFull: { var: '--status-full-bg', defaultLight: '#a5d6a7', defaultDark: '#2e5a3b', preview: 'previewStatusFull', picker: 'pickerStatusFull', input: 'inputStatusFull' },
-    }
+    };
 
     const TEXT_COLOR_MAP = {
         textLight: { var: '--text-cell', defaultLight: '#1f2328', defaultDark: '#1f2328', preview: 'previewTextLight', picker: 'pickerTextLight', input: 'inputTextLight', theme: 'light' },
         textDark:  { var: '--text-cell', defaultLight: '#e6edf3', defaultDark: '#e6edf3', preview: 'previewTextDark', picker: 'pickerTextDark', input: 'inputTextDark', theme: 'dark' }
     };
     
-    const STORAGE_KEY_COLORS = 'smarttable_user_colors'; // 存储格式：{ light: { hasValue: '#xxx', ... }, dark: {...} }
+    const STORAGE_KEY_COLORS = 'smarttable_user_colors';
     let userColorData = { light: {}, dark: {} };
 
     // ========== 主题 ==========
@@ -227,7 +224,7 @@
         dom.iconSun.style.display = theme === 'dark' ? 'none' : '';
         dom.iconMoon.style.display = theme === 'dark' ? '' : 'none';
         localStorage.setItem(STORAGE_KEY_THEME, theme);
-        syncColorUI();   // 新增：主题切换后更新颜色显示
+        syncColorUI();
     }
     function toggleTheme() { applyTheme(state.theme === 'light' ? 'dark' : 'light'); }
     function loadTheme() {
@@ -292,7 +289,7 @@
             return;
         }
         filteredRows.forEach(row => {
-            const originalIndex = state.rows.indexOf(row);   // ★ 新增行
+            const originalIndex = state.rows.indexOf(row);
             const tr = document.createElement('tr');
             const tdName = document.createElement('td');
             tdName.textContent = row.name;
@@ -309,8 +306,6 @@
 
                     td.dataset.rowindex = originalIndex;
                     td.dataset.colindex = colIndex;
-
-                    tr.appendChild(td);
 
                     let statusClass = '';
                     if (total === 0) {
@@ -361,13 +356,10 @@
     }
 
     function updateHighlightedCell() {
-        // 移除旧高亮
         if (highlightedCellElement) {
             highlightedCellElement.classList.remove('cell-highlight-blink');
             highlightedCellElement = null;
         }
-    
-        // 根据当前激活面板获取对应的选择器
         let subSelect, rowSelect, groupSelect;
         if (state.activePanel === 'input') {
             subSelect = dom.inputSubCol;
@@ -378,14 +370,12 @@
             rowSelect = dom.recordRow;
             groupSelect = dom.recordGroup;
         } else {
-            return; // 其他面板不高亮
+            return;
         }
-    
         const subIdx = parseInt(subSelect.value);
         const rowIdx = parseInt(rowSelect.value);
         const groupIdx = parseInt(groupSelect.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`);
         if (cell) {
@@ -396,17 +386,120 @@
 
     // ========== 统计面板 ==========
     function renderStats() {
-        const rows = state.rows;
-        let html = '<table><thead><tr><th>副属性</th><th>已填单元格</th></tr></thead><tbody>';
-        rows.forEach(row => {
-            const filled = row.data.filter(cell => {
+        const stats = ALL_GROUPS.map(group => ({
+            name: group.name,
+            totalMatrix: 0,
+            totalT: 0,
+            totalA: 0
+        }));
+        state.rows.forEach(row => {
+            row.data.forEach((cell, colIndex) => {
                 const c = normalizeCell(cell);
-                return c.v !== '' && c.v !== null;
-            }).length;
-            html += `<tr><td style="text-align:left;font-weight:500">${row.name}</td><td>${filled}</td></tr>`;
+                let groupIdx = 0;
+                let remaining = colIndex;
+                for (let i = 0; i < ALL_GROUPS.length; i++) {
+                    const subLen = ALL_GROUPS[i].sub.length;
+                    if (remaining < subLen) {
+                        groupIdx = i;
+                        break;
+                    }
+                    remaining -= subLen;
+                }
+                if (c.v !== '' && c.v !== null && c.v !== undefined) {
+                    stats[groupIdx].totalMatrix += 1;
+                } else if (c.t > 0) {
+                    stats[groupIdx].totalMatrix += (c.a || 0);
+                }
+                stats[groupIdx].totalT += c.t || 0;
+                stats[groupIdx].totalA += c.a || 0;
+            });
         });
-        html += '</tbody></table><p style="margin-top:10px; font-size:0.72rem; color:var(--text-tertiary)">统计当前数据集非空单元格数量。</p>';
+        stats.forEach(s => s.unacquired = s.totalT - s.totalA);
+
+        const totals = {
+            totalMatrix: stats.reduce((sum, s) => sum + s.totalMatrix, 0),
+            totalT: stats.reduce((sum, s) => sum + s.totalT, 0),
+            totalA: stats.reduce((sum, s) => sum + s.totalA, 0),
+            unacquired: stats.reduce((sum, s) => sum + s.unacquired, 0)
+        };
+
+        stats.sort((a, b) => {
+            let valA, valB;
+            switch (statsSortBy) {
+                case 'totalT': valA = a.totalT; valB = b.totalT; break;
+                case 'totalA': valA = a.totalA; valB = b.totalA; break;
+                case 'unacquired': valA = a.unacquired; valB = b.unacquired; break;
+                default: valA = a.totalMatrix; valB = b.totalMatrix;
+            }
+            return statsSortOrder === 'asc' ? valA - valB : valB - valA;
+        });
+
+        let html = `
+        <div class="stats-summary">
+            <table class="summary-table">
+                <tr><td>总基质数</td><td>${totals.totalMatrix}</td></tr>
+                <tr><td>总实装基质数</td><td>${totals.totalT}</td></tr>
+                <tr><td>总获取实装基质数</td><td>${totals.totalA}</td></tr>
+                <tr><td>未获取实装基质数</td><td>${totals.unacquired}</td></tr>
+            </table>
+        </div>
+        <div class="stats-sort-controls">
+            <div>
+                <label>排序依据</label>
+                <select id="statsSortBy">
+                    <option value="totalMatrix" ${statsSortBy === 'totalMatrix' ? 'selected' : ''}>总基质数</option>
+                    <option value="totalT" ${statsSortBy === 'totalT' ? 'selected' : ''}>总实装基质</option>
+                    <option value="totalA" ${statsSortBy === 'totalA' ? 'selected' : ''}>已获取实装</option>
+                    <option value="unacquired" ${statsSortBy === 'unacquired' ? 'selected' : ''}>未获取实装</option>
+                </select>
+            </div>
+            <div>
+                <label>排序方式</label>
+                <select id="statsSortOrder">
+                    <option value="desc" ${statsSortOrder === 'desc' ? 'selected' : ''}>降序</option>
+                    <option value="asc" ${statsSortOrder === 'asc' ? 'selected' : ''}>升序</option>
+                </select>
+            </div>
+        </div>`;
+
+        stats.forEach(s => {
+            const highlight = statsSortBy;
+            html += `
+            <div class="stat-card">
+                <table>
+                    <tr><th colspan="4">${s.name}</th></tr>
+                    <tr>
+                        <td class="data-label">未获取实装</td>
+                        <td class="data-value${highlight === 'unacquired' ? ' highlight-value' : ''}">${s.unacquired}</td>
+                        <td class="data-label">总实装基质</td>
+                        <td class="data-value${highlight === 'totalT' ? ' highlight-value' : ''}">${s.totalT}</td>
+                    </tr>
+                    <tr>
+                        <td class="data-label">已获取实装</td>
+                        <td class="data-value${highlight === 'totalA' ? ' highlight-value' : ''}">${s.totalA}</td>
+                        <td class="data-label">总基质数</td>
+                        <td class="data-value${highlight === 'totalMatrix' ? ' highlight-value' : ''}">${s.totalMatrix}</td>
+                    </tr>
+                </table>
+            </div>`;
+        });
+
         dom.statsContent.innerHTML = html;
+
+        const sortBySelect = document.getElementById('statsSortBy');
+        const sortOrderSelect = document.getElementById('statsSortOrder');
+        if (sortBySelect && sortOrderSelect) {
+            sortBySelect.addEventListener('change', function () {
+                statsSortBy = this.value;
+                renderStats();
+            });
+            sortOrderSelect.addEventListener('change', function () {
+                statsSortOrder = this.value;
+                renderStats();
+            });
+            enableWheelSelect(sortBySelect);
+            enableWheelSelect(sortOrderSelect);
+        }
     }
 
     // ========== 面板切换 ==========
@@ -499,7 +592,6 @@
         return false;
     }
     function exportData() {
-        // 生成默认文件名
         const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
         dom.exportFileName.value = defaultName;
         openModal(dom.modalExport);
@@ -509,14 +601,11 @@
     function doExport() {
         let fileName = dom.exportFileName.value.trim();
         if (!fileName) {
-            // 如果用户清空了输入框，使用默认规则
             fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
         }
-        // 确保文件名以 .json 结尾
         if (!fileName.endsWith('.json')) {
             fileName += '.json';
         }
-    
         const dataStr = JSON.stringify(state.rows, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -527,7 +616,6 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    
         closeModal(dom.modalExport);
         dom.inputHint.textContent = `已导出：${fileName}`;
     }
@@ -640,7 +728,6 @@
             showAlert('至少需要保留一个数据集。', '无法删除');
             return;
         }
-        // 打开专用删除确认弹窗，而不是之前的通用确认弹窗
         openDeleteConfirmModal();
     }
     function confirmDeleteDataset() {
@@ -837,29 +924,21 @@
         const v1 = dom.inputVal1.value.trim();
         const v2 = dom.inputVal2.value.trim();
         const v3 = dom.inputVal3.value.trim();
-    
-        // 三个都为空 -> 不操作
         if (v1 === '' && v2 === '' && v3 === '') {
             dom.inputHint.textContent = '输入为空，未做更改。';
             return;
         }
-    
-        // 任一为空或组合后不是三位数字 -> 非法
         const combined = v1 + v2 + v3;
         if (!/^\d{3}$/.test(combined)) {
             showIllegalModal('非法输入：每个输入框必须填入一位数字（0‑9），不能有空或其它字符。');
             return;
         }
-    
         const subIdx = parseInt(dom.inputSubCol.value);
         const rowIdx = parseInt(dom.inputRow.value);
         const groupIdx = parseInt(dom.inputGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-    
-        // 基质处理
         if (cell.t > 0) {
             if (cell.a >= cell.t) {
                 const groupName = ALL_GROUPS[groupIdx].name;
@@ -875,23 +954,17 @@
             const rowName = ROW_NAMES[rowIdx];
             const subName = ALL_GROUPS[groupIdx].sub[subIdx];
             dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
-            resetTripleInputs();   // ★ 成功则重置
+            resetTripleInputs();
             return;
         }
-    
-        // 无基质记录，处理数值
         const oldVal = cell.v;
         const newVal = combined;
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
-    
         if (oldVal !== '' && parseTriple(oldVal) && parseTriple(newVal)) {
-            // 有旧值且都是三位数，弹出对比弹窗
             showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName);
-            // 注意：对比结果可能是保留旧值或替换新值，需要在替换成功时重置输入框，我们在 executeReplaceNew 中处理
         } else {
-            // 直接覆盖
             cell.v = String(newVal);
             state.rows[rowIdx].data[colIndex] = cell;
             renderAllTables(); saveData();
@@ -905,7 +978,7 @@
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
         dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
-        resetTripleInputs();   // ★
+        resetTripleInputs();
     }
 
     // ========== 录入面板 ==========
@@ -914,29 +987,24 @@
         const rowIdx = parseInt(dom.recordRow.value);
         const groupIdx = parseInt(dom.recordGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-        const oldCell = JSON.parse(JSON.stringify(cell)); // 用于撤回
-    
+        const oldCell = JSON.parse(JSON.stringify(cell));
         if (cell.t === 0) {
-            // 新增逻辑：若原本存在数值，视为已获取一次
             if (cell.v !== '') {
                 cell.t = 1;
                 cell.a = 1;
-                cell.v = '';   // 清除数值
+                cell.v = '';
             } else {
                 cell.t = 1;
                 cell.a = 0;
             }
         } else {
-            // 已有基质记录，仅增加重复数
             cell.t += 1;
         }
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
         pushHistory(rowIdx, colIndex, oldCell, JSON.parse(JSON.stringify(cell)));
-    
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
@@ -967,8 +1035,6 @@
 
         [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup, dom.datasetSelect].forEach(enableWheelSelect);
 
-        //dom.inputValue.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0,3); });
-
         dom.btnApplyValue.addEventListener('click', applyValue);
         dom.btnClearAll.addEventListener('click', openClearAllModal);
         dom.btnRecordApply.addEventListener('click', applyRecord);
@@ -980,7 +1046,6 @@
         dom.btnImport.addEventListener('click', triggerImport);
         dom.importFile.addEventListener('change', e => { if(e.target.files[0]){ importData(e.target.files[0]); e.target.value=''; } });
 
-        // 数据集操作弹窗事件
         dom.btnNewDataset.addEventListener('click', createNewDataset);
         dom.btnConfirmNewDataset.addEventListener('click', confirmNewDataset);
         dom.btnCancelNewDataset.addEventListener('click', () => closeModal(dom.modalNewDataset));
@@ -1001,7 +1066,6 @@
         dom.btnCloseDeleteDataset.addEventListener('click', () => closeModal(dom.modalDeleteDataset));
         dom.modalDeleteDataset.addEventListener('click', function(e) { if (e.target === this) closeModal(dom.modalDeleteDataset); });
 
-        // 数值对比与二次确认
         dom.btnKeepOld.addEventListener('click', executeKeepOld);
         dom.btnReplaceNew.addEventListener('click', executeReplaceNew);
         dom.btnCloseCompare.addEventListener('click', () => { closeCompareModal(); dom.inputHint.textContent = '已取消'; });
@@ -1012,17 +1076,14 @@
         dom.btnCloseConfirm.addEventListener('click', () => { closeConfirmModal(); openModal(dom.modalCompare); });
         dom.modalConfirm.addEventListener('click', function(e) { if(e.target === this) { closeConfirmModal(); openModal(dom.modalCompare); } });
 
-        // 全获取提示
         dom.btnConfirmFullAcquire.addEventListener('click', closeFullAcquireModal);
         dom.btnCloseFullAcquire.addEventListener('click', closeFullAcquireModal);
         dom.modalFullAcquire.addEventListener('click', function(e) { if(e.target === this) closeFullAcquireModal(); });
 
-        // 非法输入
         dom.btnConfirmIllegal.addEventListener('click', closeIllegalModal);
         dom.btnCloseIllegal.addEventListener('click', closeIllegalModal);
         dom.modalIllegalInput.addEventListener('click', function(e) { if(e.target === this) closeIllegalModal(); });
 
-        // 通用弹窗
         dom.btnConfirmAlert.addEventListener('click', closeAlert);
         dom.btnCloseAlert.addEventListener('click', closeAlert);
         dom.modalAlert.addEventListener('click', function(e) { if(e.target === this) closeAlert(); });
@@ -1048,7 +1109,6 @@
 
         dom.btnRecordClear.addEventListener('click', clearCellRecord);
 
-        // 设置事件
         dom.colWidthSlider.addEventListener('input', function() {
             const val = parseInt(this.value);
             dom.colWidthValue.textContent = val;
@@ -1066,60 +1126,46 @@
 
         dom.btnUndo.addEventListener('click', undo);
         dom.btnRedo.addEventListener('click', redo);
-
         dom.btnClearCell.addEventListener('click', clearCurrentCell);
 
         enableTripleInputScroll(dom.inputVal1);
         enableTripleInputScroll(dom.inputVal2);
         enableTripleInputScroll(dom.inputVal3);
 
-        // 颜色设置事件
         const colorKeys = ['hasValue', 'statusNone', 'statusPartial', 'statusFull'];
         colorKeys.forEach(key => {
             const cfg = COLOR_MAP[key];
-            // 色盘变化
             dom[cfg.picker].addEventListener('input', (e) => {
                 handleColorChange(key, e.target.value);
             });
-            // 输入框变化（失去焦点时）
             dom[cfg.input].addEventListener('change', (e) => {
                 handleColorChange(key, e.target.value.trim());
             });
-            // 模式切换按钮
             const modeBtns = document.querySelectorAll(`.mode-toggle[data-target="${key}"]`);
             modeBtns.forEach(btn => {
                 btn.addEventListener('click', () => toggleColorMode(key));
             });
         });
 
-        // 重置颜色按钮
         dom.btnResetColors.addEventListener('click', resetAllColors);
 
-        // 主题切换时，同步颜色UI
-        // 在原有 toggleTheme 函数末尾添加 syncColorUI();
-        // 修改 toggleTheme 函数：
         const originalToggleTheme = toggleTheme;
         toggleTheme = function() {
             originalToggleTheme();
             syncColorUI();
         };
 
-        // 初始化时加载用户颜色并同步
-        // 在 init 函数末尾（initSettings() 调用之后）添加：
         loadUserColors();
         syncColorUI();
 
         ['textLight', 'textDark'].forEach(key => {
             const cfg = TEXT_COLOR_MAP[key];
-            // 色盘
             dom[cfg.picker].addEventListener('input', (e) => {
                 handleTextColorChange(key, e.target.value);
             });
-            // 输入框
             dom[cfg.input].addEventListener('change', (e) => {
                 handleTextColorChange(key, e.target.value.trim());
             });
-            // 模式切换按钮
             const modeBtns = document.querySelectorAll(`.mode-toggle[data-target="${key}"]`);
             modeBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1138,24 +1184,20 @@
 
         dom.fontSizeSlider.addEventListener('input', applyFontStyle);
 
-        // 清空确认弹窗事件
         dom.btnCancelClearAll.addEventListener('click', closeClearAllModal);
         dom.btnCloseClearAll.addEventListener('click', closeClearAllModal);
         dom.modalClearAll.addEventListener('click', function(e) {
             if (e.target === this) closeClearAllModal();
         });
         dom.btnConfirmClearAll.addEventListener('click', executeClearAll);
-        // 输入框实时检测
         dom.clearAllInput.addEventListener('input', checkClearAllButton);
 
-        // 错误弹窗事件
         dom.btnForceCloseError.addEventListener('click', closeClearErrorModal);
         dom.btnCloseClearError.addEventListener('click', closeClearErrorModal);
         dom.modalClearError.addEventListener('click', function(e) {
             if (e.target === this) closeClearErrorModal();
         });
 
-        // 删除确认弹窗事件
         dom.btnCancelDeleteConfirm.addEventListener('click', closeDeleteConfirmModal);
         dom.btnCloseDeleteConfirm.addEventListener('click', closeDeleteConfirmModal);
         dom.modalDeleteConfirm.addEventListener('click', function(e) {
@@ -1163,26 +1205,20 @@
         });
         dom.btnConfirmDeleteAction.addEventListener('click', executeDeleteAction);
 
-        // 删除错误弹窗事件
         dom.btnForceCloseDeleteError.addEventListener('click', closeDeleteErrorModal);
         dom.btnCloseDeleteError.addEventListener('click', closeDeleteErrorModal);
         dom.modalDeleteError.addEventListener('click', function(e) {
             if (e.target === this) closeDeleteErrorModal();
         });
 
-        // 实时检测删除确认输入（可选，但为了体验，可添加）
-        dom.deleteConfirmInput.addEventListener('input', function() {
-            // 无需额外动作，因为确认按钮仅依赖倒计时
-        });
+        dom.deleteConfirmInput.addEventListener('input', function() {});
 
-        // 导出弹窗事件
         dom.btnCancelExport.addEventListener('click', () => closeModal(dom.modalExport));
         dom.btnCloseExport.addEventListener('click', () => closeModal(dom.modalExport));
         dom.modalExport.addEventListener('click', function(e) {
             if (e.target === this) closeModal(dom.modalExport);
         });
         dom.btnConfirmExport.addEventListener('click', doExport);
-        // 支持回车导出
         dom.exportFileName.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') doExport();
         });
@@ -1191,26 +1227,23 @@
         dom.inputRow.addEventListener('change', updateHighlightedCell);
         dom.inputGroup.addEventListener('change', updateHighlightedCell);
 
-        // 为输入面板和录入面板的选择器绑定高亮更新
         [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup].forEach(select => {
             select.addEventListener('change', updateHighlightedCell);
         });
 
         dom.btnForceRefresh.addEventListener('click', () => {
-            // 强制清空缓存并重新加载页面
             window.location.reload(true);
-            // 如果浏览器不支持 reload(true)，使用以下备选方案：
-            // location.href = location.href.split('?')[0] + '?_=' + Date.now();
         });
 
-    }   //bind结尾
+        dom.btnOpenSettings.addEventListener('click', () => {
+            switchPanel('settings');
+        });
+    }
 
     // 保存操作记录（仅用于录入面板的基质变化）
     function pushHistory(rowIdx, colIndex, oldCell, newCell) {
-        // 清除当前位置之后的历史（如果之前有重做再操作新的，则丢弃后续）
         state.history = state.history.slice(0, state.historyIndex + 1);
         state.history.push({ rowIdx, colIndex, oldCell: JSON.parse(JSON.stringify(oldCell)), newCell: JSON.parse(JSON.stringify(newCell)) });
-        // 只保留最近20条
         if (state.history.length > 20) {
             state.history.shift();
         } else {
@@ -1219,7 +1252,6 @@
         updateUndoRedoButtons();
     }
 
-    // 获取单元格对应的名称
     function getCellNames(rowIdx, colIndex) {
         let groupIdx = 0, remaining = colIndex;
         for (let i = 0; i < ALL_GROUPS.length; i++) {
@@ -1236,16 +1268,13 @@
         return { rowName: '?', groupName: '?', subName: '?' };
     }
 
-    // 执行撤回
     function undo() {
         if (state.historyIndex < 0) return;
         const record = state.history[state.historyIndex];
-        // 恢复旧状态
         state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.oldCell));
         state.historyIndex--;
         renderAllTables(); saveData();
         updateUndoRedoButtons();
-        // 显示撤回弹窗
         const names = getCellNames(record.rowIdx, record.colIndex);
         const oldT = record.oldCell.t, oldA = record.oldCell.a;
         const newT = record.newCell.t, newA = record.newCell.a;
@@ -1255,7 +1284,6 @@
         );
     }
 
-    // 执行重做
     function redo() {
         if (state.historyIndex >= state.history.length - 1) return;
         state.historyIndex++;
@@ -1272,31 +1300,21 @@
         );
     }
 
-    // 更新按钮状态
     function updateUndoRedoButtons() {
         dom.btnUndo.disabled = state.historyIndex < 0;
         dom.btnRedo.disabled = state.historyIndex >= state.history.length - 1;
     }
 
-    // 清除指定词条组单元格的全部属性
     function clearCellRecord() {
         const subIdx = parseInt(dom.recordSubCol.value);
         const rowIdx = parseInt(dom.recordRow.value);
         const groupIdx = parseInt(dom.recordGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-
-        // 保存旧状态用于撤回（如果已启用撤回功能）
         const oldCell = JSON.parse(JSON.stringify(cell));
-
-        // 重置为默认空状态
         state.rows[rowIdx].data[colIndex] = defaultCellMeta();
         renderAllTables(); saveData();
-
-        // 如果已有撤回历史功能，可调用 pushHistory(rowIdx, colIndex, oldCell, defaultCellMeta());
-        // 此处直接提示
         const groupName = ALL_GROUPS[groupIdx].name;
         const rowName = ROW_NAMES[rowIdx];
         const subName = ALL_GROUPS[groupIdx].sub[subIdx];
@@ -1309,23 +1327,16 @@
         const rowIdx = parseInt(dom.inputRow.value);
         const groupIdx = parseInt(dom.inputGroup.value);
         if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-    
         const colIndex = getColumnIndex(groupIdx, subIdx);
         const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-    
-        // 如果存在基质记录，禁止清除
         if (cell.t > 0) {
             showAlert('该单元格存在基质记录（重复数>0），无法清除数值。', '操作阻止');
             return;
         }
-    
-        // 如果已经为空，提示无变化
         if (cell.v === '') {
             showAlert('当前单元格无数值，无需清除。', '提示');
             return;
         }
-    
-        // 清空数值
         cell.v = '';
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
@@ -1336,7 +1347,6 @@
         dom.inputHint.textContent = '当前单元格数值已清除';
     }
 
-    // 将三个输入框重置为 '1'
     function resetTripleInputs() {
         dom.inputVal1.value = '1';
         dom.inputVal2.value = '1';
@@ -1349,43 +1359,34 @@
             const cur = this.value.trim();
             let num = parseInt(cur);
             if (cur === '' || isNaN(num) || num === 0) {
-                // 当前为空或0，根据滚动方向从1或9开始
                 num = e.deltaY > 0 ? 9 : 1;
             } else {
                 if (e.deltaY > 0) {
-                    // 向下滚动：数字递减，到1时跳到9，跳过0
                     num = num === 1 ? 9 : num - 1;
                 } else {
-                    // 向上滚动：数字递增，到9时跳到1
                     num = num === 9 ? 1 : num + 1;
                 }
             }
             this.value = num;
             this.dispatchEvent(new Event('input', { bubbles: true }));
         }, { passive: false });
-    
         inputEl.addEventListener('input', function() {
-            // 仍允许手动输入单个数字（包括0）
             this.value = this.value.replace(/\D/g, '').slice(0, 1);
         });
     }
 
-    // 判断当前是否为暗色模式
     function isDarkTheme() { return state.theme === 'dark'; }
 
-    // 获取某个颜色类型在当前主题下的默认值
     function getDefaultColor(key) {
         const cfg = COLOR_MAP[key];
         return isDarkTheme() ? cfg.defaultDark : cfg.defaultLight;
     }
 
-    // 从 :root 读取当前 CSS 变量值
     function getCurrentCSSColor(varName) {
         const rootStyle = getComputedStyle(document.documentElement);
         return rootStyle.getPropertyValue(varName).trim() || '';
     }
 
-    // 十六进制转 RGB 字符串
     function hexToRgbString(hex) {
         if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex;
         const r = parseInt(hex.slice(1,3), 16);
@@ -1394,7 +1395,6 @@
         return `rgb(${r}, ${g}, ${b})`;
     }
 
-    // RGB 字符串转十六进制（兼容 rgb(r,g,b) 格式）
     function rgbStringToHex(rgb) {
         const match = rgb.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
         if (!match) return null;
@@ -1420,47 +1420,39 @@
         } catch(e) {}
     }
     
-    // 应用一个颜色变量
     function applyColorVariable(key, value) {
         document.documentElement.style.setProperty(COLOR_MAP[key].var, value);
-        // 同步更新预览和输入框显示
         const cfg = COLOR_MAP[key];
         const preview = dom[cfg.preview];
         const input = dom[cfg.input];
         const picker = dom[cfg.picker];
         preview.style.backgroundColor = value;
         picker.value = value;
-        input.value = value; // 默认 HEX 模式，由切换按钮控制显示格式
+        input.value = value;
     }
     
-    // 更新所有颜色配置到界面
     function syncColorUI() {
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
-        // 同步背景颜色
         Object.keys(COLOR_MAP).forEach(key => {
             const savedColor = userColorData[currentTheme]?.[key];
             const currentColor = savedColor || getDefaultColor(key);
             applyColorVariable(key, currentColor);
         });
-        // 同步字体颜色：根据当前主题应用对应的文字颜色
         const textKey = currentTheme === 'dark' ? 'textDark' : 'textLight';
         const textColor = userColorData[currentTheme]?.[textKey] || (currentTheme === 'dark' ? '#e6edf3' : '#1f2328');
         applyColorVariableForText(textKey, textColor);
         loadFontStyle();
     }
 
-    // 切换输入模式
     function toggleColorMode(targetKey) {
         const cfg = COLOR_MAP[targetKey];
         const inputEl = dom[cfg.input];
         const currentVal = inputEl.value.trim();
         const isHex = currentVal.startsWith('#');
         if (isHex) {
-            // 转为 RGB 显示
             const rgb = hexToRgbString(currentVal);
             inputEl.value = rgb;
         } else {
-            // 尝试转为 HEX
             const hex = rgbStringToHex(currentVal);
             if (hex) {
                 inputEl.value = hex;
@@ -1468,17 +1460,13 @@
         }
     }
 
-    // 当输入框或色盘改变时调用
     function handleColorChange(key, newColor) {
-        // 规范化：如果是 RGB 则转为 HEX 存储
         let hex = newColor;
         if (newColor.startsWith('rgb')) {
             const converted = rgbStringToHex(newColor);
             if (converted) hex = converted;
         }
-        // 更新 CSS 变量
         applyColorVariable(key, hex);
-        // 存储用户颜色
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
         if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
         userColorData[currentTheme][key] = hex;
@@ -1487,9 +1475,9 @@
 
     function resetAllColors() {
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
-        userColorData[currentTheme] = {}; // 清除当前主题的自定义颜色
+        userColorData[currentTheme] = {};
         saveUserColors();
-        syncColorUI(); // 会同时加载默认字体颜色
+        syncColorUI();
         showAlert('颜色已恢复为默认值', '设置已重置');
     }
 
@@ -1517,21 +1505,17 @@
         saveUserColors();
     }
 
-    // 应用字号设置
     function applyFontStyle() {
         const root = document.documentElement;
         const size = dom.fontSizeSlider.value + 'px';
         root.style.setProperty('--cell-font-size', size);
         dom.fontSizeValue.textContent = dom.fontSizeSlider.value;
-
-        // 保存到 userColorData
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
         if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
         userColorData[currentTheme].fontSize = size;
         saveUserColors();
     }
 
-    // 加载字号设置
     function loadFontStyle() {
         const currentTheme = isDarkTheme() ? 'dark' : 'light';
         const saved = userColorData[currentTheme] || {};
@@ -1544,8 +1528,7 @@
     function openClearAllModal() {
         dom.clearAllInput.value = '';
         dom.clearAllCountdown.textContent = '15';
-        dom.btnConfirmClearAll.disabled = true; // 初始禁用
-    
+        dom.btnConfirmClearAll.disabled = true;
         openModal(dom.modalClearAll);
         if (clearAllTimer) clearInterval(clearAllTimer);
         let seconds = 15;
@@ -1563,7 +1546,7 @@
     
     function checkClearAllButton() {
         const timeUp = parseInt(dom.clearAllCountdown.textContent) <= 0;
-        dom.btnConfirmClearAll.disabled = !timeUp; // 不再检查输入
+        dom.btnConfirmClearAll.disabled = !timeUp;
     }
     
     function closeClearAllModal() {
@@ -1575,13 +1558,11 @@
     }
     
     function executeClearAll() {
-        // 检查输入是否正确
         if (dom.clearAllInput.value.trim() !== '我确认清空') {
-            closeClearAllModal();   // 关闭原确认弹窗
-            openClearErrorModal();  // 打开错误提示弹窗
+            closeClearAllModal();
+            openClearErrorModal();
             return;
         }
-        // 输入正确，执行清空
         closeClearAllModal();
         clearAllData();
     }
@@ -1589,7 +1570,6 @@
     function openClearErrorModal() {
         dom.errorCountdown.textContent = '5';
         openModal(dom.modalClearError);
-    
         if (clearErrorTimer) clearInterval(clearErrorTimer);
         let seconds = 5;
         clearErrorTimer = setInterval(() => {
@@ -1611,14 +1591,11 @@
         closeModal(dom.modalClearError);
     }
 
-    // ========== 删除数据集专用确认弹窗 ==========
     function openDeleteConfirmModal() {
-        // 获取当前数据集名称并显示在弹窗中
         dom.deleteConfirmDatasetName.textContent = STORAGE_KEY_DATA;
         dom.deleteConfirmInput.value = '';
         dom.deleteConfirmCountdown.textContent = '15';
         dom.btnConfirmDeleteAction.disabled = true;
-
         openModal(dom.modalDeleteConfirm);
         if (deleteConfirmTimer) clearInterval(deleteConfirmTimer);
         let seconds = 15;
@@ -1654,15 +1631,12 @@
             return;
         }
         closeDeleteConfirmModal();
-        // 调用原有的删除确认函数（执行真正的删除）
         confirmDeleteDataset();
     }
 
-    // ========== 删除错误提示弹窗 ==========
     function openDeleteErrorModal() {
         dom.deleteErrorCountdown.textContent = '5';
         openModal(dom.modalDeleteError);
-
         if (deleteErrorTimer) clearInterval(deleteErrorTimer);
         let seconds = 5;
         deleteErrorTimer = setInterval(() => {
@@ -1682,7 +1656,7 @@
             deleteErrorTimer = null;
         }
         closeModal(dom.modalDeleteError);
-    }    
+    }
 
     // ========== 初始化 ==========
     function init() {
@@ -1701,7 +1675,7 @@
         renderAllTables();
         resetTripleInputs();
         switchPanel('input');
-        initSettings(); // 初始化设置值
+        initSettings();
         localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
         dom.inputHint.textContent = '准备就绪';
     }
