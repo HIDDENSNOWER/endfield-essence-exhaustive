@@ -1245,10 +1245,15 @@
 
     // 初始化单元格悬停提示
     function initCellTooltip() {
+        // 根据是否支持 hover 判断设备类型（支持 hover 则视为 PC，否则为触摸设备）
+        const supportsHover = window.matchMedia('(hover: hover)').matches;
+        const defaultText = supportsHover ? '鼠标悬停单元格查看详情' : '点击单元格查看详情';
+        dom.cellTooltip.textContent = defaultText;
+    
         let hoverTimeout;
-        dom.tableArea.addEventListener('mouseover', function(e) {
-            const td = e.target.closest('td');
-            if (!td) return;
+    
+        // 显示单元格详情的通用函数
+        function showCellDetail(td) {
             const rowIndex = td.dataset.rowindex;
             const colIndex = td.dataset.colindex;
             if (rowIndex === undefined || colIndex === undefined) return;
@@ -1264,39 +1269,51 @@
             let displayText = '';
     
             if (t > 0) {
-                // 有基质：主属性 || 副属性 || 词条 || 拥有 X/重复 Y || 状态
-                let status = '';
-                if (a < t) {
-                    status = `未全部获取，目前应差 ${t - a} 个`;
-                } else {
-                    status = '已全部获取';
-                }
-                displayText = `${names.subName} || ${names.rowName} || ${names.groupName} || 拥有 ${a}/重复 ${t} || ${status}`;
+                let status = a < t ? `未全部获取，目前应差 ${t - a} 个` : '已全部获取';
+                displayText = `${names.subName} || ${names.rowName} || ${names.groupName} || 已实装基质： 拥有 ${a}/重复 ${t} || ${status}`;
             } else {
-                // 无基质
                 if (v && v.length === 3) {
-                    // 标准三位数：数值拆解
-                    displayText = `${names.subName}-${v[0]} || ${names.rowName}-${v[1]} || ${names.groupName}-${v[2]}`;
-                    displayText += ` || 状态：当前为非实装基质`;
+                    displayText = `${names.subName}-${v[0]} || ${names.rowName}-${v[1]} || ${names.groupName}-${v[2]} || 状态：当前为非实装基质`;
                 } else if (v !== '') {
-                    // 非标准数值
                     displayText = `${v} || 状态：当前为非实装基质`;
                 } else {
-                    // 空单元格
-                    displayText = '无 || 状态：空';
+                    displayText = '无';
                 }
             }
-    
             dom.cellTooltip.textContent = displayText;
             clearTimeout(hoverTimeout);
+        }
+    
+        // 恢复默认文字的通用函数
+        function resetTooltip() {
+            hoverTimeout = setTimeout(() => {
+                dom.cellTooltip.textContent = defaultText;
+            }, 200);
+        }
+    
+        // PC 端：鼠标悬停显示
+        dom.tableArea.addEventListener('mouseover', function(e) {
+            const td = e.target.closest('td');
+            if (!td) return;
+            showCellDetail(td);
         });
     
         dom.tableArea.addEventListener('mouseout', function(e) {
             const td = e.target.closest('td');
             if (!td) return;
-            hoverTimeout = setTimeout(() => {
-                dom.cellTooltip.textContent = '鼠标悬停单元格查看详情';
-            }, 200);
+            resetTooltip();
+        });
+    
+        // 点击事件（两种设备均可用）
+        dom.tableArea.addEventListener('click', function(e) {
+            const td = e.target.closest('td');
+            if (td) {
+                showCellDetail(td);
+            } else {
+                // 点击空白区域立即恢复默认文字
+                clearTimeout(hoverTimeout);
+                dom.cellTooltip.textContent = defaultText;
+            }
         });
     }
 
