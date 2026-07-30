@@ -194,6 +194,8 @@
         btnCloseExport: document.getElementById('btnCloseExport'),
         btnForceRefresh: document.getElementById('btnForceRefresh'),
         btnOpenSettings: document.getElementById('btnOpenSettings'),
+        cellTooltip: document.getElementById('cellTooltip'),
+        tableArea: document.getElementById('tableArea'),   // 如果已存在可省略，但需要确保有引用
     };
 
     function normalizeCell(cell) {
@@ -1238,6 +1240,64 @@
         dom.btnOpenSettings.addEventListener('click', () => {
             switchPanel('settings');
         });
+
+    }
+
+    // 初始化单元格悬停提示
+    function initCellTooltip() {
+        let hoverTimeout;
+        dom.tableArea.addEventListener('mouseover', function(e) {
+            const td = e.target.closest('td');
+            if (!td) return;
+            const rowIndex = td.dataset.rowindex;
+            const colIndex = td.dataset.colindex;
+            if (rowIndex === undefined || colIndex === undefined) return;
+    
+            const ri = parseInt(rowIndex);
+            const ci = parseInt(colIndex);
+            const cell = normalizeCell(state.rows[ri].data[ci]);
+            const names = getCellNames(ri, ci);
+            const v = cell.v;
+            const t = cell.t || 0;
+            const a = cell.a || 0;
+    
+            let displayText = '';
+    
+            if (t > 0) {
+                // 有基质：主属性 || 副属性 || 词条 || 拥有 X/重复 Y || 状态
+                let status = '';
+                if (a < t) {
+                    status = `未全部获取，目前应差 ${t - a} 个`;
+                } else {
+                    status = '已全部获取';
+                }
+                displayText = `${names.subName} || ${names.rowName} || ${names.groupName} || 拥有 ${a}/重复 ${t} || ${status}`;
+            } else {
+                // 无基质
+                if (v && v.length === 3) {
+                    // 标准三位数：数值拆解
+                    displayText = `${names.subName}-${v[0]} || ${names.rowName}-${v[1]} || ${names.groupName}-${v[2]}`;
+                    displayText += ` || 状态：当前为非实装基质`;
+                } else if (v !== '') {
+                    // 非标准数值
+                    displayText = `${v} || 状态：当前为非实装基质`;
+                } else {
+                    // 空单元格
+                    displayText = '无 || 状态：空';
+                }
+            }
+    
+            dom.cellTooltip.textContent = displayText;
+            clearTimeout(hoverTimeout);
+        });
+    
+        dom.tableArea.addEventListener('mouseout', function(e) {
+            const td = e.target.closest('td');
+            if (!td) return;
+            hoverTimeout = setTimeout(() => {
+                dom.cellTooltip.textContent = '鼠标悬停单元格查看详情';
+            }, 200);
+        });
     }
 
     // 保存操作记录（仅用于录入面板的基质变化）
@@ -1678,6 +1738,7 @@
         initSettings();
         localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
         dom.inputHint.textContent = '准备就绪';
+        initCellTooltip();
     }
     init();
 })();

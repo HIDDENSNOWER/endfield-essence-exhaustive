@@ -319,3 +319,28 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     .sidebar { flex-direction: row; width: 100%; height: 44px; border-left: none; border-bottom: 1px solid var(--border-default); }
     .panel-container { width: 100%; border-left: none; flex-shrink: 1; }
 }
+
+/* 单元格悬停信息提示栏 */
+.cell-tooltip {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    min-height: 26px;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+    /* 粘性定位，固定在表格区顶部 */
+    position: sticky;
+    top: 0;
+    z-index: 30;           /* 高于表格行和固定列 */
+
+    /* 宽度与表格区完全贴合，消除任何空隙 */
+    width: 100%;
+    margin: -12px -8px 6px -8px;  /* 抵消 .table-area 的 padding */
+}
