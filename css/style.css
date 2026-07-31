@@ -128,7 +128,13 @@ body {
     display: inline-block; vertical-align: top; max-width: 100%;
 }
 .table-wrapper { overflow: visible; }
-table { border-collapse: collapse; font-size: 0.72rem; white-space: nowrap; width: auto; table-layout: fixed; }
+table {
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    width: auto;
+    /* table-layout: fixed;   ← 注释掉 */
+}
 thead th, tbody td {
     padding: 0 2px; border: 1px solid var(--border-muted);
     text-align: center; height: var(--row-height); vertical-align: middle;
@@ -334,13 +340,88 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     overflow: hidden;
     text-overflow: ellipsis;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-
-    /* 粘性定位，固定在表格区顶部 */
     position: sticky;
     top: 0;
-    z-index: 30;           /* 高于表格行和固定列 */
-
-    /* 宽度与表格区完全贴合，消除任何空隙 */
+    z-index: 30;
     width: 100%;
-    margin: -12px -8px 6px -8px;  /* 抵消 .table-area 的 padding */
+    margin: -12px -8px 6px -8px;
 }
+
+/* 设置弹窗 - 覆盖界面80% */
+.settings-modal {
+    width: 80vw;
+    max-width: 80vw;
+    height: 80vh;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.settings-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* 设置弹窗内部布局 */
+.settings-modal-body {
+    padding: 0 !important;
+    height: 100%;
+    overflow: hidden;
+}
+.settings-layout {
+    display: flex;
+    height: 100%;
+}
+.settings-nav {
+    width: 20%;               /* 左侧约 1/5 */
+    background-color: var(--bg-tertiary);
+    border-right: 1px solid var(--border-default);
+    padding: 12px 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+.settings-nav-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    border-left: 3px solid transparent;
+}
+.settings-nav-btn:hover {
+    background-color: var(--bg-hover);
+}
+.settings-nav-btn.active {
+    background-color: var(--bg-primary);
+    border-left-color: var(--accent-primary);
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+.settings-panels {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.settings-panel-content {
+    display: none;
+}
+.settings-panel-content.active {
+    display: block;
+}
+
+.settings-modal-body { padding: 0 !important; height: 100%; overflow: hidden; }
+.settings-layout { display: flex; height: 100%; }
+.settings-nav { width: 20%; background-color: var(--bg-tertiary); border-right: 1px solid var(--border-default); padding: 12px 0; flex-shrink: 0; overflow-y: auto; }
+.settings-nav-btn { display: block; width: 100%; padding: 10px 16px; text-align: left; font-size: 0.82rem; font-weight: 500; color: var(--text-primary); background: transparent; border: none; cursor: pointer; transition: background-color var(--transition-fast); border-left: 3px solid transparent; }
+.settings-nav-btn:hover { background-color: var(--bg-hover); }
+.settings-nav-btn.active { background-color: var(--bg-primary); border-left-color: var(--accent-primary); color: var(--accent-primary); font-weight: 600; }
+.settings-panels { flex: 1; padding: 20px; overflow-y: auto; }
+.settings-panel-content { display: none; }
+.settings-panel-content.active { display: block; }
+.settings-modal { width: 80vw; max-width: 80vw; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+.settings-modal .modal-body { flex: 1; overflow-y: auto; }

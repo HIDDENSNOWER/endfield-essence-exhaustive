@@ -50,7 +50,6 @@
                 </svg>
             </button>
         </div>
-
     </nav>
 
     <!-- 主布局 -->
@@ -183,110 +182,10 @@
                 <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
                 <p class="input-hint" id="recordHint"></p>
             </aside>
-            <!-- 设置面板 -->
-            <aside class="settings-panel" id="settingsPanel">
-                <div class="panel-title">⚙️ 设置</div>
-            
-                <!-- 列宽/行高 -->
-                <div class="form-group">
-                    <label>列宽 (30-60px)</label>
-                    <input type="range" id="colWidthSlider" min="30" max="60" value="36">
-                    <span class="range-value" id="colWidthValue">36</span>
-                </div>
-                <div class="form-group">
-                    <label>行高 (20-40px)</label>
-                    <input type="range" id="rowHeightSlider" min="20" max="40" value="24">
-                    <span class="range-value" id="rowHeightValue">24</span>
-                </div>
-            
-                <hr style="margin: 12px 0; border-color: var(--border-muted);">
-            
-                <!-- 单元格颜色自定义 -->
-                <div class="panel-title" style="font-size:0.85rem;">🎨 单元格颜色</div>
-            
-                <!-- 有数值无基质 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">已获取，非实装基质</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewHasValue"></span>
-                        <input type="color" id="pickerHasValue" class="color-picker" title="色盘">
-                        <input type="text" id="inputHasValue" class="color-text-input" placeholder="#c8e6c9" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="hasValue">HEX</button>
-                    </div>
-                </div>
-            
-                <!-- 未获取 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">未获取，重复实装基质</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewStatusNone"></span>
-                        <input type="color" id="pickerStatusNone" class="color-picker" title="色盘">
-                        <input type="text" id="inputStatusNone" class="color-text-input" placeholder="#cfd8dc" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="statusNone">HEX</button>
-                    </div>
-                </div>
-            
-                <!-- 部分获取 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">部分获取，重复实装基质</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewStatusPartial"></span>
-                        <input type="color" id="pickerStatusPartial" class="color-picker" title="色盘">
-                        <input type="text" id="inputStatusPartial" class="color-text-input" placeholder="#ffe0b2" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="statusPartial">HEX</button>
-                    </div>
-                </div>
-            
-                <!-- 全部获取 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">全部获取，重复实装基质</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewStatusFull"></span>
-                        <input type="color" id="pickerStatusFull" class="color-picker" title="色盘">
-                        <input type="text" id="inputStatusFull" class="color-text-input" placeholder="#a5d6a7" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="statusFull">HEX</button>
-                    </div>
-                </div>
-
-                <hr style="margin: 12px 0; border-color: var(--border-muted);">
-                <div class="panel-title" style="font-size:0.85rem;">🔤 字体颜色</div>
-
-                <!-- 亮色主题文字颜色 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">亮色主题文字</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewTextLight"></span>
-                        <input type="color" id="pickerTextLight" class="color-picker" title="色盘">
-                        <input type="text" id="inputTextLight" class="color-text-input" placeholder="#1f2328" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="textLight">HEX</button>
-                    </div>
-                </div>
-
-                <!-- 暗色主题文字颜色 -->
-                <div class="color-config-item">
-                    <label class="color-config-label">暗色主题文字</label>
-                    <div class="color-config-row">
-                        <span class="color-preview" id="previewTextDark"></span>
-                        <input type="color" id="pickerTextDark" class="color-picker" title="色盘">
-                        <input type="text" id="inputTextDark" class="color-text-input" placeholder="#e6edf3" maxlength="20">
-                        <button class="btn btn-sm mode-toggle" data-target="textDark">HEX</button>
-                    </div>
-                </div>
-            
-                <button class="btn btn-sm btn-block" id="btnResetColors" style="margin-top: 10px;">重置颜色</button>
-
-                <hr style="margin: 12px 0; border-color: var(--border-muted);">
-                <div class="panel-title" style="font-size:0.85rem;">🔠 字号设置</div>
-                <div class="form-group">
-                    <label>字号 (<span id="fontSizeValue">12</span>px)</label>
-                    <input type="range" id="fontSizeSlider" min="10" max="24" value="12">
-                </div>
-
-            </aside>
         </div>
     </div>
 
-    <!-- 数值对比弹窗（保持不变） -->
+    <!-- 数值对比弹窗 -->
     <div class="modal-overlay" id="modalCompare" style="display:none;">
         <div class="modal" style="max-width:450px;">
             <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare"
@@ -568,6 +467,51 @@
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <!-- 设置弹窗（覆盖界面80%） -->
+    <div class="modal-overlay" id="modalSettingsOverlay" style="display:none;">
+        <div class="modal settings-modal" id="modalSettingsContent">
+            <div class="modal-header">
+                <span>⚙️ 设置</span>
+                <button class="btn-icon btn-sm" id="btnCloseSettingsModal" style="border:none;" title="关闭">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body settings-modal-body" id="settingsModalBody">
+                <div class="settings-layout">
+                    <nav class="settings-nav" id="settingsNav">
+                        <button class="settings-nav-btn active" data-settings-panel="table">表格设置</button>
+                    </nav>
+                    <div class="settings-panels">
+                        <div class="settings-panel-content active" id="settingsPanelTable">
+                            <div class="panel-title">📏 表格设置</div>
+                            <div class="form-group">
+                                <label>列宽 (30-60px)</label>
+                                <input type="range" id="colWidthSlider" min="30" max="60" value="36">
+                                <span class="range-value" id="colWidthValue">36</span>
+                            </div>
+                            <div class="form-group">
+                                <label>行高 (20-40px)</label>
+                                <input type="range" id="rowHeightSlider" min="20" max="40" value="24">
+                                <span class="range-value" id="rowHeightValue">24</span>
+                            </div>
+                            <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnCloseSettingsModalBottom">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/core.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/logic.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
