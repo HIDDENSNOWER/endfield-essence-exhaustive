@@ -375,7 +375,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 /* 预览表格容器 */
 .color-preview-main-wrapper {
     width: fit-content;
-    max-width: 70%;
+    max-width: 90%;               /* 桌面端加宽 */
     margin: 0;
     overflow-x: auto;
     border: 1px solid var(--border-default);
@@ -383,6 +383,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     background: var(--bg-primary);
     padding: 2px;
     margin-top: 8px;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 表格基础 */
@@ -403,7 +404,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     padding: 0 2px;
     height: var(--row-height);
     line-height: var(--row-height);
-    font-size: 0.72rem !important;          /* 强制覆盖任何隐藏文字的旧样式 */
+    font-size: 0.72rem !important;
     color: var(--text-cell) !important;
     white-space: nowrap;
     overflow: hidden;
@@ -548,6 +549,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     display: flex;
     gap: 3px;
     align-items: center;
+    min-height: 28px;               /* 确保切换格式时容器不塌陷 */
 }
 .color-inputs-container input {
     width: 48px;
@@ -570,4 +572,102 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 /* 将通用提示弹窗置于设置弹窗之上 */
 #modalAlert {
     z-index: 300 !important;
+}
+/* ===================== 手机端全屏 + 自适应表格 ===================== */
+@media (max-width: 600px) {
+    /* 设置弹窗全屏 */
+    .settings-modal {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    .settings-modal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .settings-layout {
+        flex-direction: column;
+    }
+    .settings-nav {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-default);
+        display: flex;
+        overflow-x: auto;
+    }
+    .settings-nav-btn {
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    .settings-nav-btn.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--accent-primary);
+    }
+    .settings-panels {
+        padding: 12px;
+    }
+
+    /* 预览表格与控制区上下排列 */
+    .color-preview-layout {
+        flex-direction: column;
+    }
+
+    /* 预览表格容器：全宽，无缩放 */
+    .color-preview-main-wrapper {
+        max-width: 100%;
+        width: 100%;
+        overflow-x: visible;
+        transform: none;
+        margin-bottom: 0;
+    }
+
+    /* 表格基础：固定列宽百分比，字体响应式 */
+    .color-preview-main-wrapper table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+
+    /* 所有单元格通用样式：动态字体 */
+    .color-preview-main-wrapper th,
+    .color-preview-main-wrapper td {
+        font-size: clamp(10px, 2vw, 14px) !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;   /* 字体足够小，极少触发省略 */
+        padding: 0 1px;
+        height: auto;
+        line-height: 1.3;
+    }
+
+    /* 行名/表头第一列：宽度 22% */
+    .color-preview-main-wrapper td:first-child,
+    .color-preview-main-wrapper th:first-child {
+        width: 22%;
+        min-width: 22%;
+        font-size: clamp(10px, 2vw, 14px) !important;
+        padding-left: 4px;
+    }
+
+    /* 数据列宽度：每列 7.8% */
+    .color-preview-main-wrapper td:not(:first-child),
+    .color-preview-main-wrapper th:not(:first-child):not([colspan]) {
+        width: 7.8%;
+        min-width: 7.8%;
+        max-width: 7.8%;
+    }
+
+    /* 数量控制区：换行排列 */
+    .color-preview-controls {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .count-row {
+        flex: 1 1 auto;
+    }
 }
