@@ -671,3 +671,15 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
         flex: 1 1 auto;
     }
 }
+
+/* 确保全屏设置弹窗正确覆盖视口 */
+.modal-overlay {
+    padding: 0 !important;          /* 移除内边距 */
+    align-items: flex-start;        /* 从顶部开始，防止全屏弹窗被裁剪 */
+    display: flex;
+    justify-content: center;        
+}
+.settings-modal {
+    margin: 0;                      /* 无外边距 */
+    align-self: center;             /* 水平居中 */
+}
