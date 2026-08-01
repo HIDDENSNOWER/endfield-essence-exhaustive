@@ -44,6 +44,29 @@ function init() {
     dom.inputHint.textContent = '准备就绪';
 
     initCellTooltip();
+    // 强制从 localStorage 恢复颜色
+    (function applySavedColors() {
+        try {
+            var raw = localStorage.getItem('smarttable_user_colors');
+            if (!raw) return;
+            var data = JSON.parse(raw);
+            var theme = isDarkTheme() ? 'dark' : 'light';
+            var colors = data[theme];
+            if (!colors) return;
+            // 映射关系（确保与 COLOR_VARS 一致）
+            var map = {
+                hasValue: '--has-value-bg',
+                statusNone: '--status-none-bg',
+                statusPartial: '--status-partial-bg',
+                statusFull: '--status-full-bg'
+            };
+            Object.keys(map).forEach(function(type) {
+                if (colors[type]) {
+                    document.documentElement.style.setProperty(map[type], colors[type]);
+                }
+            });
+        } catch(e) {}
+    })();
 }
 
 init();

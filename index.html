@@ -341,11 +341,67 @@
                             </div>
                             <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
                         </div>
-
-                        <!-- 单元格颜色设置面板（已清空内容，仅保留标题） -->
+                        <!-- 单元格颜色设置面板 -->
                         <div class="settings-panel-content" id="settingsPanelColor">
                             <div class="panel-title">🎨 单元格颜色</div>
-                            <p class="input-hint">颜色自定义功能开发中，敬请期待。</p>
+                            <p class="input-hint" style="margin-bottom:12px;">预览四种状态颜色，右侧可调节各状态数量。</p>
+                            <div class="color-preview-layout">
+                                <!-- 左侧预览表格 -->
+                                <div class="color-preview-main-wrapper" id="colorPreviewMain"></div>
+                                <!-- 右侧数量控制区 -->
+                                <div class="color-preview-controls" id="colorPreviewControls">
+                                    <div class="count-row">
+                                        <span class="count-label has-value-label">已拥有</span>
+                                        <input type="number" id="previewCountHasValue" class="count-input" min="0" max="120" value="10" step="1">
+                                    </div>
+                                    <div class="count-row">
+                                        <span class="count-label status-none-label">未获取</span>
+                                        <input type="number" id="previewCountStatusNone" class="count-input" min="0" max="120" value="10" step="1">
+                                    </div>
+                                    <div class="count-row">
+                                        <span class="count-label status-partial-label">部分获取</span>
+                                        <input type="number" id="previewCountStatusPartial" class="count-input" min="0" max="120" value="10" step="1">
+                                    </div>
+                                    <div class="count-row">
+                                        <span class="count-label status-full-label">全部获取</span>
+                                        <input type="number" id="previewCountStatusFull" class="count-input" min="0" max="120" value="10" step="1">
+                                    </div>
+                                    <p class="input-hint" style="margin-top:8px; font-size:0.7rem;" id="previewRemainHint">剩余空格：80</p>
+                                </div>
+                            </div>
+
+                            <!-- 颜色编辑区域 -->
+                            <div class="color-edit-panel">
+                                <div class="color-states-row">
+                                    <button class="color-state-btn active" data-state="hasValue">已拥有</button>
+                                    <button class="color-state-btn" data-state="statusNone">未获取</button>
+                                    <button class="color-state-btn" data-state="statusPartial">部分获取</button>
+                                    <button class="color-state-btn" data-state="statusFull">全部获取</button>
+                                </div>
+                                <div class="color-edit-row">
+                                    <div class="color-box-group">
+                                        <span class="color-box-label">当前</span>
+                                        <div class="color-box" id="currentColorBox"></div>
+                                        <span class="color-box-hex" id="currentColorHex">#c8e6c9</span>
+                                    </div>
+                                    <input type="color" id="sharedColorPicker" class="color-picker-input" value="#c8e6c9">
+                                    <div class="color-format-row">
+                                        <select id="colorFormatSelect" class="color-format-select">
+                                            <option value="hex">HEX</option>
+                                            <option value="rgb">RGB</option>
+                                            <option value="rgba">RGBA</option>
+                                            <option value="cmyk">CMYK</option>
+                                            <option value="hsla">HSLA</option>
+                                        </select>
+                                        <div id="colorInputsContainer" class="color-inputs-container"></div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                                    <button class="btn btn-sm btn-outline-gray" id="btnUndoColors">撤销当前颜色</button>
+                                    <button class="btn btn-sm btn-outline-gray" id="btnUndoAllColors">撤销全部修改</button>
+                                    <button class="btn btn-sm btn-outline-gray" id="btnResetToDefault">重置为默认</button>
+                                    <button class="btn btn-primary btn-sm" id="btnApplyColors">确认应用</button>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -358,6 +414,7 @@
 
     <script src="js/core.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/color-preview.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/logic.js"></script>
     <script src="js/events.js"></script>
