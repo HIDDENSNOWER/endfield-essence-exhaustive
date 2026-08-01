@@ -197,7 +197,9 @@ var dom = {
     modalSettingsOverlay: document.getElementById('modalSettingsOverlay'),
     modalSettingsContent: document.getElementById('modalSettingsContent'),
     btnCloseSettingsModal: document.getElementById('btnCloseSettingsModal'),
-    btnCloseSettingsModalBottom: document.getElementById('btnCloseSettingsModalBottom')
+    btnCloseSettingsModalBottom: document.getElementById('btnCloseSettingsModalBottom'),
+    colWidthInput: document.getElementById('colWidthInput'),
+    rowHeightInput: document.getElementById('rowHeightInput'),
 };
 
 function normalizeCell(cell) {

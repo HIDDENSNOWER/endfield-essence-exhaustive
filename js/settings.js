@@ -24,11 +24,6 @@ function loadTheme() {
 }
 
 // ========== 列宽/行高设置 ==========
-// ========== 列宽/行高设置 ==========
-// settings.js - 主题、列宽行高、颜色字体
-
-// ...（applyTheme、toggleTheme、loadTheme 保持不变）...
-
 function initSettings() {
     var savedStyle = localStorage.getItem('smarttable_style');
     var colWidth = 36, rowHeight = 24;
@@ -39,7 +34,10 @@ function initSettings() {
             if (p.rowHeight) rowHeight = p.rowHeight;
         } catch(e) {}
     }
+    // 设置输入框和滑块的初始值
+    if (dom.colWidthInput) dom.colWidthInput.value = colWidth;
     if (dom.colWidthSlider) dom.colWidthSlider.value = colWidth;
+    if (dom.rowHeightInput) dom.rowHeightInput.value = rowHeight;
     if (dom.rowHeightSlider) dom.rowHeightSlider.value = rowHeight;
     if (dom.colWidthValue) dom.colWidthValue.textContent = colWidth;
     if (dom.rowHeightValue) dom.rowHeightValue.textContent = rowHeight;

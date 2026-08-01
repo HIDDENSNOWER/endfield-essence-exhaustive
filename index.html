@@ -18,7 +18,7 @@
             </svg>
             <input type="text" class="search-input" id="searchInput" placeholder="筛选行或数值...">
         </div>
-        <div class="navbar-actions">    
+        <div class="navbar-actions">
             <button class="btn-icon" id="btnToggleTheme" title="切换主题">
                 <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="5" />
@@ -31,8 +31,7 @@
                     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                 </svg>
-                <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    style="display:none;">
+                <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
             </button>
@@ -54,7 +53,6 @@
 
     <!-- 主布局 -->
     <div class="main-layout">
-        <!-- 左侧表格区 -->
         <div class="table-area" id="tableArea">
             <div id="cellTooltip" class="cell-tooltip">鼠标悬停单元格查看详情</div>
             <div class="table-section" id="section1">
@@ -81,7 +79,6 @@
             </div>
         </div>
 
-        <!-- 右侧边栏 -->
         <nav class="sidebar" id="sidebar">
             <button class="sidebar-btn active" data-panel="input" title="数据管理">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -102,9 +99,7 @@
             </button>
         </nav>
 
-        <!-- 面板容器 -->
         <div class="panel-container" id="panelContainer">
-            <!-- 数据管理面板 -->
             <aside class="input-panel active-panel" id="inputPanel">
                 <div class="panel-title">📝 数据管理</div>
                 <div class="dataset-info">
@@ -122,7 +117,6 @@
                     <button class="btn btn-sm" id="btnRename">重命名</button>
                     <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
                 </div>
-                <!-- 新增标题 -->
                 <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
                 <div class="form-group">
                     <label>主属性</label>
@@ -152,13 +146,11 @@
                 <input type="file" id="importFile" accept=".json" style="display:none;">
             </aside>
 
-            <!-- 统计面板 -->
             <aside class="stats-panel" id="statsPanel">
                 <div class="panel-title">📊 统计信息</div>
                 <div id="statsContent" class="stats-content"></div>
             </aside>
 
-            <!-- 录入面板 -->
             <aside class="record-panel" id="recordPanel">
                 <div class="panel-title">📥 录入面板</div>
                 <div class="form-group">
@@ -177,7 +169,6 @@
                     <button class="btn btn-sm" id="btnUndo" title="撤回" disabled>撤回</button>
                     <button class="btn btn-sm" id="btnRedo" title="重做" disabled>重做</button>
                 </div>
-                <!-- 录入与清除按钮 -->
                 <button class="btn btn-primary btn-block" id="btnRecordApply">录入</button>
                 <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
                 <p class="input-hint" id="recordHint"></p>
@@ -188,286 +179,130 @@
     <!-- 数值对比弹窗 -->
     <div class="modal-overlay" id="modalCompare" style="display:none;">
         <div class="modal" style="max-width:450px;">
-            <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare"
-                    style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg></button></div>
+            <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="compareBody"></div>
-            <div class="modal-footer"><button class="btn" id="btnKeepOld">保留旧值</button><button class="btn btn-primary"
-                    id="btnReplaceNew">替换为新值</button></div>
+            <div class="modal-footer"><button class="btn" id="btnKeepOld">保留旧值</button><button class="btn btn-primary" id="btnReplaceNew">替换为新值</button></div>
         </div>
     </div>
 
     <!-- 二次确认弹窗 -->
     <div class="modal-overlay" id="modalConfirm" style="display:none;">
         <div class="modal" style="max-width:420px;">
-            <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm"
-                    style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg></button></div>
+            <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="confirmBody"></div>
-            <div class="modal-footer"><button class="btn btn-success" id="btnCancelConfirm">取消</button><button
-                    class="btn btn-danger" id="btnConfirmAction">确认</button></div>
+            <div class="modal-footer"><button class="btn btn-success" id="btnCancelConfirm">取消</button><button class="btn btn-danger" id="btnConfirmAction">确认</button></div>
         </div>
     </div>
 
     <!-- 全部获取提示弹窗 -->
     <div class="modal-overlay" id="modalFullAcquire" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>ℹ️ 录入提示</span>
-                <button class="btn-icon btn-sm" id="btnCloseFullAcquire" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
+            <div class="modal-header"><span>ℹ️ 录入提示</span><button class="btn-icon btn-sm" id="btnCloseFullAcquire" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="fullAcquireBody"></div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btnConfirmFullAcquire">确定</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnConfirmFullAcquire">确定</button></div>
         </div>
     </div>
 
     <!-- 非法输入提示弹窗 -->
     <div class="modal-overlay" id="modalIllegalInput" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>⚠️ 非法输入</span>
-                <button class="btn-icon btn-sm" id="btnCloseIllegal" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
+            <div class="modal-header"><span>⚠️ 非法输入</span><button class="btn-icon btn-sm" id="btnCloseIllegal" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="illegalBody"></div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btnConfirmIllegal">确定</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnConfirmIllegal">确定</button></div>
         </div>
     </div>
+
     <!-- 新建数据集弹窗 -->
     <div class="modal-overlay" id="modalNewDataset" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>新建数据集</span>
-                <button class="btn-icon btn-sm" id="btnCloseNewDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="newDatasetName" placeholder="请输入数据集名称" maxlength="50" style="width:100%;">
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelNewDataset">取消</button>
-                <button class="btn btn-primary" id="btnConfirmNewDataset">确认</button>
-            </div>
+            <div class="modal-header"><span>新建数据集</span><button class="btn-icon btn-sm" id="btnCloseNewDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
+            <div class="modal-body"><input type="text" id="newDatasetName" placeholder="请输入数据集名称" maxlength="50" style="width:100%;"></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelNewDataset">取消</button><button class="btn btn-primary" id="btnConfirmNewDataset">确认</button></div>
         </div>
     </div>
 
     <!-- 重命名数据集弹窗 -->
     <div class="modal-overlay" id="modalRenameDataset" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>重命名数据集</span>
-                <button class="btn-icon btn-sm" id="btnCloseRenameDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span
-                        id="renameOldName"></span></p>
-                <input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelRenameDataset">取消</button>
-                <button class="btn btn-primary" id="btnConfirmRenameDataset">确认</button>
-            </div>
+            <div class="modal-header"><span>重命名数据集</span><button class="btn-icon btn-sm" id="btnCloseRenameDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
+            <div class="modal-body"><p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span id="renameOldName"></span></p><input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;"></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelRenameDataset">取消</button><button class="btn btn-primary" id="btnConfirmRenameDataset">确认</button></div>
         </div>
     </div>
 
     <!-- 删除数据集弹窗 -->
     <div class="modal-overlay" id="modalDeleteDataset" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>删除数据集</span>
-                <button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>确定要删除数据集 “<span id="deleteDatasetName"></span>” 吗？此操作不可撤销。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelDeleteDataset">取消</button>
-                <button class="btn btn-danger" id="btnConfirmDeleteDataset">删除</button>
-            </div>
+            <div class="modal-header"><span>删除数据集</span><button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
+            <div class="modal-body"><p>确定要删除数据集 “<span id="deleteDatasetName"></span>” 吗？此操作不可撤销。</p></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelDeleteDataset">取消</button><button class="btn btn-danger" id="btnConfirmDeleteDataset">删除</button></div>
         </div>
     </div>
 
     <!-- 通用提示弹窗 -->
     <div class="modal-overlay" id="modalAlert" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span id="alertTitle">提示</span>
-                <button class="btn-icon btn-sm" id="btnCloseAlert" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
+            <div class="modal-header"><span id="alertTitle">提示</span><button class="btn-icon btn-sm" id="btnCloseAlert" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="alertBody"></div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btnConfirmAlert">确定</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnConfirmAlert">确定</button></div>
         </div>
     </div>
 
     <!-- 通用确认弹窗 -->
     <div class="modal-overlay" id="modalConfirmDialog" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span id="confirmDialogTitle">确认</span>
-                <button class="btn-icon btn-sm" id="btnCloseConfirmDialog" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
+            <div class="modal-header"><span id="confirmDialogTitle">确认</span><button class="btn-icon btn-sm" id="btnCloseConfirmDialog" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body" id="confirmDialogBody"></div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelConfirmDialog">取消</button>
-                <button class="btn btn-primary" id="btnConfirmConfirmDialog">确认</button>
-            </div>
+            <div class="modal-footer"><button class="btn" id="btnCancelConfirmDialog">取消</button><button class="btn btn-primary" id="btnConfirmConfirmDialog">确认</button></div>
         </div>
     </div>
 
     <!-- 清空数据集专用确认弹窗 -->
     <div class="modal-overlay" id="modalClearAll" style="display:none;">
         <div class="modal" style="max-width:430px;">
-            <div class="modal-header">
-                <span>⚠️ 清空确认</span>
-                <button class="btn-icon btn-sm" id="btnCloseClearAll" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="modal-body" id="clearAllBody">
-                <p>你现在确定，真的要清空当前数据集的所有数值吗？</p>
-                <p style="color: var(--danger-primary); font-weight:600; margin:10px 0;">点击“确认”后无法撤销！！</p>
-                <p>在倒计时 <strong id="clearAllCountdown">15</strong> 秒后，在以下输入框中输入 <strong>“我确认清空”</strong>，才能确认清空！！</p>
-                <input type="text" id="clearAllInput" placeholder="请输入：我确认清空" style="width:100%; margin-top:8px;">
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelClearAll">取消</button>
-                <button class="btn btn-danger" id="btnConfirmClearAll" disabled>确认</button>
-            </div>
+            <div class="modal-header"><span>⚠️ 清空确认</span><button class="btn-icon btn-sm" id="btnCloseClearAll" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body" id="clearAllBody"><p>你现在确定，真的要清空当前数据集的所有数值吗？</p><p style="color: var(--danger-primary); font-weight:600; margin:10px 0;">点击“确认”后无法撤销！！</p><p>在倒计时 <strong id="clearAllCountdown">15</strong> 秒后，在以下输入框中输入 <strong>“我确认清空”</strong>，才能确认清空！！</p><input type="text" id="clearAllInput" placeholder="请输入：我确认清空" style="width:100%; margin-top:8px;"></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelClearAll">取消</button><button class="btn btn-danger" id="btnConfirmClearAll" disabled>确认</button></div>
         </div>
     </div>
 
     <!-- 清空操作输入错误提示弹窗 -->
     <div class="modal-overlay" id="modalClearError" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>⚠️ 输入有误</span>
-                <button class="btn-icon btn-sm" id="btnCloseClearError" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>输入有误！正在取消清空操作，请等待 <strong id="errorCountdown">5</strong> 秒后自动关闭弹窗。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btnForceCloseError">立即关闭</button>
-            </div>
+            <div class="modal-header"><span>⚠️ 输入有误</span><button class="btn-icon btn-sm" id="btnCloseClearError" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body"><p>输入有误！正在取消清空操作，请等待 <strong id="errorCountdown">5</strong> 秒后自动关闭弹窗。</p></div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnForceCloseError">立即关闭</button></div>
         </div>
     </div>
 
     <!-- 删除数据集专用确认弹窗 -->
     <div class="modal-overlay" id="modalDeleteConfirm" style="display:none;">
         <div class="modal" style="max-width:430px;">
-            <div class="modal-header">
-                <span>⚠️ 删除确认</span>
-                <button class="btn-icon btn-sm" id="btnCloseDeleteConfirm" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="modal-body" id="deleteConfirmBody">
-                <p>你现在确定，真的要删除当前数据集 “<strong id="deleteConfirmDatasetName"></strong>” 吗？</p>
-                <p style="color: var(--danger-primary); font-weight:600; margin:10px 0;">点击“确认”后无法撤销！！</p>
-                <p>在倒计时 <strong id="deleteConfirmCountdown">15</strong> 秒后，在以下输入框中输入 <strong>“我确认删除”</strong>，才能确认删除！！</p>
-                <input type="text" id="deleteConfirmInput" placeholder="请输入：我确认删除" style="width:100%; margin-top:8px;">
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelDeleteConfirm">取消</button>
-                <button class="btn btn-danger" id="btnConfirmDeleteAction" disabled>确认</button>
-            </div>
+            <div class="modal-header"><span>⚠️ 删除确认</span><button class="btn-icon btn-sm" id="btnCloseDeleteConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body" id="deleteConfirmBody"><p>你现在确定，真的要删除当前数据集 “<strong id="deleteConfirmDatasetName"></strong>” 吗？</p><p style="color: var(--danger-primary); font-weight:600; margin:10px 0;">点击“确认”后无法撤销！！</p><p>在倒计时 <strong id="deleteConfirmCountdown">15</strong> 秒后，在以下输入框中输入 <strong>“我确认删除”</strong>，才能确认删除！！</p><input type="text" id="deleteConfirmInput" placeholder="请输入：我确认删除" style="width:100%; margin-top:8px;"></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelDeleteConfirm">取消</button><button class="btn btn-danger" id="btnConfirmDeleteAction" disabled>确认</button></div>
         </div>
     </div>
 
     <!-- 删除操作输入错误提示弹窗 -->
     <div class="modal-overlay" id="modalDeleteError" style="display:none;">
         <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <span>⚠️ 输入有误</span>
-                <button class="btn-icon btn-sm" id="btnCloseDeleteError" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>输入有误！正在取消删除操作，请等待 <strong id="deleteErrorCountdown">5</strong> 秒后自动关闭弹窗。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btnForceCloseDeleteError">立即关闭</button>
-            </div>
+            <div class="modal-header"><span>⚠️ 输入有误</span><button class="btn-icon btn-sm" id="btnCloseDeleteError" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body"><p>输入有误！正在取消删除操作，请等待 <strong id="deleteErrorCountdown">5</strong> 秒后自动关闭弹窗。</p></div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnForceCloseDeleteError">立即关闭</button></div>
         </div>
     </div>
 
     <!-- 导出文件名确认弹窗 -->
     <div class="modal-overlay" id="modalExport" style="display:none;">
         <div class="modal" style="max-width:420px;">
-            <div class="modal-header">
-                <span>📥 导出数据</span>
-                <button class="btn-icon btn-sm" id="btnCloseExport" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:0.85rem; margin-bottom:8px;">设置导出文件名：</p>
-                <input type="text" id="exportFileName" style="width:100%;" placeholder="文件名.json">
-                <p style="font-size:0.72rem; color:var(--text-tertiary); margin-top:6px;">默认格式：数据集名_日期.json</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="btnCancelExport">取消</button>
-                <button class="btn btn-primary" id="btnConfirmExport">导出</button>
-            </div>
+            <div class="modal-header"><span>📥 导出数据</span><button class="btn-icon btn-sm" id="btnCloseExport" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="modal-body"><p style="font-size:0.85rem; margin-bottom:8px;">设置导出文件名：</p><input type="text" id="exportFileName" style="width:100%;" placeholder="文件名.json"><p style="font-size:0.72rem; color:var(--text-tertiary); margin-top:6px;">默认格式：数据集名_日期.json</p></div>
+            <div class="modal-footer"><button class="btn" id="btnCancelExport">取消</button><button class="btn btn-primary" id="btnConfirmExport">导出</button></div>
         </div>
     </div>
 
-    <!-- 设置弹窗（覆盖界面80%） -->
+    <!-- 设置弹窗 -->
     <div class="modal-overlay" id="modalSettingsOverlay" style="display:none;">
         <div class="modal settings-modal" id="modalSettingsContent">
             <div class="modal-header">
@@ -482,21 +317,35 @@
                 <div class="settings-layout">
                     <nav class="settings-nav" id="settingsNav">
                         <button class="settings-nav-btn active" data-settings-panel="table">表格设置</button>
+                        <button class="settings-nav-btn" data-settings-panel="color">单元格颜色</button>
                     </nav>
                     <div class="settings-panels">
+                        <!-- 表格设置面板 -->
                         <div class="settings-panel-content active" id="settingsPanelTable">
                             <div class="panel-title">📏 表格设置</div>
                             <div class="form-group">
                                 <label>列宽 (30-60px)</label>
-                                <input type="range" id="colWidthSlider" min="30" max="60" value="36">
-                                <span class="range-value" id="colWidthValue">36</span>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="number" id="colWidthInput" min="30" max="60" value="36" step="1" style="width:70px;">
+                                    <input type="range" id="colWidthSlider" min="30" max="60" value="36" step="1" style="flex:1;">
+                                    <span class="range-value" id="colWidthValue" style="min-width:30px;">36</span>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>行高 (20-40px)</label>
-                                <input type="range" id="rowHeightSlider" min="20" max="40" value="24">
-                                <span class="range-value" id="rowHeightValue">24</span>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="number" id="rowHeightInput" min="20" max="40" value="24" step="1" style="width:70px;">
+                                    <input type="range" id="rowHeightSlider" min="20" max="40" value="24" step="1" style="flex:1;">
+                                    <span class="range-value" id="rowHeightValue" style="min-width:30px;">24</span>
+                                </div>
                             </div>
                             <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
+                        </div>
+
+                        <!-- 单元格颜色设置面板（已清空内容，仅保留标题） -->
+                        <div class="settings-panel-content" id="settingsPanelColor">
+                            <div class="panel-title">🎨 单元格颜色</div>
+                            <p class="input-hint">颜色自定义功能开发中，敬请期待。</p>
                         </div>
                     </div>
                 </div>

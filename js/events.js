@@ -1,4 +1,4 @@
-// events.js - 所有事件绑定（含新元素判空）
+// events.js - 所有事件绑定（清理版）
 
 function bindEvents() {
     // 主题与搜索
@@ -131,21 +131,54 @@ function bindEvents() {
     // 清除录入面板单元格
     dom.btnRecordClear.addEventListener('click', clearCellRecord);
 
-    // 列宽/行高滑块
-    if (dom.colWidthSlider) {
-        dom.colWidthSlider.addEventListener('input', function() {
-            var val = parseInt(this.value);
-            if (dom.colWidthValue) dom.colWidthValue.textContent = val;
-            applyStyle(val, parseInt(dom.rowHeightSlider ? dom.rowHeightSlider.value : 24));
+    // ========== 表格设置：输入框与滑块联动 ==========
+    (function() {
+        const colInput = document.getElementById('colWidthInput');
+        const colSlider = document.getElementById('colWidthSlider');
+        const colValue = document.getElementById('colWidthValue');
+        const rowInput = document.getElementById('rowHeightInput');
+        const rowSlider = document.getElementById('rowHeightSlider');
+        const rowValue = document.getElementById('rowHeightValue');
+
+        function applySizes() {
+            let col = parseInt(colInput.value) || 36;
+            let row = parseInt(rowInput.value) || 24;
+            col = Math.max(30, Math.min(60, col));
+            row = Math.max(20, Math.min(40, row));
+            colInput.value = col;
+            rowInput.value = row;
+            colSlider.value = col;
+            rowSlider.value = row;
+            if (colValue) colValue.textContent = col;
+            if (rowValue) rowValue.textContent = row;
+            applyStyle(col, row);
+        }
+
+        // 输入框事件：直接输入 + 滚轮
+        [colInput, rowInput].forEach(inp => {
+            inp.addEventListener('input', applySizes);
+            inp.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                let val = parseInt(this.value) || (this === colInput ? 36 : 24);
+                const min = this === colInput ? 30 : 20;
+                const max = this === colInput ? 60 : 40;
+                val += e.deltaY > 0 ? -1 : 1;
+                val = Math.max(min, Math.min(max, val));
+                this.value = val;
+                applySizes();
+            });
         });
-    }
-    if (dom.rowHeightSlider) {
-        dom.rowHeightSlider.addEventListener('input', function() {
-            var val = parseInt(this.value);
-            if (dom.rowHeightValue) dom.rowHeightValue.textContent = val;
-            applyStyle(parseInt(dom.colWidthSlider ? dom.colWidthSlider.value : 36), val);
+
+        // 滑块事件：拖动同步到输入框
+        colSlider.addEventListener('input', function() {
+            colInput.value = this.value;
+            applySizes();
         });
-    }
+        rowSlider.addEventListener('input', function() {
+            rowInput.value = this.value;
+            applySizes();
+        });
+    })();
 
     // 系统主题变化
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
@@ -161,70 +194,6 @@ function bindEvents() {
     enableTripleInputScroll(dom.inputVal1);
     enableTripleInputScroll(dom.inputVal2);
     enableTripleInputScroll(dom.inputVal3);
-
-    // 颜色设置事件
-    var colorKeys = ['hasValue', 'statusNone', 'statusPartial', 'statusFull'];
-    colorKeys.forEach(function(key) {
-        var cfg = COLOR_MAP[key];
-        if (dom[cfg.picker]) {
-            dom[cfg.picker].addEventListener('input', function(e) {
-                handleColorChange(key, e.target.value);
-            });
-        }
-        if (dom[cfg.input]) {
-            dom[cfg.input].addEventListener('change', function(e) {
-                handleColorChange(key, e.target.value.trim());
-            });
-        }
-        var modeBtns = document.querySelectorAll('.mode-toggle[data-target="' + key + '"]');
-        modeBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() { toggleColorMode(key); });
-        });
-    });
-
-    if (dom.btnResetColors) {
-        dom.btnResetColors.addEventListener('click', resetAllColors);
-    }
-
-    // 主题切换时同步颜色UI
-    var originalToggleTheme = toggleTheme;
-    toggleTheme = function() {
-        originalToggleTheme();
-        syncColorUI();
-    };
-
-    loadUserColors();
-    syncColorUI();
-
-    // 字体颜色事件
-    ['textLight', 'textDark'].forEach(function(key) {
-        var cfg = TEXT_COLOR_MAP[key];
-        if (dom[cfg.picker]) {
-            dom[cfg.picker].addEventListener('input', function(e) {
-                handleTextColorChange(key, e.target.value);
-            });
-        }
-        if (dom[cfg.input]) {
-            dom[cfg.input].addEventListener('change', function(e) {
-                handleTextColorChange(key, e.target.value.trim());
-            });
-        }
-        var modeBtns = document.querySelectorAll('.mode-toggle[data-target="' + key + '"]');
-        modeBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var inputEl = dom[cfg.input];
-                if (!inputEl) return;
-                var currentVal = inputEl.value.trim();
-                var isHex = currentVal.startsWith('#');
-                if (isHex) {
-                    inputEl.value = hexToRgbString(currentVal);
-                } else {
-                    var hex = rgbStringToHex(currentVal);
-                    if (hex) inputEl.value = hex;
-                }
-            });
-        });
-    });
 
     // 字号设置
     if (dom.fontSizeSlider) {
@@ -264,9 +233,6 @@ function bindEvents() {
     dom.exportFileName.addEventListener('keydown', function(e) { if (e.key === 'Enter') doExport(); });
 
     // 高亮更新
-    dom.inputSubCol.addEventListener('change', updateHighlightedCell);
-    dom.inputRow.addEventListener('change', updateHighlightedCell);
-    dom.inputGroup.addEventListener('change', updateHighlightedCell);
     [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup].forEach(function(select) {
         select.addEventListener('change', updateHighlightedCell);
     });
@@ -276,7 +242,7 @@ function bindEvents() {
         window.location.reload(true);
     });
 
-    // 设置弹窗（仅当元素存在时绑定）
+    // 设置弹窗（打开时不再初始化颜色面板）
     if (dom.btnOpenSettings) {
         dom.btnOpenSettings.addEventListener('click', function() {
             openModal(dom.modalSettingsOverlay);
