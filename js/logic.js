@@ -324,6 +324,9 @@ function switchDataset(key) {
     updateDatasetSelect();
     dom.inputHint.textContent = '已切换到数据集: ' + key;
     localStorage.setItem('smarttable_current_dataset', key);
+    if (typeof updateDatasetRemark === 'function') {
+        updateDatasetRemark();
+    }
 }
 
 function updateDatasetDisplay() { dom.datasetName.textContent = STORAGE_KEY_DATA; }
@@ -363,7 +366,20 @@ function doExport() {
     let fileName = dom.exportFileName.value.trim();
     if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
     if (!fileName.endsWith('.json')) fileName += '.json';
-    const dataStr = JSON.stringify(state.rows, null, 2);
+
+    // 获取当前实际备注（固定备注或自定义备注）
+    var remark = '';
+    if (dom.datasetRemarkDisplay.style.display !== 'none') {
+        remark = dom.datasetRemarkDisplay.textContent;
+    } else if (dom.datasetRemarkInput.style.display !== 'none') {
+        remark = dom.datasetRemarkInput.value.trim();
+    }
+
+    var exportObj = {
+        rows: state.rows,
+        remark: remark
+    };
+    const dataStr = JSON.stringify(exportObj, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -374,29 +390,58 @@ function doExport() {
     dom.inputHint.textContent = `已导出：${fileName}`;
 }
 
-function proceedImport(data, newKey) {
+function proceedImport(data, newKey, remark) {
     state.rows = data.map(row => ({ name: row.name, data: row.data.map(cell => normalizeCell(cell)) }));
     STORAGE_KEY_DATA = newKey;
     localStorage.setItem(newKey, JSON.stringify(state.rows));
     addDatasetKey(newKey);
+
+    // 保存或删除备注
+    var remarks = getDatasetRemarks();
+    if (remark) {
+        remarks[newKey] = remark;
+    } else {
+        delete remarks[newKey];
+    }
+    saveDatasetRemarks(remarks);
+
     updateDatasetDisplay(); updateDatasetSelect();
     renderAllTables();
     dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
     localStorage.setItem('smarttable_current_dataset', newKey);
+
+    // 刷新备注显示
+    if (typeof updateDatasetRemark === 'function') {
+        updateDatasetRemark();
+    }
 }
 
 function importData(file) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const data = JSON.parse(e.target.result);
-            if (Array.isArray(data) && data.length > 0 && data[0].name && Array.isArray(data[0].data)) {
+            const parsed = JSON.parse(e.target.result);
+            var rows, remark;
+            if (Array.isArray(parsed)) {
+                // 旧格式：纯行数组
+                rows = parsed;
+                remark = '';
+            } else if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
+                // 新格式：包含 rows 和 remark
+                rows = parsed.rows;
+                remark = parsed.remark || '';
+            } else {
+                showAlert('文件格式不正确。', '导入失败');
+                return;
+            }
+
+            if (rows.length > 0 && rows[0].name && Array.isArray(rows[0].data)) {
                 const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
                 const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
                 if (getDatasetList().includes(newKey)) {
-                    showConfirmDialog(`数据集 "${newKey}" 已存在，是否覆盖？`, () => proceedImport(data, newKey), null, '覆盖确认');
+                    showConfirmDialog(`数据集 "${newKey}" 已存在，是否覆盖？`, () => proceedImport(rows, newKey, remark), null, '覆盖确认');
                 } else {
-                    proceedImport(data, newKey);
+                    proceedImport(rows, newKey, remark);
                 }
             } else {
                 showAlert('文件格式不正确。', '导入失败');

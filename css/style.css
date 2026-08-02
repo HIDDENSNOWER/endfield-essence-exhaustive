@@ -683,3 +683,42 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     margin: 0;                      /* 无外边距 */
     align-self: center;             /* 水平居中 */
 }
+
+/* 备注显示区域 */
+.remark-display {
+    display: block;
+    padding: 5px 8px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;          /* 保留换行，自动换行 */
+    word-break: break-word;         /* 长单词/外文自动断行 */
+    max-height: calc(1.4em * 5 + 10px); /* 显示5行，1.4为行高，加内边距 */
+    overflow-y: auto;               /* 超出滚动 */
+    cursor: default;
+    min-height: 28px;
+}
+.remark-display.editable {
+    cursor: pointer;
+}
+.remark-display.editable:hover {
+    background: var(--bg-hover);
+}
+
+/* 备注编辑框 */
+#datasetRemarkInput {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    padding: 5px 8px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+}

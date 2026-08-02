@@ -201,6 +201,9 @@ var dom = {
     btnCloseSettingsModalBottom: document.getElementById('btnCloseSettingsModalBottom'),
     colWidthInput: document.getElementById('colWidthInput'),
     rowHeightInput: document.getElementById('rowHeightInput'),
+    datasetRemarkInput: document.getElementById('datasetRemarkInput'),
+    datasetRemarkDisplay: document.getElementById('datasetRemarkDisplay'),
+    remarkCharCount: document.getElementById('remarkCharCount'),
 };
 
 function normalizeCell(cell) {
@@ -366,4 +369,17 @@ function getCellNames(rowIdx, colIndex) {
         remaining -= subLen;
     }
     return { rowName: '?', groupName: '?', subName: '?' };
+}
+
+var REMARKS_STORAGE_KEY = 'smarttable_dataset_remarks';
+
+function getDatasetRemarks() {
+    try { return JSON.parse(localStorage.getItem(REMARKS_STORAGE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveDatasetRemarks(remarks) {
+    localStorage.setItem(REMARKS_STORAGE_KEY, JSON.stringify(remarks));
+}
+function getCurrentDatasetRemark() {
+    var remarks = getDatasetRemarks();
+    return remarks[STORAGE_KEY_DATA] || '';
 }
