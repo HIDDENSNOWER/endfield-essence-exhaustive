@@ -296,17 +296,33 @@ function removeDatasetKey(key) { const list = getDatasetList().filter(k => k !==
 function updateDatasetSelect() {
     const list = getDatasetList();
     if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
-    dom.datasetSelect.innerHTML = list.map(k => `<option value="${k}" ${k === STORAGE_KEY_DATA ? 'selected' : ''}>${k}</option>`).join('');
+    dom.datasetSelect.innerHTML = list.map(function(k) {
+        var label = k;
+        if (PROTECTED_DATASETS.indexOf(k) !== -1) label += ' 🔒';
+        return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
 }
 
 function switchDataset(key) {
     if (key === STORAGE_KEY_DATA) return;
+
     STORAGE_KEY_DATA = key;
     updateDatasetDisplay();
-    if (!loadData()) { state.rows = createInitialRows(); saveData(); }
+
+    // 特殊处理：切换到示例数据集时重新生成随机数据
+    if (key === '数据示例-表格样式参考') {
+        state.rows = createSampleRows();
+        saveData();               // 持久化新数据
+    } else {
+        if (!loadData()) {
+            state.rows = createInitialRows();
+            saveData();
+        }
+    }
+
     renderAllTables();
     updateDatasetSelect();
-    dom.inputHint.textContent = `已切换到数据集: ${key}`;
+    dom.inputHint.textContent = '已切换到数据集: ' + key;
     localStorage.setItem('smarttable_current_dataset', key);
 }
 
@@ -439,23 +455,34 @@ function confirmRenameDataset() {
 }
 
 function deleteDataset() {
-    const list = getDatasetList();
+    // 检查是否为系统数据集
+    if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
+        showAlert('系统数据集不可删除。', '操作阻止');
+        return;
+    }
+    var list = getDatasetList();
     if (list.length <= 1) { showAlert('至少需要保留一个数据集。', '无法删除'); return; }
     openDeleteConfirmModal();
 }
 
 function confirmDeleteDataset() {
-    const currentKey = STORAGE_KEY_DATA;
+    // 再次校验保护
+    if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
+        showAlert('系统数据集不可删除。', '操作阻止');
+        closeModal(dom.modalDeleteDataset);
+        return;
+    }
+    var currentKey = STORAGE_KEY_DATA;
     localStorage.removeItem(currentKey);
     removeDatasetKey(currentKey);
-    const remaining = getDatasetList();
-    const newKey = remaining[0] || DEFAULT_STORAGE_KEY;
+    var remaining = getDatasetList();
+    var newKey = remaining[0] || DEFAULT_STORAGE_KEY;
     STORAGE_KEY_DATA = newKey;
     if (!loadData()) { state.rows = createInitialRows(); saveData(); }
     updateDatasetDisplay(); updateDatasetSelect();
     renderAllTables();
     closeModal(dom.modalDeleteDataset);
-    dom.inputHint.textContent = `已删除，切换至: ${newKey}`;
+    dom.inputHint.textContent = '已删除，切换至: ' + newKey;
     localStorage.setItem('smarttable_current_dataset', newKey);
 }
 
@@ -463,6 +490,19 @@ function clearAllData() {
     state.rows.forEach(row => row.data = createEmptyRowData());
     renderAllTables(); saveData();
     dom.inputHint.textContent = '当前数据集已清空';
+}
+
+function updateDatasetSelect() {
+    var list = getDatasetList();
+    if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
+    dom.datasetSelect.innerHTML = list.map(function(k) {
+        return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + k + '</option>';
+    }).join('');
+
+    // 禁用/启用删除按钮
+    if (dom.btnDeleteDataset) {
+        dom.btnDeleteDataset.disabled = (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1);
+    }
 }
 
 // ========== 清空/删除确认弹窗 ==========
@@ -598,4 +638,33 @@ function getFilteredRows() {
             return String(c.v).toLowerCase().includes(q);
         });
     });
+}
+
+function createSampleRows() {
+    var rows = createInitialRows();
+    var rowCount = rows.length;
+    var colCount = rows[0].data.length;
+    var fillProbability = 0.4;
+    for (var r = 0; r < rowCount; r++) {
+        for (var c = 0; c < colCount; c++) {
+            if (Math.random() < fillProbability) {
+                var cell = rows[r].data[c];
+                if (Math.random() < 0.5) {
+                    var t = Math.floor(Math.random() * 3) + 1;
+                    var a = Math.floor(Math.random() * (t + 1));
+                    cell.t = t;
+                    cell.a = a;
+                    cell.v = '';
+                } else {
+                    var d1 = Math.floor(Math.random() * 6) + 1;
+                    var d2 = Math.floor(Math.random() * 6) + 1;
+                    var d3 = Math.floor(Math.random() * 3) + 1;
+                    cell.v = '' + d1 + d2 + d3;
+                    cell.t = 0;
+                    cell.a = 0;
+                }
+            }
+        }
+    }
+    return rows;
 }

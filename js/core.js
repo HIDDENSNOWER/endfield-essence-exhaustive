@@ -3,6 +3,7 @@ var STORAGE_KEY_THEME = 'smarttable_theme';
 var DEFAULT_STORAGE_KEY = '默认数据集';
 var DATASET_LIST_KEY = 'smarttable_dataset_list';
 var STORAGE_KEY_DATA = DEFAULT_STORAGE_KEY;
+var PROTECTED_DATASETS = ['默认数据集', '数据示例-表格样式参考'];
 
 var ALL_GROUPS = [
     { name: '强攻', sub: ['敏捷','力量','意志','智识','主能力'] },

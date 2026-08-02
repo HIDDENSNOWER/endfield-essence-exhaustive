@@ -19,12 +19,39 @@ function init() {
     if (lastKey && /^[a-zA-Z0-9_]+$/.test(lastKey)) {
         STORAGE_KEY_DATA = lastKey;
     }
+    
+    // 确保系统数据集存在
+    var list = getDatasetList();
+    var sampleKey = '数据示例-表格样式参考';
 
-    if (!getDatasetList().includes(DEFAULT_STORAGE_KEY)) {
+    // 默认数据集：如果不存在，异步加载基础数据
+    if (!list.includes(DEFAULT_STORAGE_KEY)) {
         addDatasetKey(DEFAULT_STORAGE_KEY);
-        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
+        fetch('data/default.json')
+            .then(function(response) {
+                if (response.ok) return response.json();
+                throw new Error('加载失败');
+            })
+            .then(function(data) {
+                localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(data));
+                // 如果当前选中的正是默认数据集，直接渲染
+                if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+                    state.rows = data.map(function(row) {
+                        return { name: row.name, data: row.data.map(normalizeCell) };
+                    });
+                    renderAllTables();
+                }
+            })
+            .catch(function() {
+                localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
+            });
     }
 
+    // 参考示例数据（保持原样）
+    if (!list.includes(sampleKey)) {
+        addDatasetKey(sampleKey);
+        localStorage.setItem(sampleKey, JSON.stringify(createSampleRows()));
+    }
     updateDatasetDisplay();
     updateDatasetSelect();
 
