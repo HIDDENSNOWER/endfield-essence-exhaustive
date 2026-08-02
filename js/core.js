@@ -1,4 +1,5 @@
-// core.js - 全局状态、常量、DOM引用与基础工具函数
+// core.js - 全局状态、常量、DOM引用与基础工具函数（修复版）
+
 var STORAGE_KEY_THEME = 'smarttable_theme';
 var DEFAULT_STORAGE_KEY = '默认数据集';
 var DATASET_LIST_KEY = 'smarttable_dataset_list';
@@ -134,7 +135,6 @@ var dom = {
     recordGroup: document.getElementById('recordGroup'),
     btnRecordApply: document.getElementById('btnRecordApply'),
     recordHint: document.getElementById('recordHint'),
-    settingsPanel: document.getElementById('settingsPanel'),
     colWidthSlider: document.getElementById('colWidthSlider'),
     rowHeightSlider: document.getElementById('rowHeightSlider'),
     colWidthValue: document.getElementById('colWidthValue'),
@@ -143,27 +143,6 @@ var dom = {
     btnRedo: document.getElementById('btnRedo'),
     btnRecordClear: document.getElementById('btnRecordClear'),
     btnClearCell: document.getElementById('btnClearCell'),
-    previewHasValue: document.getElementById('previewHasValue'),
-    pickerHasValue: document.getElementById('pickerHasValue'),
-    inputHasValue: document.getElementById('inputHasValue'),
-    previewStatusNone: document.getElementById('previewStatusNone'),
-    pickerStatusNone: document.getElementById('pickerStatusNone'),
-    inputStatusNone: document.getElementById('inputStatusNone'),
-    previewStatusPartial: document.getElementById('previewStatusPartial'),
-    pickerStatusPartial: document.getElementById('pickerStatusPartial'),
-    inputStatusPartial: document.getElementById('inputStatusPartial'),
-    previewStatusFull: document.getElementById('previewStatusFull'),
-    pickerStatusFull: document.getElementById('pickerStatusFull'),
-    inputStatusFull: document.getElementById('inputStatusFull'),
-    btnResetColors: document.getElementById('btnResetColors'),
-    previewTextLight: document.getElementById('previewTextLight'),
-    pickerTextLight: document.getElementById('pickerTextLight'),
-    inputTextLight: document.getElementById('inputTextLight'),
-    previewTextDark: document.getElementById('previewTextDark'),
-    pickerTextDark: document.getElementById('pickerTextDark'),
-    inputTextDark: document.getElementById('inputTextDark'),
-    fontSizeSlider: document.getElementById('fontSizeSlider'),
-    fontSizeValue: document.getElementById('fontSizeValue'),
     modalClearAll: document.getElementById('modalClearAll'),
     clearAllCountdown: document.getElementById('clearAllCountdown'),
     clearAllInput: document.getElementById('clearAllInput'),
@@ -175,7 +154,6 @@ var dom = {
     btnCloseClearError: document.getElementById('btnCloseClearError'),
     btnForceCloseError: document.getElementById('btnForceCloseError'),
     modalDeleteConfirm: document.getElementById('modalDeleteConfirm'),
-    deleteConfirmBody: document.getElementById('deleteConfirmBody'),
     deleteConfirmDatasetName: document.getElementById('deleteConfirmDatasetName'),
     deleteConfirmCountdown: document.getElementById('deleteConfirmCountdown'),
     deleteConfirmInput: document.getElementById('deleteConfirmInput'),
@@ -203,7 +181,7 @@ var dom = {
     rowHeightInput: document.getElementById('rowHeightInput'),
     datasetRemarkInput: document.getElementById('datasetRemarkInput'),
     datasetRemarkDisplay: document.getElementById('datasetRemarkDisplay'),
-    remarkCharCount: document.getElementById('remarkCharCount'),
+    remarkCharCount: document.getElementById('remarkCharCount')
 };
 
 function normalizeCell(cell) {
@@ -212,80 +190,8 @@ function normalizeCell(cell) {
     return defaultCellMeta();
 }
 
-var COLOR_MAP = {
-    hasValue: { var: '--has-value-bg', defaultLight: '#c8e6c9', defaultDark: '#2a4a35', preview: 'previewHasValue', picker: 'pickerHasValue', input: 'inputHasValue' },
-    statusNone: { var: '--status-none-bg', defaultLight: '#cfd8dc', defaultDark: '#3a3f47', preview: 'previewStatusNone', picker: 'pickerStatusNone', input: 'inputStatusNone' },
-    statusPartial: { var: '--status-partial-bg', defaultLight: '#ffe0b2', defaultDark: '#5a4a28', preview: 'previewStatusPartial', picker: 'pickerStatusPartial', input: 'inputStatusPartial' },
-    statusFull: { var: '--status-full-bg', defaultLight: '#a5d6a7', defaultDark: '#2e5a3b', preview: 'previewStatusFull', picker: 'pickerStatusFull', input: 'inputStatusFull' }
-};
-
-var TEXT_COLOR_MAP = {
-    textLight: { var: '--text-cell', defaultLight: '#1f2328', defaultDark: '#1f2328', preview: 'previewTextLight', picker: 'pickerTextLight', input: 'inputTextLight', theme: 'light' },
-    textDark:  { var: '--text-cell', defaultLight: '#e6edf3', defaultDark: '#e6edf3', preview: 'previewTextDark', picker: 'pickerTextDark', input: 'inputTextDark', theme: 'dark' }
-};
-
-var STORAGE_KEY_COLORS = 'smarttable_user_colors';
-var userColorData = { light: {}, dark: {} };
-
 // ========== 基础工具函数 ==========
 function isDarkTheme() { return state.theme === 'dark'; }
-
-function getDefaultColor(key) {
-    var cfg = COLOR_MAP[key];
-    return isDarkTheme() ? cfg.defaultDark : cfg.defaultLight;
-}
-
-function getCurrentCSSColor(varName) {
-    var rootStyle = getComputedStyle(document.documentElement);
-    return rootStyle.getPropertyValue(varName).trim() || '';
-}
-
-function hexToRgbString(hex) {
-    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex;
-    var r = parseInt(hex.slice(1,3), 16);
-    var g = parseInt(hex.slice(3,5), 16);
-    var b = parseInt(hex.slice(5,7), 16);
-    return 'rgb(' + r + ', ' + g + ', ' + b + ')';
-}
-
-function rgbStringToHex(rgb) {
-    var match = rgb.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
-    if (!match) return null;
-    function toHex(n) {
-        var num = parseInt(n);
-        if (num < 0 || num > 255) return null;
-        return num.toString(16).padStart(2, '0');
-    }
-    var r = toHex(match[1]), g = toHex(match[2]), b = toHex(match[3]);
-    return r && g && b ? '#' + r + g + b : null;
-}
-
-function saveUserColors() {
-    localStorage.setItem(STORAGE_KEY_COLORS, JSON.stringify(userColorData));
-}
-
-function loadUserColors() {
-    try {
-        var saved = localStorage.getItem(STORAGE_KEY_COLORS);
-        if (saved) userColorData = JSON.parse(saved);
-    } catch(e) {}
-}
-
-function applyColorVariable(key, value) {
-    document.documentElement.style.setProperty(COLOR_MAP[key].var, value);
-    var cfg = COLOR_MAP[key];
-    if (dom[cfg.preview]) dom[cfg.preview].style.backgroundColor = value;
-    if (dom[cfg.picker]) dom[cfg.picker].value = value;
-    if (dom[cfg.input]) dom[cfg.input].value = value;
-}
-
-function applyColorVariableForText(key, value) {
-    document.documentElement.style.setProperty('--text-cell', value);
-    var cfg = TEXT_COLOR_MAP[key];
-    if (dom[cfg.preview]) dom[cfg.preview].style.backgroundColor = value;
-    if (dom[cfg.picker]) dom[cfg.picker].value = value;
-    if (dom[cfg.input]) dom[cfg.input].value = value;
-}
 
 // ========== 下拉框填充与联动 ==========
 function populateDropdowns() {

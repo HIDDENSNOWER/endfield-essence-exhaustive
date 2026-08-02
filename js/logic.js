@@ -1,4 +1,4 @@
-// logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认
+// logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认（修复版）
 
 // ========== 数据管理面板应用 ==========
 function applyValue() {
@@ -294,13 +294,18 @@ function addDatasetKey(key) { const list = getDatasetList(); if (!list.includes(
 function removeDatasetKey(key) { const list = getDatasetList().filter(k => k !== key); saveDatasetList(list); }
 
 function updateDatasetSelect() {
-    const list = getDatasetList();
+    var list = getDatasetList();
     if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
     dom.datasetSelect.innerHTML = list.map(function(k) {
         var label = k;
         if (PROTECTED_DATASETS.indexOf(k) !== -1) label += ' 🔒';
         return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + label + '</option>';
     }).join('');
+
+    // 禁用/启用删除按钮（仅保留系统数据集时禁用）
+    if (dom.btnDeleteDataset) {
+        dom.btnDeleteDataset.disabled = (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1);
+    }
 }
 
 function switchDataset(key) {
@@ -309,15 +314,20 @@ function switchDataset(key) {
     STORAGE_KEY_DATA = key;
     updateDatasetDisplay();
 
-    // 特殊处理：切换到示例数据集时重新生成随机数据
-    if (key === '数据示例-表格样式参考') {
-        state.rows = createSampleRows();
-        saveData();               // 持久化新数据
-    } else {
-        if (!loadData()) {
-            state.rows = createInitialRows();
-            saveData();
+    // 如果目标数据集不存在，则根据类型创建
+    var list = getDatasetList();
+    if (!list.includes(key)) {
+        if (key === '数据示例-表格样式参考') {
+            localStorage.setItem(key, JSON.stringify(createSampleRows()));
+        } else {
+            localStorage.setItem(key, JSON.stringify(createInitialRows()));
         }
+        addDatasetKey(key);
+    }
+
+    if (!loadData()) {
+        state.rows = createInitialRows();
+        saveData();
     }
 
     renderAllTables();
@@ -367,7 +377,6 @@ function doExport() {
     if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
     if (!fileName.endsWith('.json')) fileName += '.json';
 
-    // 获取当前实际备注（固定备注或自定义备注）
     var remark = '';
     if (dom.datasetRemarkDisplay.style.display !== 'none') {
         remark = dom.datasetRemarkDisplay.textContent;
@@ -396,7 +405,6 @@ function proceedImport(data, newKey, remark) {
     localStorage.setItem(newKey, JSON.stringify(state.rows));
     addDatasetKey(newKey);
 
-    // 保存或删除备注
     var remarks = getDatasetRemarks();
     if (remark) {
         remarks[newKey] = remark;
@@ -410,7 +418,6 @@ function proceedImport(data, newKey, remark) {
     dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
     localStorage.setItem('smarttable_current_dataset', newKey);
 
-    // 刷新备注显示
     if (typeof updateDatasetRemark === 'function') {
         updateDatasetRemark();
     }
@@ -423,11 +430,9 @@ function importData(file) {
             const parsed = JSON.parse(e.target.result);
             var rows, remark;
             if (Array.isArray(parsed)) {
-                // 旧格式：纯行数组
                 rows = parsed;
                 remark = '';
             } else if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
-                // 新格式：包含 rows 和 remark
                 rows = parsed.rows;
                 remark = parsed.remark || '';
             } else {
@@ -500,7 +505,6 @@ function confirmRenameDataset() {
 }
 
 function deleteDataset() {
-    // 检查是否为系统数据集
     if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
         showAlert('系统数据集不可删除。', '操作阻止');
         return;
@@ -511,7 +515,6 @@ function deleteDataset() {
 }
 
 function confirmDeleteDataset() {
-    // 再次校验保护
     if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
         showAlert('系统数据集不可删除。', '操作阻止');
         closeModal(dom.modalDeleteDataset);
@@ -535,19 +538,6 @@ function clearAllData() {
     state.rows.forEach(row => row.data = createEmptyRowData());
     renderAllTables(); saveData();
     dom.inputHint.textContent = '当前数据集已清空';
-}
-
-function updateDatasetSelect() {
-    var list = getDatasetList();
-    if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
-    dom.datasetSelect.innerHTML = list.map(function(k) {
-        return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + k + '</option>';
-    }).join('');
-
-    // 禁用/启用删除按钮
-    if (dom.btnDeleteDataset) {
-        dom.btnDeleteDataset.disabled = (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1);
-    }
 }
 
 // ========== 清空/删除确认弹窗 ==========

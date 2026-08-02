@@ -1,4 +1,4 @@
-// events.js - 所有事件绑定（清理版）
+// events.js - 所有事件绑定（修复版）
 
 function bindEvents() {
     // 主题与搜索
@@ -195,11 +195,6 @@ function bindEvents() {
     enableTripleInputScroll(dom.inputVal2);
     enableTripleInputScroll(dom.inputVal3);
 
-    // 字号设置
-    if (dom.fontSizeSlider) {
-        dom.fontSizeSlider.addEventListener('input', applyFontStyle);
-    }
-
     // 清空确认弹窗
     dom.btnCancelClearAll.addEventListener('click', closeClearAllModal);
     dom.btnCloseClearAll.addEventListener('click', closeClearAllModal);
@@ -242,7 +237,7 @@ function bindEvents() {
         window.location.reload(true);
     });
 
-    // 设置弹窗（打开时不再初始化颜色面板）
+    // 设置弹窗
     if (dom.btnOpenSettings) {
         dom.btnOpenSettings.addEventListener('click', function() {
             openModal(dom.modalSettingsOverlay);
@@ -260,7 +255,7 @@ function bindEvents() {
         });
     }
 
-    // 设置弹窗内的导航切换（仅当元素存在时调用）
+    // 设置弹窗内的导航切换
     if (document.querySelector('.settings-nav-btn')) {
         initSettingsNav();
     }

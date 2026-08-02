@@ -1,4 +1,4 @@
-// ui.js - 表格渲染、统计面板、弹窗辅助、单元格提示栏
+// ui.js - 表格渲染、统计面板、弹窗辅助、单元格提示栏（修复版：无变动，与原始一致）
 
 // ========== 表格渲染 ==========
 function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
@@ -43,7 +43,6 @@ function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
         group.sub.forEach((subName, subIdx) => {
             const th = document.createElement('th');
             th.textContent = subName;
-            // 移除 th.style.width，因为现在由 colgroup 控制
             th.classList.add(globalIdx % 2 === 0 ? 'group-even' : 'group-odd');
             if (subIdx === group.sub.length - 1 && groupIdx < groups.length - 1) th.classList.add('border-group-right');
             row2.appendChild(th);

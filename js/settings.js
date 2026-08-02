@@ -1,4 +1,4 @@
-// settings.js - 主题切换、列宽行高、颜色字体设置、设置弹窗导航
+// settings.js - 主题切换、列宽行高、颜色恢复、设置弹窗导航
 
 // ========== 主题 ==========
 function applyTheme(theme) {
@@ -23,6 +23,40 @@ function loadTheme() {
     }
 }
 
+// ========== 颜色恢复 ==========
+var COLOR_MAP = {
+    hasValue:       { var: '--has-value-bg',       defaultLight: '#c8e6c9', defaultDark: '#2a4a35' },
+    statusNone:     { var: '--status-none-bg',     defaultLight: '#cfd8dc', defaultDark: '#3a3f47' },
+    statusPartial:  { var: '--status-partial-bg',  defaultLight: '#ffe0b2', defaultDark: '#5a4a28' },
+    statusFull:     { var: '--status-full-bg',     defaultLight: '#a5d6a7', defaultDark: '#2e5a3b' }
+};
+
+function getDefaultColor(key) {
+    var cfg = COLOR_MAP[key];
+    return isDarkTheme() ? cfg.defaultDark : cfg.defaultLight;
+}
+
+function applyStoredColors() {
+    try {
+        var raw = localStorage.getItem('smarttable_user_colors');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        var theme = isDarkTheme() ? 'dark' : 'light';
+        var colors = data[theme];
+        if (!colors) return;
+        Object.keys(COLOR_MAP).forEach(function(key) {
+            if (colors[key]) {
+                document.documentElement.style.setProperty(COLOR_MAP[key].var, colors[key]);
+            }
+        });
+    } catch(e) {}
+}
+
+function syncColorUI() {
+    applyStoredColors();
+    // 如果用户未自定义颜色，CSS 变量会使用 :root 中的默认值，因此无需额外操作
+}
+
 // ========== 列宽/行高设置 ==========
 function initSettings() {
     var savedStyle = localStorage.getItem('smarttable_style');
@@ -34,7 +68,6 @@ function initSettings() {
             if (p.rowHeight) rowHeight = p.rowHeight;
         } catch(e) {}
     }
-    // 设置输入框和滑块的初始值
     if (dom.colWidthInput) dom.colWidthInput.value = colWidth;
     if (dom.colWidthSlider) dom.colWidthSlider.value = colWidth;
     if (dom.rowHeightInput) dom.rowHeightInput.value = rowHeight;
@@ -45,108 +78,9 @@ function initSettings() {
 }
 
 function applyStyle(colWidth, rowHeight) {
-    // 更新 CSS 变量（保留，不影响直接操作）
     document.documentElement.style.setProperty('--col-width', colWidth + 'px');
     document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
     localStorage.setItem('smarttable_style', JSON.stringify({ colWidth: colWidth, rowHeight: rowHeight }));
-
-    // ★ 直接暴力设置所有数据单元格的宽度和高度
-    var allDataCells = document.querySelectorAll('table tbody td:not(:first-child)');
-    for (var i = 0; i < allDataCells.length; i++) {
-        allDataCells[i].style.width = colWidth + 'px';
-        allDataCells[i].style.height = rowHeight + 'px';
-        allDataCells[i].style.minWidth = colWidth + 'px';
-        allDataCells[i].style.maxWidth = colWidth + 'px';
-    }
-    // 同时设置表头子列单元格（第二行）
-    var allHeaderCells = document.querySelectorAll('table thead tr:nth-child(2) th');
-    for (var j = 0; j < allHeaderCells.length; j++) {
-        allHeaderCells[j].style.width = colWidth + 'px';
-        allHeaderCells[j].style.height = rowHeight + 'px';
-    }
-}
-
-// ========== 颜色/字体设置 ==========
-function syncColorUI() {
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    Object.keys(COLOR_MAP).forEach(function(key) {
-        var savedColor = userColorData[currentTheme] && userColorData[currentTheme][key];
-        var currentColor = savedColor || getDefaultColor(key);
-        applyColorVariable(key, currentColor);
-    });
-    var textKey = currentTheme === 'dark' ? 'textDark' : 'textLight';
-    var textColor = (userColorData[currentTheme] && userColorData[currentTheme][textKey]) || (currentTheme === 'dark' ? '#e6edf3' : '#1f2328');
-    applyColorVariableForText(textKey, textColor);
-    loadFontStyle();
-}
-
-function toggleColorMode(targetKey) {
-    var cfg = COLOR_MAP[targetKey];
-    var inputEl = dom[cfg.input];
-    if (!inputEl) return;
-    var currentVal = inputEl.value.trim();
-    var isHex = currentVal.startsWith('#');
-    if (isHex) {
-        inputEl.value = hexToRgbString(currentVal);
-    } else {
-        var hex = rgbStringToHex(currentVal);
-        if (hex) inputEl.value = hex;
-    }
-}
-
-function handleColorChange(key, newColor) {
-    var hex = newColor;
-    if (newColor.startsWith('rgb')) {
-        var converted = rgbStringToHex(newColor);
-        if (converted) hex = converted;
-    }
-    applyColorVariable(key, hex);
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
-    userColorData[currentTheme][key] = hex;
-    saveUserColors();
-}
-
-function resetAllColors() {
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    userColorData[currentTheme] = {};
-    saveUserColors();
-    syncColorUI();
-    showAlert('颜色已恢复为默认值', '设置已重置');
-}
-
-function handleTextColorChange(key, newColor) {
-    var hex = newColor;
-    if (newColor.startsWith('rgb')) {
-        var converted = rgbStringToHex(newColor);
-        if (converted) hex = converted;
-    }
-    applyColorVariableForText(key, hex);
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
-    userColorData[currentTheme][key] = hex;
-    saveUserColors();
-}
-
-function applyFontStyle() {
-    var root = document.documentElement;
-    if (!dom.fontSizeSlider) return;
-    var size = dom.fontSizeSlider.value + 'px';
-    root.style.setProperty('--cell-font-size', size);
-    if (dom.fontSizeValue) dom.fontSizeValue.textContent = dom.fontSizeSlider.value;
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    if (!userColorData[currentTheme]) userColorData[currentTheme] = {};
-    userColorData[currentTheme].fontSize = size;
-    saveUserColors();
-}
-
-function loadFontStyle() {
-    var currentTheme = isDarkTheme() ? 'dark' : 'light';
-    var saved = userColorData[currentTheme] || {};
-    var fontSize = saved.fontSize || '12px';
-    if (dom.fontSizeSlider) dom.fontSizeSlider.value = parseInt(fontSize);
-    if (dom.fontSizeValue) dom.fontSizeValue.textContent = parseInt(fontSize);
-    applyFontStyle();
 }
 
 // ========== 设置弹窗导航切换 ==========
