@@ -24,37 +24,22 @@ function init() {
     var list = getDatasetList();
     var sampleKey = '数据示例-表格样式参考';
 
-    // 确保默认数据集存在（异步加载）
-    if (!list.includes(DEFAULT_STORAGE_KEY)) {
-        addDatasetKey(DEFAULT_STORAGE_KEY);
-
-        // 加载远程基础数据
-        var base = location.href.replace(/\/[^/]*$/, '/'); // 当前页面所在目录
-        fetch(base + 'data/default.json', { cache: 'no-store' })
-            .then(function(response) {
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                return response.json();
-            })
-            .then(function(data) {
-                // 验证数据格式：必须是数组，且第一项包含 name 和 data
-                if (Array.isArray(data) && data.length > 0 && data[0].name && Array.isArray(data[0].data)) {
-                    localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(data));
-                    // 如果当前选中的正是默认数据集，直接渲染
-                    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
-                        state.rows = data.map(function(row) {
-                            return { name: row.name, data: row.data.map(normalizeCell) };
-                        });
-                        renderAllTables();
-                    }
-                } else {
-                    throw new Error('数据格式不正确');
-                }
-            })
-            .catch(function(error) {
-                console.warn('默认数据集加载失败，将使用空数据:', error.message);
-                localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
+    // 确保默认数据集存在（使用全局变量 DEFAULT_ROWS，无需 fetch）
+if (!list.includes(DEFAULT_STORAGE_KEY)) {
+    addDatasetKey(DEFAULT_STORAGE_KEY);
+    if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
+        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
+        if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+            state.rows = DEFAULT_ROWS.map(function(row) {
+                return { name: row.name, data: row.data.map(normalizeCell) };
             });
+            renderAllTables();
+        }
+    } else {
+        // 如果变量不存在（加载失败），降级为空数据集
+        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
     }
+}
 
     // 参考示例数据（保持原样）
     if (!list.includes(sampleKey)) {
