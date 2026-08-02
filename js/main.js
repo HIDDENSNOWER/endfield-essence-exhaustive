@@ -25,21 +25,21 @@ function init() {
     var sampleKey = '数据示例-表格样式参考';
 
     // 确保默认数据集存在（使用全局变量 DEFAULT_ROWS，无需 fetch）
-if (!list.includes(DEFAULT_STORAGE_KEY)) {
-    addDatasetKey(DEFAULT_STORAGE_KEY);
-    if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
-        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
-        if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
-            state.rows = DEFAULT_ROWS.map(function(row) {
-                return { name: row.name, data: row.data.map(normalizeCell) };
-            });
-            renderAllTables();
+    if (!list.includes(DEFAULT_STORAGE_KEY)) {
+        addDatasetKey(DEFAULT_STORAGE_KEY);
+        if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
+            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
+            if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+                state.rows = DEFAULT_ROWS.map(function(row) {
+                    return { name: row.name, data: row.data.map(normalizeCell) };
+                });
+                renderAllTables();
+            }
+        } else {
+            // 如果变量不存在（加载失败），降级为空数据集
+            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
         }
-    } else {
-        // 如果变量不存在（加载失败），降级为空数据集
-        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
     }
-}
 
     // 参考示例数据（保持原样）
     if (!list.includes(sampleKey)) {
