@@ -1,4 +1,4 @@
-// main.js - 应用入口
+// main.js - 应用入口（含默认数据集保护及 UI 更新）
 
 // ==================== 固定备注定义 ====================
 var DEFAULT_REMARK = "26.07.16 “向渊行”版本完整实装基质列表";
@@ -64,6 +64,11 @@ function init() {
     switchPanel('input');
     initSettings();
 
+    // 保存默认数据集的基准数据，用于保护已有数据不被减少
+    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+        saveBaseline();
+    }
+
     localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
     dom.inputHint.textContent = '准备就绪';
 
@@ -98,7 +103,7 @@ function init() {
     // 编辑框（textarea）事件
     dom.datasetRemarkInput.addEventListener('blur', saveRemarkFromInput);
     dom.datasetRemarkInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {   // Enter 保存，Shift+Enter 换行
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             this.blur();
         }
@@ -107,7 +112,7 @@ function init() {
         if (dom.remarkCharCount) {
             dom.remarkCharCount.textContent = this.value.length;
         }
-        autoResizeRemark();   // 新增：实时调整高度
+        autoResizeRemark();
     });
 
     // 点击显示区域进入编辑（仅普通数据集可编辑）
@@ -118,17 +123,12 @@ function init() {
         textarea.value = this.textContent;
         textarea.style.display = 'block';
         textarea.focus();
-        // 自动调整高度
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     });
 
-    function autoResizeRemark() {
-        var textarea = dom.datasetRemarkInput;
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
-
+    // 更新 UI 保护状态（默认数据集仅禁用清除功能，保留添加功能）
+    updateLockedUI();
 }
 
 // ==================== 备注处理函数 ====================
@@ -138,12 +138,10 @@ function updateDatasetRemark() {
     var display = dom.datasetRemarkDisplay;
     var charCount = dom.remarkCharCount;
 
-    // 重置状态
     display.classList.remove('editable');
     display.style.display = 'none';
     textarea.style.display = 'none';
 
-    // 固定备注（默认数据集 / 示例数据集）
     var fixedRemark = '';
     if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && typeof DEFAULT_REMARK !== 'undefined') {
         fixedRemark = DEFAULT_REMARK;
@@ -161,7 +159,6 @@ function updateDatasetRemark() {
         return;
     }
 
-    // 普通数据集：可编辑
     var storedRemark = getCurrentDatasetRemark();
     if (storedRemark) {
         display.textContent = storedRemark;
@@ -178,14 +175,10 @@ function updateDatasetRemark() {
 function saveRemarkFromInput() {
     var textarea = dom.datasetRemarkInput;
     var val = textarea.value.trim();
-
-    // 字数超限截断（maxlength 已限制，但以防万一）
     if (val.length > 550) {
         val = val.substring(0, 550);
         textarea.value = val;
     }
-
-    // 只有非系统数据集才保存
     if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY && STORAGE_KEY_DATA !== SAMPLE_DATASET_KEY) {
         var remarks = getDatasetRemarks();
         if (val) {
@@ -202,6 +195,29 @@ function autoResizeRemark() {
     var textarea = dom.datasetRemarkInput;
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// ==================== 数据集保护 UI 更新 ====================
+function updateLockedUI() {
+    var locked = (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY);
+    // 清除相关按钮禁用
+    dom.btnClearCell.disabled = locked;
+    dom.btnClearAll.disabled = locked;
+    dom.btnRecordClear.disabled = locked;
+
+    // “重置同步”按钮：仅在默认数据集时显示
+    if (dom.btnResetSync) {
+        dom.btnResetSync.style.display = locked ? '' : 'none';
+    }
+
+    // 提示文字
+    if (locked) {
+        dom.inputHint.textContent = '🔒 默认数据集已保护：可增加，不可减少或清除已有数据';
+        dom.recordHint.textContent = '🔒 可添加新条目或增加已有实装';
+    } else {
+        dom.inputHint.textContent = '准备就绪';
+        dom.recordHint.textContent = '';
+    }
 }
 
 init();

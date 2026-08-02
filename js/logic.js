@@ -1,4 +1,4 @@
-// logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认（修复版）
+// logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认（基于基准保护）
 
 // ========== 数据管理面板应用 ==========
 function applyValue() {
@@ -19,33 +19,47 @@ function applyValue() {
     const groupIdx = parseInt(dom.inputGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
     const colIndex = getColumnIndex(groupIdx, subIdx);
+
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-    if (cell.t > 0) {
-        if (cell.a >= cell.t) {
-            const groupName = ALL_GROUPS[groupIdx].name;
-            const rowName = ROW_NAMES[rowIdx];
-            const subName = ALL_GROUPS[groupIdx].sub[subIdx];
-            showFullAcquireModal(`当前重复词条组合（${rowName} - ${groupName} - ${subName}）已全部获取，请停止录入。`);
-            return;
-        }
-        cell.a += 1;
-        state.rows[rowIdx].data[colIndex] = cell;
-        renderAllTables(); saveData();
-        const groupName = ALL_GROUPS[groupIdx].name;
-        const rowName = ROW_NAMES[rowIdx];
-        const subName = ALL_GROUPS[groupIdx].sub[subIdx];
-        dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
-        resetTripleInputs();
-        return;
-    }
     const oldVal = cell.v;
     const newVal = combined;
     const groupName = ALL_GROUPS[groupIdx].name;
     const rowName = ROW_NAMES[rowIdx];
     const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+
+    // 如果已有实装基质，则增加获取数
+    if (cell.t > 0) {
+        if (cell.a >= cell.t) {
+            showFullAcquireModal(`当前重复词条组合（${rowName} - ${groupName} - ${subName}）已全部获取，请停止录入。`);
+            return;
+        }
+        const newCell = { v: cell.v, t: cell.t, a: cell.a + 1 };
+        if (!isCellOperationAllowed(rowIdx, colIndex, newCell)) {
+            showAlert('默认数据集保护：该操作会导致获取数低于基准。', '操作限制');
+            return;
+        }
+        cell.a += 1;
+        state.rows[rowIdx].data[colIndex] = cell;
+        renderAllTables(); saveData();
+        dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
+        resetTripleInputs();
+        return;
+    }
+
+    // 普通数值处理
     if (oldVal !== '' && parseTriple(oldVal) && parseTriple(newVal)) {
+        const tempNewCell = { v: String(newVal), t: cell.t, a: cell.a };
+        if (!isCellOperationAllowed(rowIdx, colIndex, tempNewCell)) {
+            showAlert('默认数据集保护：不能将原有数值更改为低于基准的值。', '操作限制');
+            return;
+        }
         showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName);
     } else {
+        const newCell = { v: String(newVal), t: cell.t, a: cell.a };
+        if (!isCellOperationAllowed(rowIdx, colIndex, newCell)) {
+            showAlert('默认数据集保护：不能覆盖或清除已有数值。', '操作限制');
+            return;
+        }
         cell.v = String(newVal);
         state.rows[rowIdx].data[colIndex] = cell;
         renderAllTables(); saveData();
@@ -108,7 +122,12 @@ function closeCompareModal() {
 
 function applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName) {
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-    cell.v = newVal === '' ? '' : String(newVal);
+    const newCell = { v: String(newVal), t: cell.t, a: cell.a };
+    if (!isCellOperationAllowed(rowIdx, colIndex, newCell)) {
+        showAlert('默认数据集保护：不能替换为低于基准的数据。', '操作限制');
+        return;
+    }
+    cell.v = String(newVal);
     state.rows[rowIdx].data[colIndex] = cell;
     renderAllTables(); saveData();
     dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
@@ -179,6 +198,23 @@ function applyRecord() {
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const oldCell = JSON.parse(JSON.stringify(cell));
+
+    let newCell;
+    if (cell.t === 0) {
+        if (cell.v !== '') {
+            newCell = { v: '', t: 1, a: 1 };
+        } else {
+            newCell = { v: '', t: 1, a: 0 };
+        }
+    } else {
+        newCell = { v: cell.v, t: cell.t + 1, a: cell.a };
+    }
+
+    if (!isCellOperationAllowed(rowIdx, colIndex, newCell)) {
+        showAlert('默认数据集保护：该录入会导致数据低于基准状态。', '操作限制');
+        return;
+    }
+
     if (cell.t === 0) {
         if (cell.v !== '') {
             cell.t = 1;
@@ -201,6 +237,45 @@ function applyRecord() {
     updateUndoRedoButtons();
 }
 
+// ========== 撤减实装基质（减少重复数） ==========
+function decrementRecord() {
+    const subIdx = parseInt(dom.recordSubCol.value);
+    const rowIdx = parseInt(dom.recordRow.value);
+    const groupIdx = parseInt(dom.recordGroup.value);
+    if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+    const colIndex = getColumnIndex(groupIdx, subIdx);
+    const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+
+    if (cell.t === 0) {
+        showAlert('当前单元格无实装基质记录，无法撤减。', '提示');
+        return;
+    }
+
+    const oldCell = JSON.parse(JSON.stringify(cell));
+    const newT = cell.t - 1;
+    const newA = Math.min(cell.a, newT);
+    const newV = (newT === 0) ? '' : cell.v;
+    const newCell = { v: newV, t: newT, a: newA };
+
+    if (!isCellOperationAllowed(rowIdx, colIndex, newCell)) {
+        showAlert('默认数据集保护：撤减后将低于基准数据，操作被阻止。', '操作限制');
+        return;
+    }
+
+    cell.t = newT;
+    cell.a = newA;
+    cell.v = newV;
+    state.rows[rowIdx].data[colIndex] = cell;
+    renderAllTables(); saveData();
+    pushHistory(rowIdx, colIndex, oldCell, JSON.parse(JSON.stringify(cell)));
+
+    const groupName = ALL_GROUPS[groupIdx].name;
+    const rowName = ROW_NAMES[rowIdx];
+    const subName = ALL_GROUPS[groupIdx].sub[subIdx];
+    dom.recordHint.textContent = `已撤减：${rowName} > ${groupName} > ${subName} (重复${oldCell.t} → ${cell.t}, 拥有${oldCell.a} → ${cell.a})`;
+    updateUndoRedoButtons();
+}
+
 // ========== 撤回/重做 ==========
 function pushHistory(rowIdx, colIndex, oldCell, newCell) {
     state.history = state.history.slice(0, state.historyIndex + 1);
@@ -216,6 +291,10 @@ function pushHistory(rowIdx, colIndex, oldCell, newCell) {
 function undo() {
     if (state.historyIndex < 0) return;
     const record = state.history[state.historyIndex];
+    if (!isCellOperationAllowed(record.rowIdx, record.colIndex, record.oldCell)) {
+        showAlert('该撤回操作会导致数据低于基准状态，已阻止。', '撤回限制');
+        return;
+    }
     state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.oldCell));
     state.historyIndex--;
     renderAllTables(); saveData();
@@ -230,6 +309,11 @@ function redo() {
     if (state.historyIndex >= state.history.length - 1) return;
     state.historyIndex++;
     const record = state.history[state.historyIndex];
+    if (!isCellOperationAllowed(record.rowIdx, record.colIndex, record.newCell)) {
+        showAlert('该重做操作会导致数据低于基准状态，已阻止。', '重做限制');
+        state.historyIndex--;
+        return;
+    }
     state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.newCell));
     renderAllTables(); saveData();
     updateUndoRedoButtons();
@@ -251,9 +335,14 @@ function clearCellRecord() {
     const groupIdx = parseInt(dom.recordGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
     const colIndex = getColumnIndex(groupIdx, subIdx);
+    const emptyCell = defaultCellMeta();
+    if (!isCellOperationAllowed(rowIdx, colIndex, emptyCell)) {
+        showAlert('默认数据集保护：不能清除已有数据。', '操作限制');
+        return;
+    }
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const oldCell = JSON.parse(JSON.stringify(cell));
-    state.rows[rowIdx].data[colIndex] = defaultCellMeta();
+    state.rows[rowIdx].data[colIndex] = emptyCell;
     renderAllTables(); saveData();
     const groupName = ALL_GROUPS[groupIdx].name;
     const rowName = ROW_NAMES[rowIdx];
@@ -269,15 +358,23 @@ function clearCurrentCell() {
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
-    if (cell.t > 0) {
-        showAlert('该单元格存在基质记录（重复数>0），无法清除数值。', '操作阻止');
+    // 如果是实装基质单元格，委托清除
+    if (cell.t > 0 && cell.v === '') {
+        clearCellRecord();
         return;
     }
-    if (cell.v === '') {
+    const emptyCell = { v: '', t: 0, a: 0 };
+    if (!isCellOperationAllowed(rowIdx, colIndex, emptyCell)) {
+        showAlert('默认数据集保护：不能清除已有数值。', '操作限制');
+        return;
+    }
+    if (cell.v === '' && cell.t === 0) {
         showAlert('当前单元格无数值，无需清除。', '提示');
         return;
     }
     cell.v = '';
+    cell.t = 0;
+    cell.a = 0;
     state.rows[rowIdx].data[colIndex] = cell;
     renderAllTables(); saveData();
     const groupName = ALL_GROUPS[groupIdx].name;
@@ -302,7 +399,6 @@ function updateDatasetSelect() {
         return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + label + '</option>';
     }).join('');
 
-    // 禁用/启用删除按钮（仅保留系统数据集时禁用）
     if (dom.btnDeleteDataset) {
         dom.btnDeleteDataset.disabled = (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1);
     }
@@ -314,10 +410,9 @@ function switchDataset(key) {
     STORAGE_KEY_DATA = key;
     updateDatasetDisplay();
 
-    // 如果目标数据集不存在，则根据类型创建
     var list = getDatasetList();
     if (!list.includes(key)) {
-        if (key === '数据示例-表格样式参考') {
+        if (key === SAMPLE_DATASET_KEY) {
             localStorage.setItem(key, JSON.stringify(createSampleRows()));
         } else {
             localStorage.setItem(key, JSON.stringify(createInitialRows()));
@@ -330,12 +425,19 @@ function switchDataset(key) {
         saveData();
     }
 
+    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && !baselineRows) {
+        saveBaseline();
+    }
+
     renderAllTables();
     updateDatasetSelect();
     dom.inputHint.textContent = '已切换到数据集: ' + key;
     localStorage.setItem('smarttable_current_dataset', key);
     if (typeof updateDatasetRemark === 'function') {
         updateDatasetRemark();
+    }
+    if (typeof updateLockedUI === 'function') {
+        updateLockedUI();
     }
 }
 
@@ -420,6 +522,9 @@ function proceedImport(data, newKey, remark) {
 
     if (typeof updateDatasetRemark === 'function') {
         updateDatasetRemark();
+    }
+    if (typeof updateLockedUI === 'function') {
+        updateLockedUI();
     }
 }
 
@@ -535,9 +640,53 @@ function confirmDeleteDataset() {
 }
 
 function clearAllData() {
+    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+        if (baselineRows) {
+            for (let r = 0; r < baselineRows.length; r++) {
+                for (let c = 0; c < baselineRows[r].data.length; c++) {
+                    if (baselineRows[r].data[c].v !== '' || baselineRows[r].data[c].t > 0) {
+                        showAlert('默认数据集包含初始数据，不能清空。', '操作限制');
+                        return;
+                    }
+                }
+            }
+        }
+    }
     state.rows.forEach(row => row.data = createEmptyRowData());
     renderAllTables(); saveData();
     dom.inputHint.textContent = '当前数据集已清空';
+}
+
+function resetDefaultDataset() {
+    if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) {
+        showAlert('当前不是默认数据集，无需重置。', '提示');
+        return;
+    }
+    if (typeof DEFAULT_ROWS === 'undefined' || !Array.isArray(DEFAULT_ROWS)) {
+        showAlert('默认数据模板缺失，无法重置。', '错误');
+        return;
+    }
+    showConfirmDialog(
+        '将默认数据集重置为初始数据，所有用户添加或修改的数据都将丢失，确定继续吗？',
+        function() {
+            // 执行重置
+            state.rows = DEFAULT_ROWS.map(function(row) {
+                return {
+                    name: row.name,
+                    data: row.data.map(normalizeCell)
+                };
+            });
+            saveData();                 // 保存到 localStorage
+            renderAllTables();
+            saveBaseline();             // 刷新基准
+            updateLockedUI();
+            dom.inputHint.textContent = '默认数据集已重置为初始数据。';
+        },
+        function() {
+            dom.inputHint.textContent = '已取消重置。';
+        },
+        '重置默认数据集'
+    );
 }
 
 // ========== 清空/删除确认弹窗 ==========

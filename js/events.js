@@ -35,6 +35,9 @@ function bindEvents() {
     dom.datasetSelect.addEventListener('change', function() {
         switchDataset(dom.datasetSelect.value);
     });
+    if (dom.btnResetSync) {
+        dom.btnResetSync.addEventListener('click', resetDefaultDataset);
+    }
     dom.btnExport.addEventListener('click', exportData);
     dom.btnImport.addEventListener('click', triggerImport);
     dom.importFile.addEventListener('change', function(e) {
@@ -130,6 +133,10 @@ function bindEvents() {
 
     // 清除录入面板单元格
     dom.btnRecordClear.addEventListener('click', clearCellRecord);
+    // 撤减按钮
+    if (dom.btnRecordDecrement) {
+        dom.btnRecordDecrement.addEventListener('click', decrementRecord);
+    }
 
     // ========== 表格设置：输入框与滑块联动 ==========
     (function() {

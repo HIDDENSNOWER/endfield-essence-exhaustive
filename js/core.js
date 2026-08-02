@@ -1,4 +1,4 @@
-// core.js - 全局状态、常量、DOM引用与基础工具函数（修复版）
+// core.js - 全局状态、常量、DOM引用与基础工具函数（含默认数据集保护）
 
 var STORAGE_KEY_THEME = 'smarttable_theme';
 var DEFAULT_STORAGE_KEY = '默认数据集';
@@ -53,6 +53,9 @@ var deleteErrorTimer = null;
 var highlightedCellElement = null;
 var statsSortBy = 'totalMatrix';
 var statsSortOrder = 'desc';
+
+// 默认数据集保护基准数据（仅对默认数据集记录初始状态，用于防止已有数据被删减）
+var baselineRows = null;
 
 var dom = {
     tableHead1: document.getElementById('tableHead1'),
@@ -181,7 +184,9 @@ var dom = {
     rowHeightInput: document.getElementById('rowHeightInput'),
     datasetRemarkInput: document.getElementById('datasetRemarkInput'),
     datasetRemarkDisplay: document.getElementById('datasetRemarkDisplay'),
-    remarkCharCount: document.getElementById('remarkCharCount')
+    remarkCharCount: document.getElementById('remarkCharCount'),
+    btnResetSync: document.getElementById('btnResetSync'),
+    btnRecordDecrement: document.getElementById('btnRecordDecrement'),
 };
 
 function normalizeCell(cell) {
@@ -288,4 +293,39 @@ function saveDatasetRemarks(remarks) {
 function getCurrentDatasetRemark() {
     var remarks = getDatasetRemarks();
     return remarks[STORAGE_KEY_DATA] || '';
+}
+
+// ========== 默认数据集保护 ==========
+function saveBaseline() {
+    if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) return;
+    if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
+        baselineRows = DEFAULT_ROWS.map(function(row) {
+            return {
+                name: row.name,
+                data: row.data.map(normalizeCell)
+            };
+        });
+    } else {
+        // 极端回退：使用当前状态（一般为空）
+        baselineRows = JSON.parse(JSON.stringify(state.rows));
+    }
+}
+
+function isCellOperationAllowed(rowIdx, colIndex, newCell) {
+    if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) return true;
+    if (!baselineRows) return true;
+    var baseCell = baselineRows[rowIdx].data[colIndex];
+    // 检查数值 v：不允许变为空或不同值（若原基准有值）
+    if (baseCell.v !== '') {
+        if (newCell.v !== baseCell.v) return false;
+    }
+    // 检查重复数 t：不允许减少
+    if (baseCell.t > 0) {
+        if (newCell.t < baseCell.t) return false;
+    }
+    // 检查获取数 a：不允许减少
+    if (baseCell.a > 0) {
+        if (newCell.a < baseCell.a) return false;
+    }
+    return true;
 }
