@@ -29,7 +29,8 @@ function init() {
         addDatasetKey(DEFAULT_STORAGE_KEY);
 
         // 加载远程基础数据
-        fetch('data/default.json', { cache: 'no-store' })
+        var base = location.href.replace(/\/[^/]*$/, '/'); // 当前页面所在目录
+        fetch(base + 'data/default.json', { cache: 'no-store' })
             .then(function(response) {
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 return response.json();
