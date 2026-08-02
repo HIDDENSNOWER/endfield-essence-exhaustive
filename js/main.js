@@ -19,7 +19,7 @@ function init() {
     if (lastKey && /^[a-zA-Z0-9_]+$/.test(lastKey)) {
         STORAGE_KEY_DATA = lastKey;
     }
-    
+
     // 确保系统数据集存在
     var list = getDatasetList();
     var sampleKey = '数据示例-表格样式参考';
@@ -27,7 +27,7 @@ function init() {
     // 默认数据集：如果不存在，异步加载基础数据
     if (!list.includes(DEFAULT_STORAGE_KEY)) {
         addDatasetKey(DEFAULT_STORAGE_KEY);
-        fetch('data/default.json')
+        fetch('data/default.json', { cache: 'no-store' })
             .then(function(response) {
                 if (response.ok) return response.json();
                 throw new Error('加载失败');
