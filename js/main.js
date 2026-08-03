@@ -6,6 +6,7 @@ var SAMPLE_DATASET_KEY = '数据示例-表格样式参考';
 var SAMPLE_REMARK = "1-数据表单元格 数据填充状态预览\n2-每次重新进入时随机刷新填充效果，仅供效果参考";
 
 function switchPanel(panelName) {
+    if (state.leftPanel !== 'table') return; // 非数据表视图时不允许切换右侧面板
     state.activePanel = panelName;
     dom.sidebarBtns.forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.panel === panelName);
@@ -15,6 +16,35 @@ function switchPanel(panelName) {
     dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
     if (panelName === 'stats') renderStats();
     updateHighlightedCell();
+}
+
+// 左侧面板切换
+function switchLeftPanel(panelName) {
+    state.leftPanel = panelName;
+    // 更新按钮激活样式
+    dom.leftSidebarBtns.forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.leftPanel === panelName);
+    });
+
+    // 控制各区域的显示/隐藏
+    var tableArea = document.getElementById('tableArea');
+    var rightSidebar = document.getElementById('sidebar');
+    var panelContainer = document.getElementById('panelContainer');
+    var emptyPage = document.getElementById('emptyPage');
+
+    if (panelName === 'table') {
+        tableArea.style.display = '';
+        rightSidebar.style.display = '';
+        panelContainer.style.display = '';
+        emptyPage.style.display = 'none';
+        // 恢复之前的面板（input/record/stats）
+        switchPanel(state.activePanel);
+    } else if (panelName === 'empty') {
+        tableArea.style.display = 'none';
+        rightSidebar.style.display = 'none';
+        panelContainer.style.display = 'none';
+        emptyPage.style.display = 'flex';
+    }
 }
 
 function init() {
@@ -125,6 +155,13 @@ function init() {
         textarea.focus();
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
+    });
+
+    // 左侧侧边栏按钮点击
+    dom.leftSidebarBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            switchLeftPanel(this.dataset.leftPanel);
+        });
     });
 
     // 更新 UI 保护状态（默认数据集仅禁用清除功能，保留添加功能）

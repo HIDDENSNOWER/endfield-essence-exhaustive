@@ -42,7 +42,8 @@ var state = {
     theme: 'light',
     activePanel: 'input',
     history: [],
-    historyIndex: -1
+    historyIndex: -1,
+    leftPanel: 'table',   // 当前左侧面板：'table' 或 'empty'
 };
 var pendingApply = null;
 var confirmCallback = null;
@@ -187,6 +188,9 @@ var dom = {
     remarkCharCount: document.getElementById('remarkCharCount'),
     btnResetSync: document.getElementById('btnResetSync'),
     btnRecordDecrement: document.getElementById('btnRecordDecrement'),
+    leftSidebar: document.getElementById('leftSidebar'),
+    leftSidebarBtns: document.querySelectorAll('#leftSidebar .sidebar-btn'),
+    emptyPage: document.getElementById('emptyPage'),
 };
 
 function normalizeCell(cell) {

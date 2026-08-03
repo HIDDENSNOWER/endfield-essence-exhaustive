@@ -56,6 +56,25 @@
 
     <!-- 主布局 -->
     <div class="main-layout">
+        <!-- 左侧侧边栏 -->
+        <nav class="sidebar left-sidebar" id="leftSidebar">
+            <button class="sidebar-btn active" data-left-panel="table" title="数据表">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+            </button>
+            <button class="sidebar-btn" data-left-panel="empty" title="空白页">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+            </button>
+        </nav>
+
+        <!-- 表格区 -->
         <div class="table-area" id="tableArea">
             <div id="cellTooltip" class="cell-tooltip">鼠标悬停单元格查看详情</div>
             <div class="table-section" id="section1">
@@ -82,6 +101,7 @@
             </div>
         </div>
 
+        <!-- 右侧侧边栏 -->
         <nav class="sidebar" id="sidebar">
             <button class="sidebar-btn active" data-panel="input" title="数据管理">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -106,6 +126,7 @@
             </button>
         </nav>
 
+        <!-- 右侧面板容器 -->
         <div class="panel-container" id="panelContainer">
             <aside class="input-panel active-panel" id="inputPanel">
                 <div class="panel-title">📝 数据管理</div>
@@ -114,16 +135,16 @@
                     <span class="dataset-name" id="datasetName">默认数据集</span>
                 </div>
                 <div class="form-group">
-                    <label>切换数据集</label>
-                    <select id="datasetSelect"></select>
+                    <label for="datasetSelect">切换数据集</label>
+                    <select id="datasetSelect" title="切换数据集"></select>
                 </div>
 
                 <!-- 智能备注区域 -->
                 <div class="form-group">
                     <label>备注</label>
                     <div id="remarkContainer">
-                        <textarea id="datasetRemarkInput" 
-                        placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
+                        <textarea id="datasetRemarkInput"
+                            placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
                             style="width:100%; resize: none; display:none;"></textarea>
                         <span id="datasetRemarkDisplay" class="remark-display" style="display:none;"></span>
                         <div class="input-hint"><span id="remarkCharCount">0</span>/550</div>
@@ -138,27 +159,28 @@
                     <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
                 </div>
                 <button class="btn btn-sm btn-block" id="btnResetSync">重置同步</button>
+
                 <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
                 <div class="form-group">
-                    <label>主属性</label>
+                    <label for="inputSubCol">主属性</label>
                     <div class="select-input-row">
-                        <select id="inputSubCol"></select>
+                        <select id="inputSubCol" title="主属性选择"></select>
                         <input type="text" class="triple-input" id="inputVal1" placeholder="1" maxlength="1"
                             inputmode="numeric">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>副属性</label>
+                    <label for="inputRow">副属性</label>
                     <div class="select-input-row">
-                        <select id="inputRow"></select>
+                        <select id="inputRow" title="副属性选择"></select>
                         <input type="text" class="triple-input" id="inputVal2" placeholder="1" maxlength="1"
                             inputmode="numeric">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>词条</label>
+                    <label for="inputGroup">词条</label>
                     <div class="select-input-row">
-                        <select id="inputGroup"></select>
+                        <select id="inputGroup" title="词条选择"></select>
                         <input type="text" class="triple-input" id="inputVal3" placeholder="1" maxlength="1"
                             inputmode="numeric">
                     </div>
@@ -178,16 +200,16 @@
             <aside class="record-panel" id="recordPanel">
                 <div class="panel-title">📥 录入面板</div>
                 <div class="form-group">
-                    <label>主属性</label>
-                    <select id="recordSubCol"></select>
+                    <label for="recordSubCol">主属性</label>
+                    <select id="recordSubCol" title="录入主属性"></select>
                 </div>
                 <div class="form-group">
-                    <label>副属性</label>
-                    <select id="recordRow"></select>
+                    <label for="recordRow">副属性</label>
+                    <select id="recordRow" title="录入副属性"></select>
                 </div>
                 <div class="form-group">
-                    <label>词条</label>
-                    <select id="recordGroup"></select>
+                    <label for="recordGroup">词条</label>
+                    <select id="recordGroup" title="录入词条"></select>
                 </div>
                 <div class="action-buttons" style="margin-bottom: 8px;">
                     <button class="btn btn-sm" id="btnUndo" title="撤回" disabled>撤回</button>
@@ -198,6 +220,16 @@
                 <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
                 <p class="input-hint" id="recordHint"></p>
             </aside>
+        </div>
+
+        <!-- 空页面容器 -->
+        <div class="empty-page" id="emptyPage" style="display:none;">
+            <div class="empty-page-content">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <p>空页面</p>
+            </div>
         </div>
     </div>
 
@@ -475,6 +507,13 @@
                                     <span class="range-value" id="rowHeightValue" style="min-width:30px;">24</span>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label>表格底色</label>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="color" id="tableBgColor" value="#f8fafc" title="选择表格底色">
+                                    <span class="range-value" id="tableBgColorValue">#f8fafc</span>
+                                </div>
+                            </div>
                             <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
                         </div>
                         <!-- 单元格颜色设置面板 -->
@@ -553,15 +592,16 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <script src="data/default.js"></script>
-        <script src="js/core.js"></script>
-        <script src="js/settings.js"></script>
-        <script src="js/color-preview.js"></script>
-        <script src="js/ui.js"></script>
-        <script src="js/logic.js"></script>
-        <script src="js/events.js"></script>
-        <script src="js/main.js"></script>
+    <script src="data/default.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/color-preview.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/logic.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>

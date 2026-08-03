@@ -176,6 +176,32 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
     padding: 8px 0; flex-shrink: 0;
     position: relative; z-index: 10;
 }
+/* ========== 左侧侧边栏 ========== */
+.left-sidebar {
+    border-left: none;
+    border-right: 1px solid var(--border-default);
+}
+
+/* ========== 空页面 ========== */
+.empty-page {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-secondary);
+}
+
+.empty-page-content {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+
+.empty-page-content p {
+    margin-top: 16px;
+    font-size: 1rem;
+}
 .sidebar-btn {
     width: 40px; height: 40px; border-radius: var(--radius-md);
     border: 1px solid transparent; background: transparent;
