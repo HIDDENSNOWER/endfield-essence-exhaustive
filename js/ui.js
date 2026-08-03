@@ -13,11 +13,11 @@ function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
     var colName = document.createElement('col');
     colName.style.width = 'var(--name-col-width)';
     colgroup.appendChild(colName);
-    // 数据列
+    // 创建数据列时
     for (var i = 0; i < totalCols; i++) {
         var col = document.createElement('col');
-        col.className = 'data-col';                     // 关键类名
-        col.style.width = 'var(--col-width)';          // 初始值
+        col.className = 'data-col';
+        col.style.width = '36px';   // 初始默认值，之后 applyStyle 会覆盖
         colgroup.appendChild(col);
     }
 

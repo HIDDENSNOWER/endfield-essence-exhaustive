@@ -78,25 +78,29 @@ function initSettings() {
 }
 
 function applyStyle(colWidth, rowHeight) {
+    // 1. 更新 CSS 变量（供其他样式使用）
     document.documentElement.style.setProperty('--col-width', colWidth + 'px');
     document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
     localStorage.setItem('smarttable_style', JSON.stringify({ colWidth: colWidth, rowHeight: rowHeight }));
 
-    // 设置列宽：直接修改 <col> 元素宽度 + 强制内联样式备份
+    // 2. 直接设置所有数据列的 <col> 宽度（立即生效）
     var dataCols = document.querySelectorAll('col.data-col');
     for (var i = 0; i < dataCols.length; i++) {
         dataCols[i].style.width = colWidth + 'px';
     }
 
-    // 设置行高：直接设置表头子行及所有数据单元格高度
-    var allCells = document.querySelectorAll('table thead tr:nth-child(2) th, table tbody td');
-    for (var j = 0; j < allCells.length; j++) {
-        allCells[j].style.height = rowHeight + 'px';
+    // 3. 强制所有数据单元格和表头子行为指定高度
+    var cells = document.querySelectorAll('table tbody td, table thead tr:nth-child(2) th');
+    for (var j = 0; j < cells.length; j++) {
+        cells[j].style.height = rowHeight + 'px';
     }
-    // 单独处理数据单元格的宽度，确保小屏幕下也不变形
+
+    // 4. 数据单元格宽度也强制同步（保险）
     var dataCells = document.querySelectorAll('table tbody td:not(:first-child)');
     for (var k = 0; k < dataCells.length; k++) {
         dataCells[k].style.width = colWidth + 'px';
+        dataCells[k].style.minWidth = colWidth + 'px';
+        dataCells[k].style.maxWidth = colWidth + 'px';
     }
 }
 

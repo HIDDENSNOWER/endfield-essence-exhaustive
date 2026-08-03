@@ -425,6 +425,15 @@ function switchDataset(key) {
         saveData();
     }
 
+    // ===== 新增：如果是示例数据集，重新生成随机数据 =====
+    if (key === SAMPLE_DATASET_KEY) {
+        state.rows = createSampleRows();
+        renderAllTables();
+        // 可选：是否保存随机数据到 localStorage
+        // localStorage.setItem(SAMPLE_DATASET_KEY, JSON.stringify(state.rows));
+    }
+    // ===================================================
+
     if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && !baselineRows) {
         saveBaseline();
     }

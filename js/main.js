@@ -1,9 +1,9 @@
 // main.js - 应用入口（含默认数据集保护及 UI 更新）
 
 // ==================== 固定备注定义 ====================
-var DEFAULT_REMARK = "26.07.16 “向渊行”版本完整实装基质列表";
+var DEFAULT_REMARK = "1-26.07.16 “向渊行”版本完整实装基质列表\n2-“用户新建数据集默认模板”";
 var SAMPLE_DATASET_KEY = '数据示例-表格样式参考';
-var SAMPLE_REMARK = '表格样式参考示例数据，每次切换自动随机刷新。';
+var SAMPLE_REMARK = "1-数据表单元格 数据填充状态预览\n2-每次重新进入时随机刷新填充效果，仅供效果参考";
 
 function switchPanel(panelName) {
     state.activePanel = panelName;

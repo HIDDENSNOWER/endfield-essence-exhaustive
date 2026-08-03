@@ -133,7 +133,7 @@ table {
     font-size: 0.72rem;
     white-space: nowrap;
     width: auto;
-    table-layout: fixed;   /* 新增：必须固定布局，列宽才能由 <col> 控制 */
+    table-layout: fixed;   /* 新增：固定布局，列宽由 <col> 决定 */
 }
 thead th, tbody td {
     padding: 0 2px; border: 1px solid var(--border-muted);
