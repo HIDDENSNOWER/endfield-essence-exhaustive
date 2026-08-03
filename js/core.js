@@ -44,6 +44,7 @@ var state = {
     history: [],
     historyIndex: -1,
     leftPanel: 'table',   // 当前左侧面板：'table' 或 'empty'
+    rightPanelCollapsed: false,
 };
 var pendingApply = null;
 var confirmCallback = null;
@@ -191,6 +192,9 @@ var dom = {
     leftSidebar: document.getElementById('leftSidebar'),
     leftSidebarBtns: document.querySelectorAll('#leftSidebar .sidebar-btn'),
     emptyPage: document.getElementById('emptyPage'),
+    btnToggleRightPanel: document.getElementById('btnToggleRightPanel'),
+    iconPanelCollapse: document.getElementById('icon-panel-collapse'),
+    iconPanelExpand: document.getElementById('icon-panel-expand'),
 };
 
 function normalizeCell(cell) {

@@ -749,3 +749,10 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-primary);
     font-family: inherit;
 }
+/* 右侧面板折叠系统 */
+.main-layout.right-collapsed .panel-container {
+    display: none;
+}
+.main-layout.right-collapsed #sidebar .sidebar-btn:not(#btnToggleRightPanel) {
+    display: none;
+}

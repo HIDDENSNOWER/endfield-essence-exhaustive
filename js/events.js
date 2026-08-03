@@ -266,4 +266,25 @@ function bindEvents() {
     if (document.querySelector('.settings-nav-btn')) {
         initSettingsNav();
     }
+    // 右侧面板折叠/展开
+    if (dom.btnToggleRightPanel) {
+        dom.btnToggleRightPanel.addEventListener('click', function() {
+            state.rightPanelCollapsed = !state.rightPanelCollapsed;
+            var layout = document.querySelector('.main-layout');
+            var collapseIcon = document.getElementById('icon-panel-collapse');
+            var expandIcon = document.getElementById('icon-panel-expand');
+            if (state.rightPanelCollapsed) {
+                layout.classList.add('right-collapsed');
+                collapseIcon.style.display = 'none';
+                expandIcon.style.display = 'inline';
+                this.title = '展开面板';
+            } else {
+                layout.classList.remove('right-collapsed');
+                collapseIcon.style.display = 'inline';
+                expandIcon.style.display = 'none';
+                this.title = '折叠面板';
+            }
+            localStorage.setItem('smarttable_right_collapsed', state.rightPanelCollapsed ? '1' : '0');
+        });
+    }
 }

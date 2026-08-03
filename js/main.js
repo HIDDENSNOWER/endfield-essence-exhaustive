@@ -257,4 +257,20 @@ function updateLockedUI() {
     }
 }
 
+// 恢复右侧面板折叠状态
+var savedCollapsed = localStorage.getItem('smarttable_right_collapsed');
+var collapseIcon = document.getElementById('icon-panel-collapse');
+var expandIcon = document.getElementById('icon-panel-expand');
+if (savedCollapsed === '1') {
+    state.rightPanelCollapsed = true;
+    document.querySelector('.main-layout').classList.add('right-collapsed');
+    if (collapseIcon) collapseIcon.style.display = 'none';
+    if (expandIcon) expandIcon.style.display = 'inline';
+    if (dom.btnToggleRightPanel) dom.btnToggleRightPanel.title = '展开面板';
+} else {
+    if (collapseIcon) collapseIcon.style.display = 'inline';
+    if (expandIcon) expandIcon.style.display = 'none';
+    if (dom.btnToggleRightPanel) dom.btnToggleRightPanel.title = '折叠面板';
+}
+
 init();
