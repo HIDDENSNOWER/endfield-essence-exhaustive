@@ -756,3 +756,18 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 .main-layout.right-collapsed #sidebar .sidebar-btn:not(#btnToggleRightPanel) {
     display: none;
 }
+
+/* ========== 版本信息底栏 ========== */
+.app-footer {
+    height: 28px;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;          /* 防止被压缩 */
+    z-index: 10;             /* 确保在其他内容之上，但低于模态框 */
+    user-select: none;       /* 禁止选中 */
+}
