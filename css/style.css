@@ -771,3 +771,56 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     z-index: 10;             /* 确保在其他内容之上，但低于模态框 */
     user-select: none;       /* 禁止选中 */
 }
+
+/* 底栏版本按钮 */
+.footer-version-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+.footer-version-btn:hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+}
+
+/* 版本信息弹窗内容排版 */
+.version-info-content {
+    padding: 8px 0;
+}
+.version-title-lg {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+}
+.version-title-md {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+}
+.version-ver {
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 16px;
+}
+.version-divider {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin: 16px 0;
+}
+.version-contact-label {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+.version-email {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}

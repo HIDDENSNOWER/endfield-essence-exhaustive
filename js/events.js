@@ -287,4 +287,20 @@ function bindEvents() {
             localStorage.setItem('smarttable_right_collapsed', state.rightPanelCollapsed ? '1' : '0');
         });
     }
+
+    // 版本信息弹窗
+    if (dom.btnVersionInfo) {
+        dom.btnVersionInfo.addEventListener('click', function() {
+            openModal(dom.modalVersionInfo);
+        });
+    }
+    if (dom.btnCloseVersionInfo) {
+        dom.btnCloseVersionInfo.addEventListener('click', function() { closeModal(dom.modalVersionInfo); });
+    }
+    if (dom.btnConfirmVersionInfo) {
+        dom.btnConfirmVersionInfo.addEventListener('click', function() { closeModal(dom.modalVersionInfo); });
+    }
+    if (dom.modalVersionInfo) {
+        dom.modalVersionInfo.addEventListener('click', function(e) { if (e.target === this) closeModal(dom.modalVersionInfo); });
+    }
 }

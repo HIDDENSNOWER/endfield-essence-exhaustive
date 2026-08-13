@@ -195,6 +195,11 @@ var dom = {
     btnToggleRightPanel: document.getElementById('btnToggleRightPanel'),
     iconPanelCollapse: document.getElementById('icon-panel-collapse'),
     iconPanelExpand: document.getElementById('icon-panel-expand'),
+    btnVersionInfo: document.getElementById('btnVersionInfo'),
+    modalVersionInfo: document.getElementById('modalVersionInfo'),
+    btnCloseVersionInfo: document.getElementById('btnCloseVersionInfo'),
+    btnConfirmVersionInfo: document.getElementById('btnConfirmVersionInfo'),
+    versionInfoBody: document.getElementById('versionInfoBody'),
 };
 
 function normalizeCell(cell) {
