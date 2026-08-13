@@ -200,6 +200,12 @@ var dom = {
     btnCloseVersionInfo: document.getElementById('btnCloseVersionInfo'),
     btnConfirmVersionInfo: document.getElementById('btnConfirmVersionInfo'),
     versionInfoBody: document.getElementById('versionInfoBody'),
+    tableBgColorOdd: document.getElementById('tableBgColorOdd'),
+    tableBgColorOddValue: document.getElementById('tableBgColorOddValue'),
+    tableBgColorEven: document.getElementById('tableBgColorEven'),
+    tableBgColorEvenValue: document.getElementById('tableBgColorEvenValue'),
+    btnResetTableBgOdd: document.getElementById('btnResetTableBgOdd'),
+    btnResetTableBgEven: document.getElementById('btnResetTableBgEven'),
 };
 
 function normalizeCell(cell) {

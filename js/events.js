@@ -288,6 +288,38 @@ function bindEvents() {
         });
     }
 
+    // 表格底色实时更新
+    if (dom.tableBgColorOdd) {
+        dom.tableBgColorOdd.addEventListener('input', function() {
+            var colors = loadTableBgColors();
+            colors.odd = this.value;
+            applyTableBgColors(colors);
+            saveTableBgColors(colors);
+            if (dom.tableBgColorOddValue) dom.tableBgColorOddValue.textContent = colors.odd;
+        });
+    }
+    if (dom.tableBgColorEven) {
+        dom.tableBgColorEven.addEventListener('input', function() {
+            var colors = loadTableBgColors();
+            colors.even = this.value;
+            applyTableBgColors(colors);
+            saveTableBgColors(colors);
+            if (dom.tableBgColorEvenValue) dom.tableBgColorEvenValue.textContent = colors.even;
+        });
+    }
+
+    // 重置表格底色按钮
+    if (dom.btnResetTableBgOdd) {
+        dom.btnResetTableBgOdd.addEventListener('click', function() {
+            resetTableBgColor('odd');
+        });
+    }
+    if (dom.btnResetTableBgEven) {
+        dom.btnResetTableBgEven.addEventListener('click', function() {
+            resetTableBgColor('even');
+        });
+    }
+    
     // 版本信息弹窗
     if (dom.btnVersionInfo) {
         dom.btnVersionInfo.addEventListener('click', function() {

@@ -1,8 +1,10 @@
-// ui.js - 表格渲染、统计面板、弹窗辅助、单元格提示栏（修复版：无变动，与原始一致）
+// ui.js - 表格渲染、统计面板、弹窗辅助、单元格提示栏（含表格底色内联背景）
 
 // ========== 表格渲染 ==========
 function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
     var table = thead.closest('table');
+    var bgColors = loadTableBgColors();   // 获取当前表格底色（奇数/偶数行）
+
     var colgroup = table.querySelector('colgroup');
     if (!colgroup) {
         colgroup = document.createElement('colgroup');
@@ -112,6 +114,8 @@ function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
                 }
                 td.textContent = text;
                 td.classList.add(globalIdx % 2 === 0 ? 'group-even' : 'group-odd');
+                // 设置内联背景色（确保实时生效）
+                td.style.backgroundColor = (globalIdx % 2 === 0) ? bgColors.even : bgColors.odd;
                 if (subIdx === group.sub.length - 1 && groupIdx < groups.length - 1) {
                     td.classList.add('border-group-right');
                 }

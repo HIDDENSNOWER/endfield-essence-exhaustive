@@ -495,7 +495,7 @@
                 <div class="settings-layout">
                     <nav class="settings-nav" id="settingsNav">
                         <button class="settings-nav-btn active" data-settings-panel="table">表格设置</button>
-                        <button class="settings-nav-btn" data-settings-panel="color">单元格颜色</button>
+                        <button class="settings-nav-btn" data-settings-panel="color">表格个性化</button>
                     </nav>
                     <div class="settings-panels">
                         <!-- 表格设置面板 -->
@@ -521,19 +521,33 @@
                                     <span class="range-value" id="rowHeightValue" style="min-width:30px;">24</span>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>表格底色</label>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <input type="color" id="tableBgColor" value="#f8fafc" title="选择表格底色">
-                                    <span class="range-value" id="tableBgColorValue">#f8fafc</span>
-                                </div>
-                            </div>
                             <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
                         </div>
                         <!-- 单元格颜色设置面板 -->
                         <div class="settings-panel-content" id="settingsPanelColor">
                             <div class="panel-title">🎨 单元格颜色</div>
                             <p class="input-hint" style="margin-bottom:12px;">预览四种状态颜色，右侧可调节各状态数量。</p>
+                            
+                            <!-- 表格底色设置 -->
+                            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+                                <div class="form-group" style="flex:1; min-width:200px;">
+                                    <label>奇数行底色</label>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <input type="color" id="tableBgColorOdd" value="#f8fafc" title="选择奇数行底色">
+                                        <span class="range-value" id="tableBgColorOddValue">#f8fafc</span>
+                                        <button class="btn btn-sm btn-outline-gray" id="btnResetTableBgOdd">重置为默认</button>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="flex:1; min-width:200px;">
+                                    <label>偶数行底色</label>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <input type="color" id="tableBgColorEven" value="#eaf0f6" title="选择偶数行底色">
+                                        <span class="range-value" id="tableBgColorEvenValue">#eaf0f6</span>
+                                        <button class="btn btn-sm btn-outline-gray" id="btnResetTableBgEven">重置为默认</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="border:0; border-top:1px solid var(--border-muted); margin:12px 0;">
                             <div class="color-preview-layout">
                                 <!-- 左侧预览表格 -->
                                 <div class="color-preview-main-wrapper" id="colorPreviewMain"></div>

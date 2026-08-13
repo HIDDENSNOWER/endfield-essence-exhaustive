@@ -8,6 +8,7 @@ function applyTheme(theme) {
     dom.iconMoon.style.display = theme === 'dark' ? '' : 'none';
     localStorage.setItem(STORAGE_KEY_THEME, theme);
     syncColorUI();
+    syncTableBgColors();
 }
 
 function toggleTheme() {
@@ -75,6 +76,7 @@ function initSettings() {
     if (dom.colWidthValue) dom.colWidthValue.textContent = colWidth;
     if (dom.rowHeightValue) dom.rowHeightValue.textContent = rowHeight;
     applyStyle(colWidth, rowHeight);
+    syncTableBgColors();
 }
 
 function applyStyle(colWidth, rowHeight) {
@@ -102,6 +104,103 @@ function applyStyle(colWidth, rowHeight) {
         dataCells[k].style.minWidth = colWidth + 'px';
         dataCells[k].style.maxWidth = colWidth + 'px';
     }
+}
+
+
+// ========== 表格底色 ==========
+var TABLE_BG_STORAGE_KEY = 'smarttable_table_bg';
+
+function getDefaultTableBgColors() {
+    if (isDarkTheme()) {
+        return {
+            odd: '#0f1722',    // 与暗色主题 --group-odd-bg 一致
+            even: '#1b2636'    // 与暗色主题 --group-even-bg 一致
+        };
+    } else {
+        return {
+            odd: '#f8fafc',    // 与亮色主题 --group-odd-bg 一致
+            even: '#eaf0f6'    // 与亮色主题 --group-even-bg 一致
+        };
+    }
+}
+
+function getStoredTableBgColors() {
+    try {
+        return JSON.parse(localStorage.getItem(TABLE_BG_STORAGE_KEY)) || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveTableBgColors(colors) {
+    if (typeof colors !== 'object' || colors === null) return;
+    var stored = getStoredTableBgColors();
+    stored[isDarkTheme() ? 'dark' : 'light'] = {
+        odd: colors.odd,
+        even: colors.even
+    };
+    localStorage.setItem(TABLE_BG_STORAGE_KEY, JSON.stringify(stored));
+}
+
+function applyTableBgColors(colors) {
+    var defaults = getDefaultTableBgColors();
+    var odd = colors.odd || defaults.odd;
+    var even = colors.even || defaults.even;
+    document.documentElement.style.setProperty('--group-odd-bg', odd);
+    document.documentElement.style.setProperty('--group-even-bg', even);
+    refreshTableBgColors();
+}
+
+function refreshTableBgColors() {
+    var colors = loadTableBgColors();   // 已经过兼容处理，返回对象
+    document.querySelectorAll('td.group-even').forEach(function(td) {
+        td.style.backgroundColor = colors.even;
+    });
+    document.querySelectorAll('td.group-odd').forEach(function(td) {
+        td.style.backgroundColor = colors.odd;
+    });
+}
+
+function loadTableBgColors() {
+    var stored = getStoredTableBgColors();
+    var theme = isDarkTheme() ? 'dark' : 'light';
+    var colors = stored[theme];
+    var defaults = getDefaultTableBgColors();
+
+    // 兼容旧版存储格式（字符串或缺少字段）
+    if (typeof colors !== 'object' || colors === null) {
+        return defaults;
+    }
+    return {
+        odd: colors.odd || defaults.odd,
+        even: colors.even || defaults.even
+    };
+}
+
+function updateTableBgColorUI(colors) {
+    if (dom.tableBgColorOdd) dom.tableBgColorOdd.value = colors.odd;
+    if (dom.tableBgColorOddValue) dom.tableBgColorOddValue.textContent = colors.odd;
+    if (dom.tableBgColorEven) dom.tableBgColorEven.value = colors.even;
+    if (dom.tableBgColorEvenValue) dom.tableBgColorEvenValue.textContent = colors.even;
+}
+
+function syncTableBgColors() {
+    var colors = loadTableBgColors();
+    applyTableBgColors(colors);
+    updateTableBgColorUI(colors);
+}
+
+function resetTableBgColor(type) {
+    var colors = loadTableBgColors();
+    var defaults = getDefaultTableBgColors();
+    if (type === 'odd') {
+        colors.odd = defaults.odd;
+    } else if (type === 'even') {
+        colors.even = defaults.even;
+    }
+    saveTableBgColors(colors);
+    applyTableBgColors(colors);
+    updateTableBgColorUI(colors);
 }
 
 // ========== 设置弹窗导航切换 ==========
