@@ -166,6 +166,13 @@ function init() {
 
     // 更新 UI 保护状态（默认数据集仅禁用清除功能，保留添加功能）
     updateLockedUI();
+
+    // 自动打开“关于”弹窗（每个标签页首次加载时显示，刷新不显示）
+    var aboutShown = sessionStorage.getItem('smarttable_about_shown');
+    if (!aboutShown && dom.modalVersionInfo) {
+        openModal(dom.modalVersionInfo);
+        sessionStorage.setItem('smarttable_about_shown', '1');
+    }
 }
 
 // ==================== 备注处理函数 ====================
