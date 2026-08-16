@@ -38,13 +38,15 @@ function createInitialRows() { return ROW_NAMES.map(function(name){ return { nam
 
 var state = {
     rows: createInitialRows(),
+    // searchQuery 可移除，此处保留但不再使用
     searchQuery: '',
     theme: 'light',
     activePanel: 'input',
     history: [],
     historyIndex: -1,
-    leftPanel: 'table',   // 当前左侧面板：'table' 或 'empty'
+    leftPanel: 'table',
     rightPanelCollapsed: false,
+    selectedRows: ROW_NAMES.slice()   // 默认全选，存储行名字符串
 };
 var pendingApply = null;
 var confirmCallback = null;
@@ -64,7 +66,15 @@ var dom = {
     tableBody1: document.getElementById('tableBody1'),
     tableHead2: document.getElementById('tableHead2'),
     tableBody2: document.getElementById('tableBody2'),
-    searchInput: document.getElementById('searchInput'),
+    btnRowFilter: document.getElementById('btnRowFilter'),
+    modalRowFilter: document.getElementById('modalRowFilter'),
+    rowFilterCheckboxes: document.getElementById('rowFilterCheckboxes'),
+    btnSelectAllRows: document.getElementById('btnSelectAllRows'),
+    btnSelectNoneRows: document.getElementById('btnSelectNoneRows'),
+    btnApplyRowFilter: document.getElementById('btnApplyRowFilter'),
+    btnCancelRowFilter: document.getElementById('btnCancelRowFilter'),
+    btnCloseRowFilter: document.getElementById('btnCloseRowFilter'),
+    rowFilterLabel: document.getElementById('rowFilterLabel'),
     btnToggleTheme: document.getElementById('btnToggleTheme'),
     iconSun: document.getElementById('icon-sun'),
     iconMoon: document.getElementById('icon-moon'),

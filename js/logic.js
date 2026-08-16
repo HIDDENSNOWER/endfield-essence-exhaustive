@@ -822,15 +822,8 @@ function closeDeleteErrorModal() {
 
 // ========== 搜索 ==========
 function getFilteredRows() {
-    const q = state.searchQuery.trim().toLowerCase();
-    if (!q) return state.rows;
-    return state.rows.filter(row => {
-        if (row.name.toLowerCase().includes(q)) return true;
-        return row.data.some(cell => {
-            const c = normalizeCell(cell);
-            return String(c.v).toLowerCase().includes(q);
-        });
-    });
+    const selected = new Set(state.selectedRows);
+    return state.rows.filter(row => selected.has(row.name));
 }
 
 function createSampleRows() {

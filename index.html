@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具Ver.0.1.43</title>
+    <title>终末地基质穷举数据记录与统计工具Ver.0.1.44</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -12,11 +12,12 @@
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="search-bar">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input type="text" class="search-input" id="searchInput" placeholder="筛选行...">
+            <button class="btn-row-filter" id="btnRowFilter" title="筛选显示行">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                <span id="rowFilterLabel">全部行</span>
+            </button>
         </div>
         <div class="navbar-actions">
             <button class="btn-icon" id="btnToggleTheme" title="切换主题">
@@ -104,11 +105,13 @@
         <!-- 右侧侧边栏 -->
         <nav class="sidebar" id="sidebar">
             <button class="sidebar-btn" id="btnToggleRightPanel" title="折叠面板">
-                <svg id="icon-panel-collapse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg id="icon-panel-collapse" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <polyline points="11 17 6 12 11 7" />
                     <polyline points="18 17 13 12 18 7" />
                 </svg>
-                <svg id="icon-panel-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg id="icon-panel-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
                     <polyline points="13 17 18 12 13 7" />
                     <polyline points="6 17 11 12 6 7" />
                 </svg>
@@ -153,8 +156,7 @@
                 <div class="form-group">
                     <label>备注</label>
                     <div id="remarkContainer">
-                        <textarea id="datasetRemarkInput"
-                            placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
+                        <textarea id="datasetRemarkInput" placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
                             style="width:100%; resize: none; display:none;"></textarea>
                         <span id="datasetRemarkDisplay" class="remark-display" style="display:none;"></span>
                         <div class="input-hint"><span id="remarkCharCount">0</span>/550</div>
@@ -235,8 +237,9 @@
         <!-- 空页面容器 -->
         <div class="empty-page" id="emptyPage" style="display:none;">
             <div class="empty-page-content">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                    opacity="0.3">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
                 <p>空页面</p>
             </div>
@@ -244,7 +247,9 @@
     </div>
 
     <footer class="app-footer">
-        <button class="footer-version-btn" id="btnVersionInfo" title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.43(&quot;再访基地&quot;更新)">Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.43("再访基地"更新)</button>
+        <button class="footer-version-btn" id="btnVersionInfo"
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.44(&quot;再访基地&quot;更新)">Endfield-Essence-Exhaustive
+            // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.44("再访基地"更新)</button>
     </footer>
 
     <!-- 数值对比弹窗 -->
@@ -527,7 +532,7 @@
                         <div class="settings-panel-content" id="settingsPanelColor">
                             <div class="panel-title">🎨 单元格颜色</div>
                             <p class="input-hint" style="margin-bottom:12px;">预览四种状态颜色，右侧可调节各状态数量。</p>
-                            
+
                             <!-- 表格底色设置 -->
                             <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
                                 <div class="form-group" style="flex:1; min-width:200px;">
@@ -535,7 +540,8 @@
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <input type="color" id="tableBgColorOdd" value="#f8fafc" title="选择奇数行底色">
                                         <span class="range-value" id="tableBgColorOddValue">#f8fafc</span>
-                                        <button class="btn btn-sm btn-outline-gray" id="btnResetTableBgOdd">重置为默认</button>
+                                        <button class="btn btn-sm btn-outline-gray"
+                                            id="btnResetTableBgOdd">重置为默认</button>
                                     </div>
                                 </div>
                                 <div class="form-group" style="flex:1; min-width:200px;">
@@ -543,7 +549,8 @@
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <input type="color" id="tableBgColorEven" value="#eaf0f6" title="选择偶数行底色">
                                         <span class="range-value" id="tableBgColorEvenValue">#eaf0f6</span>
-                                        <button class="btn btn-sm btn-outline-gray" id="btnResetTableBgEven">重置为默认</button>
+                                        <button class="btn btn-sm btn-outline-gray"
+                                            id="btnResetTableBgEven">重置为默认</button>
                                     </div>
                                 </div>
                             </div>
@@ -628,7 +635,8 @@
             <div class="modal-header">
                 <span>📋 关于</span>
                 <button class="btn-icon btn-sm" id="btnCloseVersionInfo" style="border:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
@@ -638,7 +646,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">Ver.0.1.43("再访基地"更新)</div>
+                    <div class="version-ver">Ver.0.1.44("再访基地"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -646,6 +654,33 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" id="btnConfirmVersionInfo">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行筛选弹窗 -->
+    <div class="modal-overlay" id="modalRowFilter" style="display:none;">
+        <div class="modal" style="max-width:360px;">
+            <div class="modal-header">
+                <span>筛选显示行</span>
+                <button class="btn-icon btn-sm" id="btnCloseRowFilter" style="border:none;" title="关闭">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row-filter-actions">
+                    <button class="btn btn-sm" id="btnSelectAllRows">全选</button>
+                    <button class="btn btn-sm" id="btnSelectNoneRows">全不选</button>
+                </div>
+                <div id="rowFilterCheckboxes" class="row-filter-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelRowFilter">取消</button>
+                <button class="btn btn-primary" id="btnApplyRowFilter">应用</button>
             </div>
         </div>
     </div>

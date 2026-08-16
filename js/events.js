@@ -1,11 +1,51 @@
 // events.js - 所有事件绑定（修复版）
 
 function bindEvents() {
-    // 主题与搜索
-    dom.btnToggleTheme.addEventListener('click', toggleTheme);
-    dom.searchInput.addEventListener('input', function() {
-        state.searchQuery = dom.searchInput.value;
+    // 行筛选按钮：打开弹窗并初始化复选框
+    dom.btnRowFilter.addEventListener('click', function() {
+        renderRowFilterCheckboxes();
+        openModal(dom.modalRowFilter);
+    });
+
+    // 全选
+    dom.btnSelectAllRows.addEventListener('click', function() {
+        document.querySelectorAll('#rowFilterCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = true);
+        updateSelectedRowsFromCheckboxes();
+    });
+
+    // 全不选
+    dom.btnSelectNoneRows.addEventListener('click', function() {
+        document.querySelectorAll('#rowFilterCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+        updateSelectedRowsFromCheckboxes();
+    });
+
+    // 复选框变化（实时同步到 state.selectedRows，但不重新渲染表格）
+    dom.rowFilterCheckboxes.addEventListener('change', function(e) {
+        if (e.target && e.target.matches('input[type="checkbox"]')) {
+            updateSelectedRowsFromCheckboxes();
+        }
+    });
+
+    // 应用按钮
+    dom.btnApplyRowFilter.addEventListener('click', function() {
+        closeModal(dom.modalRowFilter);
         renderAllTables();
+        updateRowFilterButtonLabel();
+    });
+
+    // 取消按钮
+    dom.btnCancelRowFilter.addEventListener('click', function() {
+        closeModal(dom.modalRowFilter);
+    });
+
+    // 关闭按钮
+    dom.btnCloseRowFilter.addEventListener('click', function() {
+        closeModal(dom.modalRowFilter);
+    });
+
+    // 点击遮罩关闭
+    dom.modalRowFilter.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(dom.modalRowFilter);
     });
 
     // 下拉框联动

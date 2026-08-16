@@ -697,6 +697,19 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     .count-row {
         flex: 1 1 auto;
     }
+
+    .btn-row-filter {
+        min-width: 0;
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    .btn-row-filter span {
+        font-size: 0.75rem;
+    }
+    .row-filter-list {
+        grid-template-columns: 1fr;
+        max-height: 260px;
+    }
 }
 
 /* 确保全屏设置弹窗正确覆盖视口 */
@@ -823,4 +836,103 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     text-align: center;
     font-size: 0.85rem;
     color: var(--text-secondary);
+}
+
+/* 行筛选弹窗 */
+.row-filter-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.row-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.row-filter-item input[type="checkbox"] {
+    accent-color: var(--accent-primary);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+/* ========== 行筛选按钮 ========== */
+.btn-row-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    height: 32px;
+    min-width: 120px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+.btn-row-filter:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-emphasis);
+}
+.btn-row-filter svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+.btn-row-filter span {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+/* ========== 行筛选弹窗优化 ========== */
+.row-filter-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+}
+.row-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: background var(--transition-fast);
+    cursor: pointer;
+}
+.row-filter-item:hover {
+    background: var(--bg-hover);
+}
+.row-filter-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* 弹窗按钮容器 */
+.row-filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.row-filter-actions .btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 0.8rem;
 }

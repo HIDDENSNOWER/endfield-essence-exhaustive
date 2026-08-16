@@ -57,7 +57,7 @@ function renderTablePart(thead, tbody, groups, colOffset, totalCols) {
         const tr = document.createElement('tr');
         const td = document.createElement('td');
         td.colSpan = totalCols + 1;
-        td.textContent = '没有匹配的数据';
+        td.textContent = '没有选择行';
         td.style.textAlign = 'center'; td.style.padding = '24px'; td.style.color = 'var(--text-tertiary)';
         tr.appendChild(td); tbody.appendChild(tr);
         return;
@@ -392,4 +392,43 @@ function initCellTooltip() {
             dom.cellTooltip.textContent = defaultText;
         }
     });
+}
+
+// 渲染行筛选复选框列表
+function renderRowFilterCheckboxes() {
+    const container = dom.rowFilterCheckboxes;
+    container.innerHTML = '';
+    ROW_NAMES.forEach(name => {
+        const label = document.createElement('label');
+        label.className = 'row-filter-item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = name;
+        cb.checked = state.selectedRows.includes(name);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(name));
+        container.appendChild(label);
+    });
+}
+
+// 从复选框更新 state.selectedRows
+function updateSelectedRowsFromCheckboxes() {
+    const checked = [];
+    document.querySelectorAll('#rowFilterCheckboxes input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) checked.push(cb.value);
+    });
+    state.selectedRows = checked;
+}
+
+// 更新按钮文本（显示已选行数）
+function updateRowFilterButtonLabel() {
+    const total = ROW_NAMES.length;
+    const selected = state.selectedRows.length;
+    if (selected === total) {
+        dom.rowFilterLabel.textContent = '全部行';
+    } else if (selected === 0) {
+        dom.rowFilterLabel.textContent = '未选行';
+    } else {
+        dom.rowFilterLabel.textContent = `已选 ${selected}/${total} 行`;
+    }
 }
