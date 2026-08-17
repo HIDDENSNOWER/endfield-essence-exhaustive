@@ -1,6 +1,11 @@
 // events.js - 所有事件绑定（修复版）
 
 function bindEvents() {
+    // 主题切换
+    if (dom.btnToggleTheme) {
+        dom.btnToggleTheme.addEventListener('click', toggleTheme);
+    }
+    
     // 行筛选按钮：打开弹窗并初始化复选框
     dom.btnRowFilter.addEventListener('click', function() {
         renderRowFilterCheckboxes();

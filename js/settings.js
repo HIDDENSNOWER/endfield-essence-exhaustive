@@ -4,8 +4,8 @@
 function applyTheme(theme) {
     state.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
-    dom.iconSun.style.display = theme === 'dark' ? 'none' : '';
-    dom.iconMoon.style.display = theme === 'dark' ? '' : 'none';
+    if (dom.iconSun) dom.iconSun.style.display = theme === 'dark' ? 'none' : '';
+    if (dom.iconMoon) dom.iconMoon.style.display = theme === 'dark' ? '' : 'none';
     localStorage.setItem(STORAGE_KEY_THEME, theme);
     syncColorUI();
     syncTableBgColors();
@@ -38,6 +38,11 @@ function getDefaultColor(key) {
 }
 
 function applyStoredColors() {
+    // 先移除所有状态颜色变量的内联样式，防止旧主题颜色残留
+    Object.keys(COLOR_MAP).forEach(function(key) {
+        document.documentElement.style.removeProperty(COLOR_MAP[key].var);
+    });
+
     try {
         var raw = localStorage.getItem('smarttable_user_colors');
         if (!raw) return;
@@ -152,11 +157,12 @@ function applyTableBgColors(colors) {
 }
 
 function refreshTableBgColors() {
-    var colors = loadTableBgColors();   // 已经过兼容处理，返回对象
-    document.querySelectorAll('td.group-even').forEach(function(td) {
+    var colors = loadTableBgColors();
+    // 仅更新主表格区域的奇偶行底色，不影响设置弹窗中的预览表格
+    document.querySelectorAll('#tableArea td.group-even').forEach(function(td) {
         td.style.backgroundColor = colors.even;
     });
-    document.querySelectorAll('td.group-odd').forEach(function(td) {
+    document.querySelectorAll('#tableArea td.group-odd').forEach(function(td) {
         td.style.backgroundColor = colors.odd;
     });
 }
