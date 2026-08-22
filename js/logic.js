@@ -1,6 +1,6 @@
 /**
  * logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认
- * 包含：数值应用与对比、录入与撤减、历史记录、数据集 CRUD、搜索过滤、示例数据
+ * 包含：数值应用与对比、录入与撤减、历史记录、数据集 CRUD、导入导出（ZIP/JSON）、搜索过滤、示例数据
  */
 
 // ========== 数据管理面板应用 ==========
@@ -113,7 +113,6 @@ function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, 
     const btnKeep = dom.btnKeepOld;
     const btnReplace = dom.btnReplaceNew;
 
-    // 设置按钮样式
     btnKeep.className = 'btn';
     btnReplace.className = 'btn';
     if (sug.keepOld) {
@@ -275,7 +274,6 @@ function applyRecord() {
         return;
     }
 
-    // 更新单元格
     if (cell.t === 0) {
         if (cell.v !== '') {
             cell.t = 1;
@@ -459,7 +457,6 @@ function clearCurrentCell() {
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
 
-    // 如果是实装基质单元格，委托清除
     if (cell.t > 0 && cell.v === '') {
         clearCellRecord();
         return;
@@ -572,7 +569,6 @@ function switchDataset(key) {
         saveData();
     }
 
-    // 如果是示例数据集，重新生成随机数据
     if (key === SAMPLE_DATASET_KEY) {
         state.rows = createSampleRows();
         renderAllTables();
@@ -631,25 +627,37 @@ function loadData() {
     return false;
 }
 
+// ========== 导出功能 ==========
 /**
  * 打开导出弹窗
  */
 function exportData() {
-    const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}.json`;
+    const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}.zip`;
     dom.exportFileName.value = defaultName;
     openModal(dom.modalExport);
     setTimeout(() => dom.exportFileName.focus(), 100);
 }
 
 /**
- * 执行导出操作
+ * 执行导出操作（根据文件扩展名决定 ZIP 或 JSON）
  */
-function doExport() {
+async function doExport() {
     let fileName = dom.exportFileName.value.trim();
-    if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}.json`;
-    if (!fileName.endsWith('.json')) fileName += '.json';
+    if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}`;
+    if (fileName.endsWith('.json')) {
+        doExportJSON(fileName);
+    } else {
+        if (!fileName.endsWith('.zip')) fileName += '.zip';
+        await doExportZip(fileName);
+    }
+}
 
-    // 获取当前备注
+/**
+ * 导出为 ZIP 文件（JSON + 图片分离）
+ * @param {string} fileName - 下载文件名
+ */
+async function doExportZip(fileName) {
+    // 1. 获取当前数据集备注
     let remark = '';
     if (dom.datasetRemarkDisplay.style.display !== 'none') {
         remark = dom.datasetRemarkDisplay.textContent;
@@ -657,10 +665,47 @@ function doExport() {
         remark = dom.datasetRemarkInput.value.trim();
     }
 
-    const exportObj = { rows: state.rows, remark };
-    const dataStr = JSON.stringify(exportObj, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    // 2. 深拷贝 rows，提取图片
+    const rowsCopy = JSON.parse(JSON.stringify(state.rows));
+    const zip = new JSZip();
+    const imagesFolder = zip.folder('images');
+    const imageMap = {}; // { base64: fileName }
+    let imageCounter = 0;
+
+    rowsCopy.forEach((row, rowIdx) => {
+        row.data.forEach((cell, colIdx) => {
+            const note = cell.note;
+            if (note && note.images && note.images.length > 0) {
+                const newImageRefs = [];
+                note.images.forEach((base64, imgIdx) => {
+                    if (!imageMap[base64]) {
+                        const ext = getImageExtension(base64);
+                        const imageFileName = `cell_${rowIdx}_${colIdx}_${imgIdx}.${ext}`;
+                        imageMap[base64] = imageFileName;
+                        const blob = base64ToBlob(base64);
+                        imagesFolder.file(imageFileName, blob);
+                    }
+                    newImageRefs.push(imageMap[base64]);
+                });
+                note.images = newImageRefs;
+            }
+        });
+    });
+
+    // 3. 构建导出数据对象
+    const exportObj = {
+        rows: rowsCopy,
+        remark: remark,
+        version: '2.0',
+        exportedAt: new Date().toISOString()
+    };
+
+    // 4. 将 JSON 加入 zip
+    zip.file('data.json', JSON.stringify(exportObj, null, 2));
+
+    // 5. 生成 zip 并下载
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
@@ -674,7 +719,258 @@ function doExport() {
 }
 
 /**
- * 导入数据并创建新数据集
+ * 导出为纯 JSON 文件（备用）
+ * @param {string} fileName
+ */
+function doExportJSON(fileName) {
+    let remark = '';
+    if (dom.datasetRemarkDisplay.style.display !== 'none') {
+        remark = dom.datasetRemarkDisplay.textContent;
+    } else if (dom.datasetRemarkInput.style.display !== 'none') {
+        remark = dom.datasetRemarkInput.value.trim();
+    }
+
+    const exportObj = { rows: state.rows, remark };
+    const dataStr = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName.endsWith('.json') ? fileName : fileName + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    closeModal(dom.modalExport);
+    dom.inputHint.textContent = `已导出：${fileName}`;
+}
+
+/**
+ * 将 base64 数据转换为 Blob
+ * @param {string} base64 - Data URL 或纯 base64
+ * @returns {Blob}
+ */
+function base64ToBlob(base64) {
+    const parts = base64.split(',');
+    const contentType = parts[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+    const raw = atob(parts[1] || parts[0]);
+    const array = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) {
+        array[i] = raw.charCodeAt(i);
+    }
+    return new Blob([array], { type: contentType });
+}
+
+/**
+ * 从 base64 Data URL 获取图片扩展名
+ * @param {string} base64
+ * @returns {string} 扩展名（如 'png'）
+ */
+function getImageExtension(base64) {
+    const match = base64.match(/^data:image\/(\w+);base64,/);
+    return match ? match[1] : 'png';
+}
+
+// ========== 导入功能 ==========
+/**
+ * 处理导入文件（支持 ZIP 和 JSON）
+ * @param {File} file
+ */
+function importData(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'zip') {
+        importZipData(file);
+    } else if (ext === 'json') {
+        importJSONData(file);
+    } else {
+        showAlert('不支持的文件格式，请选择 .zip 或 .json 文件。', '导入失败');
+    }
+}
+
+/**
+ * 导入 ZIP 文件
+ * @param {File} file
+ */
+async function importZipData(file) {
+    try {
+        const zip = await JSZip.loadAsync(file);
+
+        // 读取 data.json
+        const dataFile = zip.file('data.json');
+        if (!dataFile) {
+            showAlert('ZIP 中未找到 data.json。', '导入失败');
+            return;
+        }
+        const dataText = await dataFile.async('string');
+        const parsed = JSON.parse(dataText);
+
+        let rows, remark;
+        if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
+            rows = parsed.rows;
+            remark = parsed.remark || '';
+        } else if (Array.isArray(parsed)) {
+            rows = parsed;
+            remark = '';
+        } else {
+            showAlert('文件格式不正确。', '导入失败');
+            return;
+        }
+
+        if (!(rows.length > 0 && rows[0].name && Array.isArray(rows[0].data))) {
+            showAlert('文件格式不正确。', '导入失败');
+            return;
+        }
+
+        // 还原图片
+        rows = await restoreImagesFromZip(rows, zip);
+
+        // 确定数据集名称
+        const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
+        const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
+
+        proceedImportWithConflict(rows, newKey, remark);
+
+    } catch (err) {
+        console.error(err);
+        showAlert('解析 ZIP 文件失败，请检查文件内容。', '导入失败');
+    }
+}
+
+/**
+ * 从 ZIP 中还原图片为 Data URL
+ * @param {Array} rows
+ * @param {JSZip} zip
+ * @returns {Promise<Array>}
+ */
+async function restoreImagesFromZip(rows, zip) {
+    const imageFolder = zip.folder('images');
+    for (const row of rows) {
+        for (const cell of row.data) {
+            const note = cell.note;
+            if (note && note.images && note.images.length > 0) {
+                const restoredImages = [];
+                for (const ref of note.images) {
+                    if (typeof ref === 'string' && ref.startsWith('data:')) {
+                        restoredImages.push(ref);
+                    } else if (typeof ref === 'string' && imageFolder) {
+                        const imageFile = imageFolder.file(ref);
+                        if (imageFile) {
+                            const blob = await imageFile.async('blob');
+                            const dataUrl = await blobToDataURL(blob);
+                            restoredImages.push(dataUrl);
+                        }
+                    }
+                }
+                note.images = restoredImages;
+            }
+        }
+    }
+    return rows;
+}
+
+/**
+ * 将 Blob 转换为 Data URL
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * 导入 JSON 文件（原有逻辑）
+ * @param {File} file
+ */
+function importJSONData(file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            var rows, remark;
+            if (Array.isArray(parsed)) {
+                rows = parsed;
+                remark = '';
+            } else if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
+                rows = parsed.rows;
+                remark = parsed.remark || '';
+            } else {
+                showAlert('文件格式不正确。', '导入失败');
+                return;
+            }
+
+            if (rows.length > 0 && rows[0].name && Array.isArray(rows[0].data)) {
+                const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
+                const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
+                proceedImportWithConflict(rows, newKey, remark);
+            } else {
+                showAlert('文件格式不正确。', '导入失败');
+            }
+        } catch (err) {
+            showAlert('解析文件失败，请检查文件内容。', '导入失败');
+        }
+    };
+    reader.readAsText(file);
+}
+
+/**
+ * 处理导入时的重名冲突与受保护数据集
+ * @param {Array} rows
+ * @param {string} newKey
+ * @param {string} remark
+ */
+function proceedImportWithConflict(rows, newKey, remark) {
+    const existing = getDatasetList();
+
+    // 如果名称与受保护数据集重名，自动改名
+    if (PROTECTED_DATASETS.includes(newKey)) {
+        newKey = newKey + '_导入';
+    }
+
+    if (existing.includes(newKey)) {
+        showImportConflictDialog(rows, newKey, remark);
+    } else {
+        proceedImport(rows, newKey, remark);
+    }
+}
+
+/**
+ * 显示导入冲突弹窗
+ */
+function showImportConflictDialog(rows, newKey, remark) {
+    const message = `数据集 "${newKey}" 已存在，请选择操作：`;
+    dom.confirmDialogTitle.textContent = '导入冲突';
+    dom.confirmDialogBody.innerHTML = `
+        <p>${message}</p>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="btn btn-danger" id="btnOverwrite">覆盖</button>
+            <button class="btn btn-primary" id="btnSaveAs">另存为</button>
+            <button class="btn" id="btnCancelImport">取消</button>
+        </div>
+    `;
+    openModal(dom.modalConfirmDialog);
+
+    document.getElementById('btnOverwrite').addEventListener('click', function () {
+        closeConfirmDialog();
+        proceedImport(rows, newKey, remark);
+    });
+    document.getElementById('btnSaveAs').addEventListener('click', function () {
+        closeConfirmDialog();
+        const altKey = newKey + '_' + Date.now();
+        proceedImport(rows, altKey, remark);
+    });
+    document.getElementById('btnCancelImport').addEventListener('click', function () {
+        closeConfirmDialog();
+    });
+}
+
+/**
+ * 导入数据并创建新数据集（原 proceedImport）
  * @param {Array} data - 行数据
  * @param {string} newKey - 新数据集键
  * @param {string} remark - 备注
@@ -704,51 +1000,13 @@ function proceedImport(data, newKey, remark) {
 }
 
 /**
- * 处理导入文件
- * @param {File} file
- */
-function importData(file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            const parsed = JSON.parse(e.target.result);
-            let rows, remark;
-            if (Array.isArray(parsed)) {
-                rows = parsed;
-                remark = '';
-            } else if (parsed && parsed.rows && Array.isArray(parsed.rows)) {
-                rows = parsed.rows;
-                remark = parsed.remark || '';
-            } else {
-                showAlert('文件格式不正确。', '导入失败');
-                return;
-            }
-
-            if (rows.length > 0 && rows[0].name && Array.isArray(rows[0].data)) {
-                const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
-                const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
-                if (getDatasetList().includes(newKey)) {
-                    showConfirmDialog(`数据集 "${newKey}" 已存在，是否覆盖？`, () => proceedImport(rows, newKey, remark), null, '覆盖确认');
-                } else {
-                    proceedImport(rows, newKey, remark);
-                }
-            } else {
-                showAlert('文件格式不正确。', '导入失败');
-            }
-        } catch (err) {
-            showAlert('解析文件失败，请检查文件内容。', '导入失败');
-        }
-    };
-    reader.readAsText(file);
-}
-
-/**
  * 触发导入文件选择
  */
 function triggerImport() {
     dom.importFile.click();
 }
 
+// ========== 新建/重命名/删除数据集 ==========
 /**
  * 打开新建数据集弹窗
  */
@@ -853,11 +1111,11 @@ function confirmDeleteDataset() {
     localStorage.setItem('smarttable_current_dataset', newKey);
 }
 
+// ========== 清空数据 ==========
 /**
  * 清空当前数据集
  */
 function clearAllData() {
-    // 默认数据集保护
     if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && baselineRows) {
         for (let r = 0; r < baselineRows.length; r++) {
             for (let c = 0; c < baselineRows[r].data.length; c++) {
@@ -1108,14 +1366,12 @@ function createSampleRows() {
             if (Math.random() < fillProbability) {
                 const cell = rows[r].data[c];
                 if (Math.random() < 0.5) {
-                    // 实装基质
                     const t = Math.floor(Math.random() * 3) + 1;
                     const a = Math.floor(Math.random() * (t + 1));
                     cell.t = t;
                     cell.a = a;
                     cell.v = '';
                 } else {
-                    // 普通数值
                     const d1 = Math.floor(Math.random() * 6) + 1;
                     const d2 = Math.floor(Math.random() * 6) + 1;
                     const d3 = Math.floor(Math.random() * 3) + 1;
