@@ -1,25 +1,34 @@
-// logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认（基于基准保护）
+/**
+ * logic.js - 数据管理应用、录入面板、撤回/重做、数据集管理、清空/删除确认
+ * 包含：数值应用与对比、录入与撤减、历史记录、数据集 CRUD、搜索过滤、示例数据
+ */
 
 // ========== 数据管理面板应用 ==========
+/**
+ * 应用数据输入面板中的数值
+ */
 function applyValue() {
     const v1 = dom.inputVal1.value.trim();
     const v2 = dom.inputVal2.value.trim();
     const v3 = dom.inputVal3.value.trim();
+
     if (v1 === '' && v2 === '' && v3 === '') {
         dom.inputHint.textContent = '输入为空，未做更改。';
         return;
     }
+
     const combined = v1 + v2 + v3;
     if (!/^\d{3}$/.test(combined)) {
         showIllegalModal('非法输入：每个输入框必须填入一位数字（0‑9），不能有空或其它字符。');
         return;
     }
+
     const subIdx = parseInt(dom.inputSubCol.value);
     const rowIdx = parseInt(dom.inputRow.value);
     const groupIdx = parseInt(dom.inputGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
-    const colIndex = getColumnIndex(groupIdx, subIdx);
 
+    const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const oldVal = cell.v;
     const newVal = combined;
@@ -69,21 +78,42 @@ function applyValue() {
 }
 
 // ========== 数值对比 ==========
+/**
+ * 比较新旧值，给出建议
+ * @param {number[]} oldT - 旧值数字数组
+ * @param {number[]} newT - 新值数字数组
+ * @returns {{keepOld: boolean, reason: string}}
+ */
 function getSuggestion(oldT, newT) {
     const oldSum = calcSum(oldT), newSum = calcSum(newT);
-    if (oldSum !== newSum) return { keepOld: oldSum > newSum, reason: `总和 ${oldSum>newSum?'旧值更大':'新值更大'}（旧${oldSum} vs 新${newSum}）` };
-    if (oldT[2] !== newT[2]) return { keepOld: oldT[2] > newT[2], reason: `总和相同，第三位 ${oldT[2]>newT[2]?'旧值更大':'新值更大'}（旧${oldT[2]} vs 新${newT[2]}）` };
+    if (oldSum !== newSum) {
+        return { keepOld: oldSum > newSum, reason: `总和 ${oldSum > newSum ? '旧值更大' : '新值更大'}（旧${oldSum} vs 新${newSum}）` };
+    }
+    if (oldT[2] !== newT[2]) {
+        return { keepOld: oldT[2] > newT[2], reason: `总和相同，第三位 ${oldT[2] > newT[2] ? '旧值更大' : '新值更大'}（旧${oldT[2]} vs 新${newT[2]}）` };
+    }
     const oldMax = Math.max(oldT[0], oldT[1]), newMax = Math.max(newT[0], newT[1]);
-    if (oldMax !== newMax) return { keepOld: oldMax > newMax, reason: `总和及第三位相同，前两位最大值 ${oldMax>newMax?'旧值更大':'新值更大'}（旧${oldMax} vs 新${newMax}）` };
+    if (oldMax !== newMax) {
+        return { keepOld: oldMax > newMax, reason: `总和及第三位相同，前两位最大值 ${oldMax > newMax ? '旧值更大' : '新值更大'}（旧${oldMax} vs 新${newMax}）` };
+    }
     return { keepOld: true, reason: '各项完全相同，建议保留原值' };
 }
 
+/**
+ * 显示数值对比弹窗
+ */
 function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, subName) {
     const oldT = parseTriple(oldVal), newT = parseTriple(newVal);
-    if (!oldT || !newT) { applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName); return; }
+    if (!oldT || !newT) {
+        applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName);
+        return;
+    }
+
     const sug = getSuggestion(oldT, newT);
     const btnKeep = dom.btnKeepOld;
     const btnReplace = dom.btnReplaceNew;
+
+    // 设置按钮样式
     btnKeep.className = 'btn';
     btnReplace.className = 'btn';
     if (sug.keepOld) {
@@ -93,6 +123,7 @@ function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, 
         btnReplace.classList.add('btn-success');
         btnKeep.classList.add('btn-outline-gray');
     }
+
     dom.compareBody.innerHTML = `
         <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
             <div style="text-align:center">
@@ -111,15 +142,22 @@ function showCompareModal(rowIdx, colIndex, oldVal, newVal, groupName, rowName, 
         <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; text-align:center; font-size:0.85rem; color:var(--accent-primary)">
             💡 建议：${sug.reason} → ${sug.keepOld ? '保留旧值' : '替换为新值'}
         </div>`;
+
     pendingApply = { rowIdx, colIndex, newVal, groupName, rowName, subName, suggestion: sug };
     openModal(dom.modalCompare);
 }
 
+/**
+ * 关闭数值对比弹窗
+ */
 function closeCompareModal() {
     closeModal(dom.modalCompare);
     pendingApply = null;
 }
 
+/**
+ * 直接应用新值（无需对比）
+ */
 function applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName) {
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const newCell = { v: String(newVal), t: cell.t, a: cell.a };
@@ -134,6 +172,12 @@ function applyNewValue(rowIdx, colIndex, newVal, groupName, rowName, subName) {
     resetTripleInputs();
 }
 
+/**
+ * 显示二次确认弹窗
+ * @param {string} message
+ * @param {string} reason
+ * @param {Function} onConfirm
+ */
 function showConfirmModal(message, reason, onConfirm) {
     dom.confirmBody.innerHTML = `
         <p style="font-size:0.9rem; color:var(--text-primary); margin-bottom:8px;">${message}</p>
@@ -145,16 +189,25 @@ function showConfirmModal(message, reason, onConfirm) {
     openModal(dom.modalConfirm);
 }
 
+/**
+ * 关闭二次确认弹窗
+ */
 function closeConfirmModal() {
     closeModal(dom.modalConfirm);
     confirmCallback = null;
 }
 
+/**
+ * 执行二次确认的回调
+ */
 function executeConfirmedAction() {
     if (confirmCallback) confirmCallback();
     closeConfirmModal();
 }
 
+/**
+ * 用户选择保留旧值
+ */
 function executeKeepOld() {
     if (!pendingApply) return;
     const sug = pendingApply.suggestion;
@@ -169,6 +222,9 @@ function executeKeepOld() {
     }
 }
 
+/**
+ * 用户选择替换为新值
+ */
 function executeReplaceNew() {
     if (!pendingApply) return;
     const sug = pendingApply.suggestion;
@@ -176,25 +232,29 @@ function executeReplaceNew() {
         showConfirmModal('系统建议“保留旧值”，您选择了替换为新值。', `原因：${sug.reason}`, () => {
             if (pendingApply) {
                 applyNewValue(pendingApply.rowIdx, pendingApply.colIndex, pendingApply.newVal,
-                             pendingApply.groupName, pendingApply.rowName, pendingApply.subName);
+                    pendingApply.groupName, pendingApply.rowName, pendingApply.subName);
             }
             closeCompareModal();
         });
     } else {
         if (pendingApply) {
             applyNewValue(pendingApply.rowIdx, pendingApply.colIndex, pendingApply.newVal,
-                         pendingApply.groupName, pendingApply.rowName, pendingApply.subName);
+                pendingApply.groupName, pendingApply.rowName, pendingApply.subName);
         }
         closeCompareModal();
     }
 }
 
 // ========== 录入面板 ==========
+/**
+ * 录入实装基质
+ */
 function applyRecord() {
     const subIdx = parseInt(dom.recordSubCol.value);
     const rowIdx = parseInt(dom.recordRow.value);
     const groupIdx = parseInt(dom.recordGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const oldCell = JSON.parse(JSON.stringify(cell));
@@ -215,6 +275,7 @@ function applyRecord() {
         return;
     }
 
+    // 更新单元格
     if (cell.t === 0) {
         if (cell.v !== '') {
             cell.t = 1;
@@ -227,9 +288,11 @@ function applyRecord() {
     } else {
         cell.t += 1;
     }
+
     state.rows[rowIdx].data[colIndex] = cell;
     renderAllTables(); saveData();
     pushHistory(rowIdx, colIndex, oldCell, JSON.parse(JSON.stringify(cell)));
+
     const groupName = ALL_GROUPS[groupIdx].name;
     const rowName = ROW_NAMES[rowIdx];
     const subName = ALL_GROUPS[groupIdx].sub[subIdx];
@@ -237,12 +300,16 @@ function applyRecord() {
     updateUndoRedoButtons();
 }
 
-// ========== 撤减实装基质（减少重复数） ==========
+// ========== 撤减实装基质 ==========
+/**
+ * 撤减一个实装基质（减少重复数）
+ */
 function decrementRecord() {
     const subIdx = parseInt(dom.recordSubCol.value);
     const rowIdx = parseInt(dom.recordRow.value);
     const groupIdx = parseInt(dom.recordGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
 
@@ -277,9 +344,21 @@ function decrementRecord() {
 }
 
 // ========== 撤回/重做 ==========
+/**
+ * 将操作记录推入历史
+ * @param {number} rowIdx
+ * @param {number} colIndex
+ * @param {Object} oldCell
+ * @param {Object} newCell
+ */
 function pushHistory(rowIdx, colIndex, oldCell, newCell) {
     state.history = state.history.slice(0, state.historyIndex + 1);
-    state.history.push({ rowIdx, colIndex, oldCell: JSON.parse(JSON.stringify(oldCell)), newCell: JSON.parse(JSON.stringify(newCell)) });
+    state.history.push({
+        rowIdx,
+        colIndex,
+        oldCell: JSON.parse(JSON.stringify(oldCell)),
+        newCell: JSON.parse(JSON.stringify(newCell))
+    });
     if (state.history.length > 20) {
         state.history.shift();
     } else {
@@ -288,6 +367,9 @@ function pushHistory(rowIdx, colIndex, oldCell, newCell) {
     updateUndoRedoButtons();
 }
 
+/**
+ * 撤回上一步操作
+ */
 function undo() {
     if (state.historyIndex < 0) return;
     const record = state.history[state.historyIndex];
@@ -299,12 +381,16 @@ function undo() {
     state.historyIndex--;
     renderAllTables(); saveData();
     updateUndoRedoButtons();
+
     const names = getCellNames(record.rowIdx, record.colIndex);
     const oldT = record.oldCell.t, oldA = record.oldCell.a;
     const newT = record.newCell.t, newA = record.newCell.a;
     showAlert(`已撤回：${names.rowName} > ${names.groupName} > ${names.subName} (重复${newT} → ${oldT}, 拥有${newA} → ${oldA})`, '撤回成功');
 }
 
+/**
+ * 重做下一步操作
+ */
 function redo() {
     if (state.historyIndex >= state.history.length - 1) return;
     state.historyIndex++;
@@ -317,33 +403,43 @@ function redo() {
     state.rows[record.rowIdx].data[record.colIndex] = JSON.parse(JSON.stringify(record.newCell));
     renderAllTables(); saveData();
     updateUndoRedoButtons();
+
     const names = getCellNames(record.rowIdx, record.colIndex);
     const oldT = record.oldCell.t, oldA = record.oldCell.a;
     const newT = record.newCell.t, newA = record.newCell.a;
     showAlert(`已重做：${names.rowName} > ${names.groupName} > ${names.subName} (重复${oldT} → ${newT}, 拥有${oldA} → ${newA})`, '重做成功');
 }
 
+/**
+ * 更新撤回/重做按钮禁用状态
+ */
 function updateUndoRedoButtons() {
     dom.btnUndo.disabled = state.historyIndex < 0;
     dom.btnRedo.disabled = state.historyIndex >= state.history.length - 1;
 }
 
 // ========== 清除单元格 ==========
+/**
+ * 清除录入面板当前单元格的实装基质属性
+ */
 function clearCellRecord() {
     const subIdx = parseInt(dom.recordSubCol.value);
     const rowIdx = parseInt(dom.recordRow.value);
     const groupIdx = parseInt(dom.recordGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const emptyCell = defaultCellMeta();
     if (!isCellOperationAllowed(rowIdx, colIndex, emptyCell)) {
         showAlert('默认数据集保护：不能清除已有数据。', '操作限制');
         return;
     }
+
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
     const oldCell = JSON.parse(JSON.stringify(cell));
     state.rows[rowIdx].data[colIndex] = emptyCell;
     renderAllTables(); saveData();
+
     const groupName = ALL_GROUPS[groupIdx].name;
     const rowName = ROW_NAMES[rowIdx];
     const subName = ALL_GROUPS[groupIdx].sub[subIdx];
@@ -351,18 +447,24 @@ function clearCellRecord() {
     dom.recordHint.textContent = '已清除所选单元格属性';
 }
 
+/**
+ * 清除数据输入面板当前单元格的数值
+ */
 function clearCurrentCell() {
     const subIdx = parseInt(dom.inputSubCol.value);
     const rowIdx = parseInt(dom.inputRow.value);
     const groupIdx = parseInt(dom.inputGroup.value);
     if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
+
     const colIndex = getColumnIndex(groupIdx, subIdx);
     const cell = normalizeCell(state.rows[rowIdx].data[colIndex]);
+
     // 如果是实装基质单元格，委托清除
     if (cell.t > 0 && cell.v === '') {
         clearCellRecord();
         return;
     }
+
     const emptyCell = { v: '', t: 0, a: 0 };
     if (!isCellOperationAllowed(rowIdx, colIndex, emptyCell)) {
         showAlert('默认数据集保护：不能清除已有数值。', '操作限制');
@@ -372,11 +474,13 @@ function clearCurrentCell() {
         showAlert('当前单元格无数值，无需清除。', '提示');
         return;
     }
+
     cell.v = '';
     cell.t = 0;
     cell.a = 0;
     state.rows[rowIdx].data[colIndex] = cell;
     renderAllTables(); saveData();
+
     const groupName = ALL_GROUPS[groupIdx].name;
     const rowName = ROW_NAMES[rowIdx];
     const subName = ALL_GROUPS[groupIdx].sub[subIdx];
@@ -385,32 +489,75 @@ function clearCurrentCell() {
 }
 
 // ========== 数据集管理 ==========
-function getDatasetList() { try { return JSON.parse(localStorage.getItem(DATASET_LIST_KEY)) || []; } catch(e) { return []; } }
-function saveDatasetList(list) { localStorage.setItem(DATASET_LIST_KEY, JSON.stringify(list)); }
-function addDatasetKey(key) { const list = getDatasetList(); if (!list.includes(key)) { list.push(key); saveDatasetList(list); } }
-function removeDatasetKey(key) { const list = getDatasetList().filter(k => k !== key); saveDatasetList(list); }
-
-function updateDatasetSelect() {
-    var list = getDatasetList();
-    if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
-    dom.datasetSelect.innerHTML = list.map(function(k) {
-        var label = k;
-        if (PROTECTED_DATASETS.indexOf(k) !== -1) label += ' 🔒';
-        return '<option value="' + k + '"' + (k === STORAGE_KEY_DATA ? ' selected' : '') + '>' + label + '</option>';
-    }).join('');
-
-    if (dom.btnDeleteDataset) {
-        dom.btnDeleteDataset.disabled = (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1);
+/**
+ * 获取数据集列表
+ * @returns {string[]}
+ */
+function getDatasetList() {
+    try {
+        return JSON.parse(localStorage.getItem(DATASET_LIST_KEY)) || [];
+    } catch (e) {
+        return [];
     }
 }
 
+/**
+ * 保存数据集列表
+ * @param {string[]} list
+ */
+function saveDatasetList(list) {
+    localStorage.setItem(DATASET_LIST_KEY, JSON.stringify(list));
+}
+
+/**
+ * 添加数据集键到列表
+ * @param {string} key
+ */
+function addDatasetKey(key) {
+    const list = getDatasetList();
+    if (!list.includes(key)) {
+        list.push(key);
+        saveDatasetList(list);
+    }
+}
+
+/**
+ * 从列表移除数据集键
+ * @param {string} key
+ */
+function removeDatasetKey(key) {
+    const list = getDatasetList().filter(k => k !== key);
+    saveDatasetList(list);
+}
+
+/**
+ * 更新数据集选择下拉框
+ */
+function updateDatasetSelect() {
+    const list = getDatasetList();
+    if (!list.includes(STORAGE_KEY_DATA)) addDatasetKey(STORAGE_KEY_DATA);
+
+    dom.datasetSelect.innerHTML = list.map(k => {
+        const label = PROTECTED_DATASETS.includes(k) ? k + ' 🔒' : k;
+        return `<option value="${k}" ${k === STORAGE_KEY_DATA ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+
+    if (dom.btnDeleteDataset) {
+        dom.btnDeleteDataset.disabled = PROTECTED_DATASETS.includes(STORAGE_KEY_DATA);
+    }
+}
+
+/**
+ * 切换数据集
+ * @param {string} key
+ */
 function switchDataset(key) {
     if (key === STORAGE_KEY_DATA) return;
 
     STORAGE_KEY_DATA = key;
     updateDatasetDisplay();
 
-    var list = getDatasetList();
+    const list = getDatasetList();
     if (!list.includes(key)) {
         if (key === SAMPLE_DATASET_KEY) {
             localStorage.setItem(key, JSON.stringify(createSampleRows()));
@@ -425,14 +572,11 @@ function switchDataset(key) {
         saveData();
     }
 
-    // ===== 新增：如果是示例数据集，重新生成随机数据 =====
+    // 如果是示例数据集，重新生成随机数据
     if (key === SAMPLE_DATASET_KEY) {
         state.rows = createSampleRows();
         renderAllTables();
-        // 可选：是否保存随机数据到 localStorage
-        // localStorage.setItem(SAMPLE_DATASET_KEY, JSON.stringify(state.rows));
     }
-    // ===================================================
 
     if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && !baselineRows) {
         saveBaseline();
@@ -442,22 +586,31 @@ function switchDataset(key) {
     updateDatasetSelect();
     dom.inputHint.textContent = '已切换到数据集: ' + key;
     localStorage.setItem('smarttable_current_dataset', key);
-    if (typeof updateDatasetRemark === 'function') {
-        updateDatasetRemark();
-    }
-    if (typeof updateLockedUI === 'function') {
-        updateLockedUI();
-    }
+
+    if (typeof updateDatasetRemark === 'function') updateDatasetRemark();
+    if (typeof updateLockedUI === 'function') updateLockedUI();
 }
 
-function updateDatasetDisplay() { dom.datasetName.textContent = STORAGE_KEY_DATA; }
+/**
+ * 更新数据集名称显示
+ */
+function updateDatasetDisplay() {
+    dom.datasetName.textContent = STORAGE_KEY_DATA;
+}
 
+/**
+ * 保存当前数据到 localStorage
+ */
 function saveData() {
     localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(state.rows));
     addDatasetKey(STORAGE_KEY_DATA);
     updateDatasetSelect();
 }
 
+/**
+ * 从 localStorage 加载当前数据集
+ * @returns {boolean} 是否成功
+ */
 function loadData() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY_DATA);
@@ -466,57 +619,73 @@ function loadData() {
             if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name && Array.isArray(parsed[0].data)) {
                 state.rows = parsed.map(row => ({
                     name: row.name,
-                    data: row.data.map(cell => normalizeCell(cell))
+                    data: row.data.map(normalizeCell)
                 }));
                 addDatasetKey(STORAGE_KEY_DATA);
                 return true;
             }
         }
-    } catch(e) {}
+    } catch (e) {
+        // 忽略解析错误
+    }
     return false;
 }
 
+/**
+ * 打开导出弹窗
+ */
 function exportData() {
-    const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
+    const defaultName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}.json`;
     dom.exportFileName.value = defaultName;
     openModal(dom.modalExport);
     setTimeout(() => dom.exportFileName.focus(), 100);
 }
 
+/**
+ * 执行导出操作
+ */
 function doExport() {
     let fileName = dom.exportFileName.value.trim();
-    if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0,10)}.json`;
+    if (!fileName) fileName = `${STORAGE_KEY_DATA}_${new Date().toISOString().slice(0, 10)}.json`;
     if (!fileName.endsWith('.json')) fileName += '.json';
 
-    var remark = '';
+    // 获取当前备注
+    let remark = '';
     if (dom.datasetRemarkDisplay.style.display !== 'none') {
         remark = dom.datasetRemarkDisplay.textContent;
     } else if (dom.datasetRemarkInput.style.display !== 'none') {
         remark = dom.datasetRemarkInput.value.trim();
     }
 
-    var exportObj = {
-        rows: state.rows,
-        remark: remark
-    };
+    const exportObj = { rows: state.rows, remark };
     const dataStr = JSON.stringify(exportObj, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = fileName;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
     closeModal(dom.modalExport);
     dom.inputHint.textContent = `已导出：${fileName}`;
 }
 
+/**
+ * 导入数据并创建新数据集
+ * @param {Array} data - 行数据
+ * @param {string} newKey - 新数据集键
+ * @param {string} remark - 备注
+ */
 function proceedImport(data, newKey, remark) {
-    state.rows = data.map(row => ({ name: row.name, data: row.data.map(cell => normalizeCell(cell)) }));
+    state.rows = data.map(row => ({ name: row.name, data: row.data.map(normalizeCell) }));
     STORAGE_KEY_DATA = newKey;
     localStorage.setItem(newKey, JSON.stringify(state.rows));
     addDatasetKey(newKey);
 
-    var remarks = getDatasetRemarks();
+    const remarks = getDatasetRemarks();
     if (remark) {
         remarks[newKey] = remark;
     } else {
@@ -524,25 +693,26 @@ function proceedImport(data, newKey, remark) {
     }
     saveDatasetRemarks(remarks);
 
-    updateDatasetDisplay(); updateDatasetSelect();
+    updateDatasetDisplay();
+    updateDatasetSelect();
     renderAllTables();
     dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
     localStorage.setItem('smarttable_current_dataset', newKey);
 
-    if (typeof updateDatasetRemark === 'function') {
-        updateDatasetRemark();
-    }
-    if (typeof updateLockedUI === 'function') {
-        updateLockedUI();
-    }
+    if (typeof updateDatasetRemark === 'function') updateDatasetRemark();
+    if (typeof updateLockedUI === 'function') updateLockedUI();
 }
 
+/**
+ * 处理导入文件
+ * @param {File} file
+ */
 function importData(file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const parsed = JSON.parse(e.target.result);
-            var rows, remark;
+            let rows, remark;
             if (Array.isArray(parsed)) {
                 rows = parsed;
                 remark = '';
@@ -565,35 +735,53 @@ function importData(file) {
             } else {
                 showAlert('文件格式不正确。', '导入失败');
             }
-        } catch(err) { showAlert('解析文件失败，请检查文件内容。', '导入失败'); }
+        } catch (err) {
+            showAlert('解析文件失败，请检查文件内容。', '导入失败');
+        }
     };
     reader.readAsText(file);
 }
 
-function triggerImport() { dom.importFile.click(); }
+/**
+ * 触发导入文件选择
+ */
+function triggerImport() {
+    dom.importFile.click();
+}
 
+/**
+ * 打开新建数据集弹窗
+ */
 function createNewDataset() {
     dom.newDatasetName.value = '';
     openModal(dom.modalNewDataset);
     setTimeout(() => dom.newDatasetName.focus(), 100);
 }
 
+/**
+ * 确认新建数据集
+ */
 function confirmNewDataset() {
     const name = dom.newDatasetName.value.trim();
     if (!name) { showAlert('数据集名称不能为空。'); return; }
     if (getDatasetList().includes(name)) { showAlert('该数据集名称已存在，请使用其他名称。'); return; }
+
     const empty = createInitialRows();
     localStorage.setItem(name, JSON.stringify(empty));
     addDatasetKey(name);
     STORAGE_KEY_DATA = name;
     state.rows = JSON.parse(JSON.stringify(empty));
-    updateDatasetDisplay(); updateDatasetSelect();
+    updateDatasetDisplay();
+    updateDatasetSelect();
     renderAllTables();
     closeModal(dom.modalNewDataset);
     dom.inputHint.textContent = `已创建新数据集: ${name}`;
     localStorage.setItem('smarttable_current_dataset', name);
 }
 
+/**
+ * 打开重命名弹窗
+ */
 function renameDataset() {
     dom.renameOldName.textContent = STORAGE_KEY_DATA;
     dom.renameDatasetName.value = '';
@@ -601,71 +789,95 @@ function renameDataset() {
     setTimeout(() => dom.renameDatasetName.focus(), 100);
 }
 
+/**
+ * 确认重命名数据集
+ */
 function confirmRenameDataset() {
     const newName = dom.renameDatasetName.value.trim();
     if (!newName) { showAlert('新名称不能为空。'); return; }
     if (newName === STORAGE_KEY_DATA) { closeModal(dom.modalRenameDataset); return; }
     if (getDatasetList().includes(newName)) { showAlert('该名称已存在，请使用其他名称。'); return; }
+
     const data = localStorage.getItem(STORAGE_KEY_DATA);
     localStorage.setItem(newName, data || '[]');
     removeDatasetKey(STORAGE_KEY_DATA);
     STORAGE_KEY_DATA = newName;
     addDatasetKey(newName);
     saveData();
-    updateDatasetDisplay(); updateDatasetSelect();
+    updateDatasetDisplay();
+    updateDatasetSelect();
     closeModal(dom.modalRenameDataset);
     dom.inputHint.textContent = `已重命名为: ${newName}`;
     localStorage.setItem('smarttable_current_dataset', newName);
 }
 
+/**
+ * 删除数据集流程入口
+ */
 function deleteDataset() {
-    if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
+    if (PROTECTED_DATASETS.includes(STORAGE_KEY_DATA)) {
         showAlert('系统数据集不可删除。', '操作阻止');
         return;
     }
-    var list = getDatasetList();
+    const list = getDatasetList();
     if (list.length <= 1) { showAlert('至少需要保留一个数据集。', '无法删除'); return; }
     openDeleteConfirmModal();
 }
 
+/**
+ * 确认删除数据集
+ */
 function confirmDeleteDataset() {
-    if (PROTECTED_DATASETS.indexOf(STORAGE_KEY_DATA) !== -1) {
+    if (PROTECTED_DATASETS.includes(STORAGE_KEY_DATA)) {
         showAlert('系统数据集不可删除。', '操作阻止');
         closeModal(dom.modalDeleteDataset);
         return;
     }
-    var currentKey = STORAGE_KEY_DATA;
+
+    const currentKey = STORAGE_KEY_DATA;
     localStorage.removeItem(currentKey);
     removeDatasetKey(currentKey);
-    var remaining = getDatasetList();
-    var newKey = remaining[0] || DEFAULT_STORAGE_KEY;
+
+    const remaining = getDatasetList();
+    const newKey = remaining[0] || DEFAULT_STORAGE_KEY;
     STORAGE_KEY_DATA = newKey;
-    if (!loadData()) { state.rows = createInitialRows(); saveData(); }
-    updateDatasetDisplay(); updateDatasetSelect();
+    if (!loadData()) {
+        state.rows = createInitialRows();
+        saveData();
+    }
+    updateDatasetDisplay();
+    updateDatasetSelect();
     renderAllTables();
     closeModal(dom.modalDeleteDataset);
     dom.inputHint.textContent = '已删除，切换至: ' + newKey;
     localStorage.setItem('smarttable_current_dataset', newKey);
 }
 
+/**
+ * 清空当前数据集
+ */
 function clearAllData() {
-    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
-        if (baselineRows) {
-            for (let r = 0; r < baselineRows.length; r++) {
-                for (let c = 0; c < baselineRows[r].data.length; c++) {
-                    if (baselineRows[r].data[c].v !== '' || baselineRows[r].data[c].t > 0) {
-                        showAlert('默认数据集包含初始数据，不能清空。', '操作限制');
-                        return;
-                    }
+    // 默认数据集保护
+    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY && baselineRows) {
+        for (let r = 0; r < baselineRows.length; r++) {
+            for (let c = 0; c < baselineRows[r].data.length; c++) {
+                if (baselineRows[r].data[c].v !== '' || baselineRows[r].data[c].t > 0) {
+                    showAlert('默认数据集包含初始数据，不能清空。', '操作限制');
+                    return;
                 }
             }
         }
     }
+
     state.rows.forEach(row => row.data = createEmptyRowData());
-    renderAllTables(); saveData();
+    renderAllTables();
+    saveData();
     dom.inputHint.textContent = '当前数据集已清空';
 }
 
+/**
+ * 重置默认数据集
+ */
 function resetDefaultDataset() {
     if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) {
         showAlert('当前不是默认数据集，无需重置。', '提示');
@@ -675,23 +887,21 @@ function resetDefaultDataset() {
         showAlert('默认数据模板缺失，无法重置。', '错误');
         return;
     }
+
     showConfirmDialog(
         '将默认数据集重置为初始数据，所有用户添加或修改的数据都将丢失，确定继续吗？',
-        function() {
-            // 执行重置
-            state.rows = DEFAULT_ROWS.map(function(row) {
-                return {
-                    name: row.name,
-                    data: row.data.map(normalizeCell)
-                };
-            });
-            saveData();                 // 保存到 localStorage
+        () => {
+            state.rows = DEFAULT_ROWS.map(row => ({
+                name: row.name,
+                data: row.data.map(normalizeCell)
+            }));
+            saveData();
             renderAllTables();
-            saveBaseline();             // 刷新基准
+            saveBaseline();
             updateLockedUI();
             dom.inputHint.textContent = '默认数据集已重置为初始数据。';
         },
-        function() {
+        () => {
             dom.inputHint.textContent = '已取消重置。';
         },
         '重置默认数据集'
@@ -699,11 +909,15 @@ function resetDefaultDataset() {
 }
 
 // ========== 清空/删除确认弹窗 ==========
+/**
+ * 打开清空确认弹窗，启动倒计时
+ */
 function openClearAllModal() {
     dom.clearAllInput.value = '';
     dom.clearAllCountdown.textContent = '15';
     dom.btnConfirmClearAll.disabled = true;
     openModal(dom.modalClearAll);
+
     if (clearAllTimer) clearInterval(clearAllTimer);
     let seconds = 15;
     clearAllTimer = setInterval(() => {
@@ -718,16 +932,28 @@ function openClearAllModal() {
     }, 1000);
 }
 
+/**
+ * 检查清空确认按钮是否可点击
+ */
 function checkClearAllButton() {
     const timeUp = parseInt(dom.clearAllCountdown.textContent) <= 0;
     dom.btnConfirmClearAll.disabled = !timeUp;
 }
 
+/**
+ * 关闭清空确认弹窗
+ */
 function closeClearAllModal() {
-    if (clearAllTimer) { clearInterval(clearAllTimer); clearAllTimer = null; }
+    if (clearAllTimer) {
+        clearInterval(clearAllTimer);
+        clearAllTimer = null;
+    }
     closeModal(dom.modalClearAll);
 }
 
+/**
+ * 执行清空操作
+ */
 function executeClearAll() {
     if (dom.clearAllInput.value.trim() !== '我确认清空') {
         closeClearAllModal();
@@ -738,9 +964,13 @@ function executeClearAll() {
     clearAllData();
 }
 
+/**
+ * 打开清空错误提示弹窗
+ */
 function openClearErrorModal() {
     dom.errorCountdown.textContent = '5';
     openModal(dom.modalClearError);
+
     if (clearErrorTimer) clearInterval(clearErrorTimer);
     let seconds = 5;
     clearErrorTimer = setInterval(() => {
@@ -754,17 +984,27 @@ function openClearErrorModal() {
     }, 1000);
 }
 
+/**
+ * 关闭清空错误提示弹窗
+ */
 function closeClearErrorModal() {
-    if (clearErrorTimer) { clearInterval(clearErrorTimer); clearErrorTimer = null; }
+    if (clearErrorTimer) {
+        clearInterval(clearErrorTimer);
+        clearErrorTimer = null;
+    }
     closeModal(dom.modalClearError);
 }
 
+/**
+ * 打开删除确认弹窗
+ */
 function openDeleteConfirmModal() {
     dom.deleteConfirmDatasetName.textContent = STORAGE_KEY_DATA;
     dom.deleteConfirmInput.value = '';
     dom.deleteConfirmCountdown.textContent = '15';
     dom.btnConfirmDeleteAction.disabled = true;
     openModal(dom.modalDeleteConfirm);
+
     if (deleteConfirmTimer) clearInterval(deleteConfirmTimer);
     let seconds = 15;
     deleteConfirmTimer = setInterval(() => {
@@ -779,16 +1019,28 @@ function openDeleteConfirmModal() {
     }, 1000);
 }
 
+/**
+ * 检查删除确认按钮是否可点击
+ */
 function checkDeleteConfirmButton() {
     const timeUp = parseInt(dom.deleteConfirmCountdown.textContent) <= 0;
     dom.btnConfirmDeleteAction.disabled = !timeUp;
 }
 
+/**
+ * 关闭删除确认弹窗
+ */
 function closeDeleteConfirmModal() {
-    if (deleteConfirmTimer) { clearInterval(deleteConfirmTimer); deleteConfirmTimer = null; }
+    if (deleteConfirmTimer) {
+        clearInterval(deleteConfirmTimer);
+        deleteConfirmTimer = null;
+    }
     closeModal(dom.modalDeleteConfirm);
 }
 
+/**
+ * 执行删除操作
+ */
 function executeDeleteAction() {
     if (dom.deleteConfirmInput.value.trim() !== '我确认删除') {
         closeDeleteConfirmModal();
@@ -799,9 +1051,13 @@ function executeDeleteAction() {
     confirmDeleteDataset();
 }
 
+/**
+ * 打开删除错误提示弹窗
+ */
 function openDeleteErrorModal() {
     dom.deleteErrorCountdown.textContent = '5';
     openModal(dom.modalDeleteError);
+
     if (deleteErrorTimer) clearInterval(deleteErrorTimer);
     let seconds = 5;
     deleteErrorTimer = setInterval(() => {
@@ -815,37 +1071,55 @@ function openDeleteErrorModal() {
     }, 1000);
 }
 
+/**
+ * 关闭删除错误提示弹窗
+ */
 function closeDeleteErrorModal() {
-    if (deleteErrorTimer) { clearInterval(deleteErrorTimer); deleteErrorTimer = null; }
+    if (deleteErrorTimer) {
+        clearInterval(deleteErrorTimer);
+        deleteErrorTimer = null;
+    }
     closeModal(dom.modalDeleteError);
 }
 
-// ========== 搜索 ==========
+// ========== 行筛选 ==========
+/**
+ * 获取当前筛选后的行数据
+ * @returns {Array}
+ */
 function getFilteredRows() {
     const selected = new Set(state.selectedRows);
     return state.rows.filter(row => selected.has(row.name));
 }
 
+// ========== 示例数据生成 ==========
+/**
+ * 生成示例数据（随机填充）
+ * @returns {Array}
+ */
 function createSampleRows() {
-    var rows = createInitialRows();
-    var rowCount = rows.length;
-    var colCount = rows[0].data.length;
-    var fillProbability = 0.4;
-    for (var r = 0; r < rowCount; r++) {
-        for (var c = 0; c < colCount; c++) {
+    const rows = createInitialRows();
+    const rowCount = rows.length;
+    const colCount = rows[0].data.length;
+    const fillProbability = 0.4;
+
+    for (let r = 0; r < rowCount; r++) {
+        for (let c = 0; c < colCount; c++) {
             if (Math.random() < fillProbability) {
-                var cell = rows[r].data[c];
+                const cell = rows[r].data[c];
                 if (Math.random() < 0.5) {
-                    var t = Math.floor(Math.random() * 3) + 1;
-                    var a = Math.floor(Math.random() * (t + 1));
+                    // 实装基质
+                    const t = Math.floor(Math.random() * 3) + 1;
+                    const a = Math.floor(Math.random() * (t + 1));
                     cell.t = t;
                     cell.a = a;
                     cell.v = '';
                 } else {
-                    var d1 = Math.floor(Math.random() * 6) + 1;
-                    var d2 = Math.floor(Math.random() * 6) + 1;
-                    var d3 = Math.floor(Math.random() * 3) + 1;
-                    cell.v = '' + d1 + d2 + d3;
+                    // 普通数值
+                    const d1 = Math.floor(Math.random() * 6) + 1;
+                    const d2 = Math.floor(Math.random() * 6) + 1;
+                    const d3 = Math.floor(Math.random() * 3) + 1;
+                    cell.v = `${d1}${d2}${d3}`;
                     cell.t = 0;
                     cell.a = 0;
                 }

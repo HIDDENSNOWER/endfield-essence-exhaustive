@@ -1,4 +1,4 @@
-/* ========== 主题变量 ========== */
+/* ==================== 主题变量 ==================== */
 :root {
     --bg-primary: #f5f7fa;
     --bg-secondary: #eef1f5;
@@ -37,6 +37,7 @@
     --cell-font-size: 12px;
 }
 
+/* 暗色主题变量 */
 [data-theme="dark"] {
     --bg-primary: #0d1117;
     --bg-secondary: #161b22;
@@ -68,6 +69,7 @@
     --modal-input-bg: #0a0e14;
 }
 
+/* ==================== 全局重置与基础 ==================== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; }
 body {
@@ -84,7 +86,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
 
-/* 导航栏 */
+/* ==================== 导航栏 ==================== */
 .navbar {
     background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-default);
@@ -109,7 +111,7 @@ body {
 .btn-icon:hover { background-color: var(--bg-hover); color: var(--text-primary); }
 .btn-icon svg { width: 16px; height: 16px; }
 
-/* 主布局 */
+/* ==================== 主布局 ==================== */
 .main-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 
 /* 表格区 */
@@ -133,7 +135,7 @@ table {
     font-size: 0.72rem;
     white-space: nowrap;
     width: auto;
-    table-layout: fixed;   /* 新增：固定布局，列宽由 <col> 决定 */
+    table-layout: fixed;
 }
 thead th, tbody td {
     padding: 0 2px; border: 1px solid var(--border-muted);
@@ -168,7 +170,7 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
 .status-full { background-color: var(--status-full-bg) !important; }
 .has-value { background-color: var(--has-value-bg) !important; }
 
-/* 侧边栏 */
+/* ==================== 侧边栏 ==================== */
 .sidebar {
     width: var(--sidebar-width); background-color: var(--bg-primary);
     border-left: 1px solid var(--border-default);
@@ -176,32 +178,11 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
     padding: 8px 0; flex-shrink: 0;
     position: relative; z-index: 10;
 }
-/* ========== 左侧侧边栏 ========== */
 .left-sidebar {
     border-left: none;
     border-right: 1px solid var(--border-default);
 }
 
-/* ========== 空页面 ========== */
-.empty-page {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--bg-secondary);
-}
-
-.empty-page-content {
-    text-align: center;
-    color: var(--text-tertiary);
-    font-size: 1.2rem;
-    opacity: 0.6;
-}
-
-.empty-page-content p {
-    margin-top: 16px;
-    font-size: 1rem;
-}
 .sidebar-btn {
     width: 40px; height: 40px; border-radius: var(--radius-md);
     border: 1px solid transparent; background: transparent;
@@ -215,7 +196,26 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
     color: var(--accent-primary); box-shadow: var(--shadow-sm);
 }
 
-/* 面板容器 */
+/* ==================== 空页面 ==================== */
+.empty-page {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-secondary);
+}
+.empty-page-content {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+.empty-page-content p {
+    margin-top: 16px;
+    font-size: 1rem;
+}
+
+/* ==================== 面板容器 ==================== */
 .panel-container {
     width: var(--panel-width); flex-shrink: 0;
     display: flex; flex-direction: column;
@@ -242,7 +242,7 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
     border-radius: 4px; background-color: var(--bg-primary); color: var(--text-primary);
 }
 
-/* 按钮系统 */
+/* ==================== 按钮系统 ==================== */
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 6px 14px; font-size: 0.82rem; font-weight: 500; border-radius: var(--radius-md);
@@ -270,7 +270,7 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
 .select-input-row select { flex: 2 1 0; min-width: 0; }
 .select-input-row .triple-input { flex: 1 1 0; min-width: 0; text-align: center; width: auto; }
 
-/* 统计面板 */
+/* ==================== 统计面板 ==================== */
 .stats-content { font-size: 0.78rem; }
 .stats-content table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.75rem; }
 .stats-content th, .stats-content td { padding: 6px 8px; border: 1px solid var(--border-muted); text-align: center; }
@@ -302,11 +302,11 @@ tbody td:first-child:hover { outline: 2px solid var(--accent-primary); outline-o
     border-radius: 4px; background-color: var(--bg-primary); color: var(--text-primary); font-size: 0.78rem;
 }
 
-/* 设置滑块 */
+/* ==================== 设置滑块 ==================== */
 .range-value { font-size: 0.75rem; color: var(--text-secondary); margin-left: 8px; font-weight: 500; }
 input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-primary); }
 
-/* 弹窗 */
+/* ==================== 弹窗 ==================== */
 .modal-overlay {
     position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
     display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px;
@@ -332,7 +332,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 /* 导航栏操作区 */
 .navbar-actions { display: flex; align-items: center; gap: 8px; }
 
-/* 响应式 */
+/* ==================== 响应式 ==================== */
 @media (max-width: 768px) {
     .main-layout { flex-direction: column; }
     .sidebar { flex-direction: row; width: 100%; height: 44px; border-left: none; border-bottom: 1px solid var(--border-default); }
@@ -360,7 +360,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     margin: -12px -8px 6px -8px;
 }
 
-/* 设置弹窗 - 覆盖界面80% */
+/* ==================== 设置弹窗 ==================== */
 .settings-modal {
     width: 80vw;
     max-width: 80vw;
@@ -397,12 +397,11 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 .settings-panels { flex: 1; padding: 20px; overflow-y: auto; }
 .settings-panel-content { display: none; }
 .settings-panel-content.active { display: block; }
-/* ========== 单元格颜色预览 & 编辑专用样式（修复版） ========== */
 
-/* 预览表格容器 */
+/* ==================== 颜色预览与编辑 ==================== */
 .color-preview-main-wrapper {
     width: fit-content;
-    max-width: 90%;               /* 桌面端加宽 */
+    max-width: 90%;
     margin: 0;
     overflow-x: auto;
     border: 1px solid var(--border-default);
@@ -412,8 +411,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     margin-top: 8px;
     -webkit-overflow-scrolling: touch;
 }
-
-/* 表格基础 */
 .color-preview-main-wrapper table {
     table-layout: fixed;
     width: calc(var(--name-col-width) + 10 * var(--col-width));
@@ -421,8 +418,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     font-size: 0.72rem;
     color: var(--text-cell);
 }
-
-/* 所有单元格通用样式 */
 .color-preview-main-wrapper th,
 .color-preview-main-wrapper td {
     border: 1px solid var(--border-muted);
@@ -437,37 +432,28 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-/* 行名/表头第一列 */
 .color-preview-main-wrapper td:first-child,
 .color-preview-main-wrapper th:first-child {
     width: var(--name-col-width);
     min-width: var(--name-col-width);
 }
-
-/* 数据列宽度 */
 .color-preview-main-wrapper td:not(:first-child),
 .color-preview-main-wrapper th:not(:first-child):not([colspan]) {
     width: var(--col-width);
     min-width: var(--col-width);
     max-width: var(--col-width);
 }
-
-/* 左右布局：预览表格 + 数量控制 */
 .color-preview-layout {
     display: flex;
     gap: 12px;
     align-items: flex-start;
 }
-
-/* 右侧数量控制区 */
 .color-preview-controls {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
-
 .count-row {
     display: flex;
     align-items: center;
@@ -488,14 +474,11 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-primary);
     text-align: center;
 }
-
-/* 颜色编辑面板 */
 .color-edit-panel {
     margin-top: 12px;
     border-top: 1px solid var(--border-muted);
     padding-top: 10px;
 }
-
 .color-states-row {
     display: flex;
     gap: 4px;
@@ -518,7 +501,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: #fff;
     border-color: var(--accent-primary);
 }
-
 .color-edit-row {
     display: flex;
     align-items: center;
@@ -526,7 +508,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     flex-wrap: wrap;
     margin-bottom: 8px;
 }
-
 .color-box-group {
     display: flex;
     flex-direction: column;
@@ -548,7 +529,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     font-family: monospace;
     color: var(--text-tertiary);
 }
-
 .color-picker-input {
     width: 30px;
     height: 24px;
@@ -558,7 +538,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     background: none;
     cursor: pointer;
 }
-
 .color-format-row {
     display: flex;
     align-items: center;
@@ -576,7 +555,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     display: flex;
     gap: 3px;
     align-items: center;
-    min-height: 28px;               /* 确保切换格式时容器不塌陷 */
+    min-height: 28px;
 }
 .color-inputs-container input {
     width: 48px;
@@ -591,7 +570,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 .color-inputs-container input[data-type="hex"] {
     width: 80px;
 }
-
 #btnApplyColors {
     margin-top: 6px;
 }
@@ -600,9 +578,9 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 #modalAlert {
     z-index: 300 !important;
 }
-/* ===================== 手机端全屏 + 自适应表格 ===================== */
+
+/* ==================== 手机端全屏 + 自适应表格 ==================== */
 @media (max-width: 600px) {
-    /* 设置弹窗全屏 */
     .settings-modal {
         width: 100vw;
         max-width: 100vw;
@@ -636,13 +614,9 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     .settings-panels {
         padding: 12px;
     }
-
-    /* 预览表格与控制区上下排列 */
     .color-preview-layout {
         flex-direction: column;
     }
-
-    /* 预览表格容器：全宽，无缩放 */
     .color-preview-main-wrapper {
         max-width: 100%;
         width: 100%;
@@ -650,27 +624,21 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
         transform: none;
         margin-bottom: 0;
     }
-
-    /* 表格基础：固定列宽百分比，字体响应式 */
     .color-preview-main-wrapper table {
         width: 100%;
         table-layout: fixed;
         border-collapse: collapse;
     }
-
-    /* 所有单元格通用样式：动态字体 */
     .color-preview-main-wrapper th,
     .color-preview-main-wrapper td {
         font-size: clamp(10px, 2vw, 14px) !important;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;   /* 字体足够小，极少触发省略 */
+        text-overflow: ellipsis;
         padding: 0 1px;
         height: auto;
         line-height: 1.3;
     }
-
-    /* 行名/表头第一列：宽度 22% */
     .color-preview-main-wrapper td:first-child,
     .color-preview-main-wrapper th:first-child {
         width: 22%;
@@ -678,16 +646,12 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
         font-size: clamp(10px, 2vw, 14px) !important;
         padding-left: 4px;
     }
-
-    /* 数据列宽度：每列 7.8% */
     .color-preview-main-wrapper td:not(:first-child),
     .color-preview-main-wrapper th:not(:first-child):not([colspan]) {
         width: 7.8%;
         min-width: 7.8%;
         max-width: 7.8%;
     }
-
-    /* 数量控制区：换行排列 */
     .color-preview-controls {
         width: 100%;
         flex-direction: row;
@@ -697,7 +661,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     .count-row {
         flex: 1 1 auto;
     }
-
     .btn-row-filter {
         min-width: 0;
         padding: 6px 10px;
@@ -714,17 +677,17 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 
 /* 确保全屏设置弹窗正确覆盖视口 */
 .modal-overlay {
-    padding: 0 !important;          /* 移除内边距 */
-    align-items: flex-start;        /* 从顶部开始，防止全屏弹窗被裁剪 */
+    padding: 0 !important;
+    align-items: flex-start;
     display: flex;
-    justify-content: center;        
+    justify-content: center;
 }
 .settings-modal {
-    margin: 0;                      /* 无外边距 */
-    align-self: center;             /* 水平居中 */
+    margin: 0;
+    align-self: center;
 }
 
-/* 备注显示区域 */
+/* ==================== 备注显示区域 ==================== */
 .remark-display {
     display: block;
     padding: 5px 8px;
@@ -734,10 +697,10 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-primary);
     font-size: 0.8rem;
     line-height: 1.4;
-    white-space: pre-wrap;          /* 保留换行，自动换行 */
-    word-break: break-word;         /* 长单词/外文自动断行 */
-    max-height: calc(1.4em * 5 + 10px); /* 显示5行，1.4为行高，加内边距 */
-    overflow-y: auto;               /* 超出滚动 */
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: calc(1.4em * 5 + 10px);
+    overflow-y: auto;
     cursor: default;
     min-height: 28px;
 }
@@ -762,7 +725,8 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-primary);
     font-family: inherit;
 }
-/* 右侧面板折叠系统 */
+
+/* ==================== 右侧面板折叠系统 ==================== */
 .main-layout.right-collapsed .panel-container {
     display: none;
 }
@@ -770,7 +734,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     display: none;
 }
 
-/* ========== 版本信息底栏 ========== */
+/* ==================== 版本信息底栏 ==================== */
 .app-footer {
     height: 28px;
     background-color: var(--bg-primary);
@@ -780,12 +744,10 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     justify-content: center;
     font-size: 0.72rem;
     color: var(--text-secondary);
-    flex-shrink: 0;          /* 防止被压缩 */
-    z-index: 10;             /* 确保在其他内容之上，但低于模态框 */
-    user-select: none;       /* 禁止选中 */
+    flex-shrink: 0;
+    z-index: 10;
+    user-select: none;
 }
-
-/* 底栏版本按钮 */
 .footer-version-btn {
     background: none;
     border: none;
@@ -799,8 +761,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--accent-primary);
     text-decoration: underline;
 }
-
-/* 版本信息弹窗内容排版 */
 .version-info-content {
     padding: 8px 0;
 }
@@ -838,29 +798,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-secondary);
 }
 
-/* 行筛选弹窗 */
-.row-filter-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    max-height: 300px;
-    overflow-y: auto;
-}
-.row-filter-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    color: var(--text-primary);
-}
-.row-filter-item input[type="checkbox"] {
-    accent-color: var(--accent-primary);
-    width: 15px;
-    height: 15px;
-    cursor: pointer;
-}
-
-/* ========== 行筛选按钮 ========== */
+/* ==================== 行筛选 ==================== */
 .btn-row-filter {
     display: inline-flex;
     align-items: center;
@@ -893,8 +831,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     color: var(--text-primary);
     line-height: 1;
 }
-
-/* ========== 行筛选弹窗优化 ========== */
 .row-filter-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -924,8 +860,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     cursor: pointer;
     flex-shrink: 0;
 }
-
-/* 弹窗按钮容器 */
 .row-filter-actions {
     display: flex;
     gap: 8px;
@@ -937,9 +871,7 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     font-size: 0.8rem;
 }
 
-/* ========== 单元格备注功能 ========== */
-
-/* 备注图片上传行 */
+/* ==================== 单元格备注功能 ==================== */
 .note-image-upload-row {
     display: flex;
     gap: 8px;
@@ -984,8 +916,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 .note-image-thumb .note-image-remove:hover {
     background: rgba(220, 50, 50, 0.8);
 }
-
-/* 备注悬浮框 */
 .note-tooltip {
     position: fixed;
     z-index: 400;
@@ -1000,8 +930,8 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    resize: both;           /* 提供原生调整手柄，但我们也会自定义 */
-    user-select: none;      /* 拖拽时防止选中文本 */
+    resize: both;
+    user-select: none;
 }
 .note-tooltip-header {
     display: flex;
@@ -1078,8 +1008,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     cursor: nwse-resize;
     background: linear-gradient(135deg, transparent 50%, var(--border-emphasis) 50%);
 }
-
-/* 悬浮框布局模式 */
 .note-tooltip.layout-text-top .note-tooltip-body {
     display: flex;
     flex-direction: column;
@@ -1099,7 +1027,6 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 .note-tooltip.layout-horizontal .note-image-gallery {
     flex: 1;
 }
-
 #cellNoteText {
     font-size: 0.8rem;
     line-height: 1.4;

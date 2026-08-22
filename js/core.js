@@ -1,12 +1,17 @@
-// core.js - 全局状态、常量、DOM引用与基础工具函数（含默认数据集保护）
+/**
+ * core.js - 全局状态、常量、DOM 引用与基础工具函数
+ * 包含：数据定义、单元格元数据、状态管理、DOM 缓存、工具函数、默认数据集保护
+ */
 
-var STORAGE_KEY_THEME = 'smarttable_theme';
-var DEFAULT_STORAGE_KEY = '默认数据集';
-var DATASET_LIST_KEY = 'smarttable_dataset_list';
-var STORAGE_KEY_DATA = DEFAULT_STORAGE_KEY;
-var PROTECTED_DATASETS = ['默认数据集', '数据示例-表格样式参考'];
+// ========== 存储键与常量 ==========
+const STORAGE_KEY_THEME = 'smarttable_theme';
+const DEFAULT_STORAGE_KEY = '默认数据集';
+const DATASET_LIST_KEY = 'smarttable_dataset_list';
+let STORAGE_KEY_DATA = DEFAULT_STORAGE_KEY;
+const PROTECTED_DATASETS = ['默认数据集', '数据示例-表格样式参考'];
 
-var ALL_GROUPS = [
+// ========== 词条组与行列定义 ==========
+const ALL_GROUPS = [
     { name: '强攻', sub: ['敏捷','力量','意志','智识','主能力'] },
     { name: '压制', sub: ['敏捷','力量','意志','智识','主能力'] },
     { name: '追袭', sub: ['敏捷','力量','意志','智识','主能力'] },
@@ -22,48 +27,70 @@ var ALL_GROUPS = [
     { name: '流转', sub: ['敏捷','力量','意志','智识','主能力'] },
     { name: '效益', sub: ['敏捷','力量','意志','智识','主能力'] }
 ];
-var GROUP1 = ALL_GROUPS.slice(0, 7);
-var GROUP2 = ALL_GROUPS.slice(7);
-var COLS1 = GROUP1.reduce(function(s,g){ return s + g.sub.length; }, 0);
-var COLS2 = GROUP2.reduce(function(s,g){ return s + g.sub.length; }, 0);
-var ROW_NAMES = [
+
+const GROUP1 = ALL_GROUPS.slice(0, 7);
+const GROUP2 = ALL_GROUPS.slice(7);
+const COLS1 = GROUP1.reduce((s, g) => s + g.sub.length, 0);
+const COLS2 = GROUP2.reduce((s, g) => s + g.sub.length, 0);
+
+const ROW_NAMES = [
     '攻击提升', '生命提升', '暴击率提升', '物理伤害提升', '灼热伤害提升',
     '法术伤害提升', '自然伤害提升', '电磁伤害提升', '寒冷伤害提升',
     '源石技艺提升', '治疗效率提升', '终结技效率提升'
 ];
 
-function defaultCellMeta() { 
-    return { v: '', t: 0, a: 0, note: { text: '', images: [] } }; 
+// ========== 单元格数据模型 ==========
+/**
+ * 创建默认的单元格元数据
+ * @returns {{v: string, t: number, a: number, note: {text: string, images: string[]}}}
+ */
+function defaultCellMeta() {
+    return { v: '', t: 0, a: 0, note: { text: '', images: [] } };
 }
-function createEmptyRowData() { return new Array(70).fill(null).map(function(){ return defaultCellMeta(); }); }
-function createInitialRows() { return ROW_NAMES.map(function(name){ return { name: name, data: createEmptyRowData() }; }); }
 
-var state = {
+/**
+ * 创建空行数据（70 列）
+ * @returns {Array<{v: string, t: number, a: number, note: Object}>}
+ */
+function createEmptyRowData() {
+    return new Array(70).fill(null).map(() => defaultCellMeta());
+}
+
+/**
+ * 创建初始行数据（12 个提升项，每个含 70 列空数据）
+ * @returns {Array<{name: string, data: Array}>}
+ */
+function createInitialRows() {
+    return ROW_NAMES.map(name => ({ name, data: createEmptyRowData() }));
+}
+
+// ========== 全局状态 ==========
+const state = {
     rows: createInitialRows(),
-    // searchQuery 可移除，此处保留但不再使用
-    searchQuery: '',
+    searchQuery: '',               // 已不再使用，保留兼容
     theme: 'light',
     activePanel: 'input',
     history: [],
     historyIndex: -1,
     leftPanel: 'table',
     rightPanelCollapsed: false,
-    selectedRows: ROW_NAMES.slice()   // 默认全选，存储行名字符串
+    selectedRows: ROW_NAMES.slice()   // 当前筛选显示的行（默认全部）
 };
-var pendingApply = null;
-var confirmCallback = null;
-var clearAllTimer = null;
-var clearErrorTimer = null;
-var deleteConfirmTimer = null;
-var deleteErrorTimer = null;
-var highlightedCellElement = null;
-var statsSortBy = 'totalMatrix';
-var statsSortOrder = 'desc';
 
-// 默认数据集保护基准数据（仅对默认数据集记录初始状态，用于防止已有数据被删减）
-var baselineRows = null;
+// ========== 其他全局状态 ==========
+let pendingApply = null;          // 等待应用的新值信息
+let confirmCallback = null;       // 二次确认回调
+let clearAllTimer = null;         // 清空倒计时定时器
+let clearErrorTimer = null;       // 清空错误提示定时器
+let deleteConfirmTimer = null;    // 删除倒计时定时器
+let deleteErrorTimer = null;      // 删除错误提示定时器
+let highlightedCellElement = null; // 当前高亮的单元格 DOM
+let statsSortBy = 'totalMatrix';  // 统计排序依据
+let statsSortOrder = 'desc';      // 统计排序方向
+let baselineRows = null;          // 默认数据集保护基准数据
 
-var dom = {
+// ========== DOM 引用缓存 ==========
+const dom = {
     tableHead1: document.getElementById('tableHead1'),
     tableBody1: document.getElementById('tableBody1'),
     tableHead2: document.getElementById('tableHead2'),
@@ -233,9 +260,16 @@ var dom = {
     btnNoteTooltipClose: document.getElementById('btnNoteTooltipClose'),
     btnNoteTooltipLayout: document.getElementById('btnNoteTooltipLayout'),
     noteTooltipResizer: document.getElementById('noteTooltipResizer'),
-    };
+};
 
+// ========== 单元格数据标准化 ==========
+/**
+ * 将各种格式的单元格数据转换为标准对象
+ * @param {Object|string|number} cell - 原始单元格数据
+ * @returns {{v: string, t: number, a: number, note: Object}}
+ */
 function normalizeCell(cell) {
+    // 已为标准对象
     if (typeof cell === 'object' && cell !== null && 'v' in cell && 't' in cell && 'a' in cell) {
         if (!cell.note || typeof cell.note !== 'object') {
             cell.note = { text: '', images: [] };
@@ -243,17 +277,30 @@ function normalizeCell(cell) {
         if (!Array.isArray(cell.note.images)) cell.note.images = [];
         return cell;
     }
-    if (typeof cell === 'string' || typeof cell === 'number') return { v: cell === '' ? '' : String(cell), t: 0, a: 0, note: { text: '', images: [] } };
+    // 字符串或数字（旧版数据）
+    if (typeof cell === 'string' || typeof cell === 'number') {
+        return { v: cell === '' ? '' : String(cell), t: 0, a: 0, note: { text: '', images: [] } };
+    }
+    // 兜底
     return defaultCellMeta();
 }
 
 // ========== 基础工具函数 ==========
-function isDarkTheme() { return state.theme === 'dark'; }
+/**
+ * 判断当前是否为暗色主题
+ * @returns {boolean}
+ */
+function isDarkTheme() {
+    return state.theme === 'dark';
+}
 
 // ========== 下拉框填充与联动 ==========
+/**
+ * 填充所有下拉框选项
+ */
 function populateDropdowns() {
-    var rowOpts = ROW_NAMES.map(function(n,i){ return '<option value="' + i + '">' + n + '</option>'; }).join('');
-    var groupOpts = ALL_GROUPS.map(function(g,i){ return '<option value="' + i + '">' + g.name + '</option>'; }).join('');
+    const rowOpts = ROW_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+    const groupOpts = ALL_GROUPS.map((g, i) => `<option value="${i}">${g.name}</option>`).join('');
     dom.inputRow.innerHTML = rowOpts;
     dom.inputGroup.innerHTML = groupOpts;
     dom.recordRow.innerHTML = rowOpts;
@@ -261,67 +308,114 @@ function populateDropdowns() {
     updateSubColOptions(0);
     updateRecordSubColOptions(0);
 }
+
+/**
+ * 更新数据输入面板的副属性下拉框
+ * @param {number} groupIdx - 词条组索引
+ */
 function updateSubColOptions(groupIdx) {
-    dom.inputSubCol.innerHTML = ALL_GROUPS[groupIdx].sub.map(function(s,i){ return '<option value="' + i + '">' + s + '</option>'; }).join('');
-}
-function updateRecordSubColOptions(groupIdx) {
-    dom.recordSubCol.innerHTML = ALL_GROUPS[groupIdx].sub.map(function(s,i){ return '<option value="' + i + '">' + s + '</option>'; }).join('');
+    dom.inputSubCol.innerHTML = ALL_GROUPS[groupIdx].sub
+        .map((s, i) => `<option value="${i}">${s}</option>`).join('');
 }
 
+/**
+ * 更新录入面板的副属性下拉框
+ * @param {number} groupIdx - 词条组索引
+ */
+function updateRecordSubColOptions(groupIdx) {
+    dom.recordSubCol.innerHTML = ALL_GROUPS[groupIdx].sub
+        .map((s, i) => `<option value="${i}">${s}</option>`).join('');
+}
+
+/**
+ * 根据词条组索引和副属性索引计算全局列索引
+ * @param {number} groupIdx - 词条组索引
+ * @param {number} subIdx - 副属性索引
+ * @returns {number} 全局列索引（0-69）
+ */
 function getColumnIndex(groupIdx, subIdx) {
-    var col = 0;
-    for (var i=0; i<groupIdx; i++) col += ALL_GROUPS[i].sub.length;
+    let col = 0;
+    for (let i = 0; i < groupIdx; i++) col += ALL_GROUPS[i].sub.length;
     return col + subIdx;
 }
 
-function parseTriple(val) { var s = String(val).trim(); return /^\d{3}$/.test(s) ? s.split('').map(Number) : null; }
-function calcSum(arr) { return arr.reduce(function(a,b){ return a+b; }, 0); }
+/**
+ * 解析三位数字字符串
+ * @param {string} val
+ * @returns {number[]|null} 解析成功返回数字数组，否则 null
+ */
+function parseTriple(val) {
+    const s = String(val).trim();
+    return /^\d{3}$/.test(s) ? s.split('').map(Number) : null;
+}
 
+/**
+ * 计算数组元素之和
+ * @param {number[]} arr
+ * @returns {number}
+ */
+function calcSum(arr) {
+    return arr.reduce((a, b) => a + b, 0);
+}
+
+/**
+ * 重置三个输入框为默认值 '1'
+ */
 function resetTripleInputs() {
     dom.inputVal1.value = '1';
     dom.inputVal2.value = '1';
     dom.inputVal3.value = '1';
 }
 
+/**
+ * 为单个字符输入框启用滚轮增减和数字过滤
+ * @param {HTMLInputElement} inputEl
+ */
 function enableTripleInputScroll(inputEl) {
-    inputEl.addEventListener('wheel', function(e) {
+    inputEl.addEventListener('wheel', function (e) {
         e.preventDefault();
-        var cur = this.value.trim();
-        var num = parseInt(cur);
-        if (cur === '' || isNaN(num) || num === 0) {
+        let num = parseInt(this.value);
+        if (isNaN(num) || num === 0) {
             num = e.deltaY > 0 ? 9 : 1;
         } else {
-            if (e.deltaY > 0) {
-                num = num === 1 ? 9 : num - 1;
-            } else {
-                num = num === 9 ? 1 : num + 1;
-            }
+            num = e.deltaY > 0 ? (num === 1 ? 9 : num - 1) : (num === 9 ? 1 : num + 1);
         }
         this.value = num;
         this.dispatchEvent(new Event('input', { bubbles: true }));
     }, { passive: false });
-    inputEl.addEventListener('input', function() {
+
+    inputEl.addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 1);
     });
 }
 
+/**
+ * 为下拉框启用滚轮切换选项
+ * @param {HTMLSelectElement} el
+ */
 function enableWheelSelect(el) {
-    el.addEventListener('wheel', function(e) {
+    el.addEventListener('wheel', function (e) {
         e.preventDefault();
-        var opts = this.options;
+        const opts = this.options;
         if (!opts.length) return;
-        var idx = this.selectedIndex + (e.deltaY > 0 ? 1 : -1);
+        let idx = this.selectedIndex + (e.deltaY > 0 ? 1 : -1);
         if (idx < 0) idx = opts.length - 1;
         else if (idx >= opts.length) idx = 0;
         this.selectedIndex = idx;
-        this.dispatchEvent(new Event('change', {bubbles:true}));
-    }, {passive:false});
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    }, { passive: false });
 }
 
+/**
+ * 根据行列索引获取单元格的名称信息
+ * @param {number} rowIdx - 行索引
+ * @param {number} colIndex - 全局列索引
+ * @returns {{rowName: string, groupName: string, subName: string}}
+ */
 function getCellNames(rowIdx, colIndex) {
-    var groupIdx = 0, remaining = colIndex;
-    for (var i = 0; i < ALL_GROUPS.length; i++) {
-        var subLen = ALL_GROUPS[i].sub.length;
+    let groupIdx = 0, remaining = colIndex;
+    for (let i = 0; i < ALL_GROUPS.length; i++) {
+        const subLen = ALL_GROUPS[i].sub.length;
         if (remaining < subLen) {
             return {
                 rowName: ROW_NAMES[rowIdx],
@@ -334,50 +428,73 @@ function getCellNames(rowIdx, colIndex) {
     return { rowName: '?', groupName: '?', subName: '?' };
 }
 
-var REMARKS_STORAGE_KEY = 'smarttable_dataset_remarks';
+// ========== 数据集备注存储 ==========
+const REMARKS_STORAGE_KEY = 'smarttable_dataset_remarks';
 
+/**
+ * 获取所有数据集的备注对象
+ * @returns {Object}
+ */
 function getDatasetRemarks() {
-    try { return JSON.parse(localStorage.getItem(REMARKS_STORAGE_KEY)) || {}; } catch(e) { return {}; }
+    try {
+        return JSON.parse(localStorage.getItem(REMARKS_STORAGE_KEY)) || {};
+    } catch (e) {
+        return {};
+    }
 }
+
+/**
+ * 保存所有数据集的备注对象
+ * @param {Object} remarks
+ */
 function saveDatasetRemarks(remarks) {
     localStorage.setItem(REMARKS_STORAGE_KEY, JSON.stringify(remarks));
 }
+
+/**
+ * 获取当前数据集的备注文本
+ * @returns {string}
+ */
 function getCurrentDatasetRemark() {
-    var remarks = getDatasetRemarks();
+    const remarks = getDatasetRemarks();
     return remarks[STORAGE_KEY_DATA] || '';
 }
 
 // ========== 默认数据集保护 ==========
+/**
+ * 保存默认数据集的基准数据，用于防止已有数据被删减
+ */
 function saveBaseline() {
     if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) return;
     if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
-        baselineRows = DEFAULT_ROWS.map(function(row) {
-            return {
-                name: row.name,
-                data: row.data.map(normalizeCell)
-            };
-        });
+        baselineRows = DEFAULT_ROWS.map(row => ({
+            name: row.name,
+            data: row.data.map(normalizeCell)
+        }));
     } else {
         // 极端回退：使用当前状态（一般为空）
         baselineRows = JSON.parse(JSON.stringify(state.rows));
     }
 }
 
+/**
+ * 检查单元格操作是否被默认数据集保护允许
+ * @param {number} rowIdx - 行索引
+ * @param {number} colIndex - 列索引
+ * @param {Object} newCell - 新单元格数据
+ * @returns {boolean} 是否允许
+ */
 function isCellOperationAllowed(rowIdx, colIndex, newCell) {
     if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) return true;
     if (!baselineRows) return true;
-    var baseCell = baselineRows[rowIdx].data[colIndex];
-    // 检查数值 v：不允许变为空或不同值（若原基准有值）
-    if (baseCell.v !== '') {
-        if (newCell.v !== baseCell.v) return false;
-    }
-    // 检查重复数 t：不允许减少
-    if (baseCell.t > 0) {
-        if (newCell.t < baseCell.t) return false;
-    }
-    // 检查获取数 a：不允许减少
-    if (baseCell.a > 0) {
-        if (newCell.a < baseCell.a) return false;
-    }
+    const baseCell = baselineRows[rowIdx].data[colIndex];
+
+    // 数值 v：不允许变为空或不同值（若原基准有值）
+    if (baseCell.v !== '' && newCell.v !== baseCell.v) return false;
+    // 重复数 t：不允许减少
+    if (baseCell.t > 0 && newCell.t < baseCell.t) return false;
+    // 获取数 a：不允许减少
+    if (baseCell.a > 0 && newCell.a < baseCell.a) return false;
+
     return true;
 }
