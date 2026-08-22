@@ -172,6 +172,8 @@ function updateHighlightedCell() {
         cell.classList.add('cell-highlight-blink');
         highlightedCellElement = cell;
     }
+    // 加载当前选中单元格的备注到输入面板
+    loadNoteIntoPanel(rowIdx, colIndex);
 }
 
 // ========== 统计面板 ==========

@@ -103,6 +103,7 @@ function init() {
     dom.inputHint.textContent = '准备就绪';
 
     initCellTooltip();
+    initNoteFeature();
 
     // 恢复用户自定义颜色
     (function applySavedColors() {

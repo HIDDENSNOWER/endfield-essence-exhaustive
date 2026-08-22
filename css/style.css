@@ -936,3 +936,180 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     padding: 6px 10px;
     font-size: 0.8rem;
 }
+
+/* ========== 单元格备注功能 ========== */
+
+/* 备注图片上传行 */
+.note-image-upload-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.note-image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.note-image-thumb {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+}
+.note-image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.note-image-thumb .note-image-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+.note-image-thumb .note-image-remove:hover {
+    background: rgba(220, 50, 50, 0.8);
+}
+
+/* 备注悬浮框 */
+.note-tooltip {
+    position: fixed;
+    z-index: 400;
+    min-width: 220px;
+    min-height: 100px;
+    max-width: 360px;
+    max-height: 360px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    resize: both;           /* 提供原生调整手柄，但我们也会自定义 */
+    user-select: none;      /* 拖拽时防止选中文本 */
+}
+.note-tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-muted);
+    cursor: move;
+    flex-shrink: 0;
+}
+.note-tooltip-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.note-tooltip-actions {
+    display: flex;
+    gap: 4px;
+}
+.note-tooltip-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+.note-tooltip-btn:hover {
+    background: var(--bg-hover);
+}
+.note-tooltip-body {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    cursor: default;
+    user-select: text;
+}
+.note-tooltip-body img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin: 4px 0;
+}
+.note-tooltip-body .note-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.note-tooltip-body .note-image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.note-tooltip-body .note-image-gallery img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    cursor: pointer;
+}
+.note-tooltip-resizer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--border-emphasis) 50%);
+}
+
+/* 悬浮框布局模式 */
+.note-tooltip.layout-text-top .note-tooltip-body {
+    display: flex;
+    flex-direction: column;
+}
+.note-tooltip.layout-image-top .note-tooltip-body {
+    display: flex;
+    flex-direction: column-reverse;
+}
+.note-tooltip.layout-horizontal .note-tooltip-body {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.note-tooltip.layout-horizontal .note-text {
+    flex: 1;
+}
+.note-tooltip.layout-horizontal .note-image-gallery {
+    flex: 1;
+}
+
+#cellNoteText {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    padding: 5px 8px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+}

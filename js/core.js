@@ -32,7 +32,9 @@ var ROW_NAMES = [
     '源石技艺提升', '治疗效率提升', '终结技效率提升'
 ];
 
-function defaultCellMeta() { return { v: '', t: 0, a: 0 }; }
+function defaultCellMeta() { 
+    return { v: '', t: 0, a: 0, note: { text: '', images: [] } }; 
+}
 function createEmptyRowData() { return new Array(70).fill(null).map(function(){ return defaultCellMeta(); }); }
 function createInitialRows() { return ROW_NAMES.map(function(name){ return { name: name, data: createEmptyRowData() }; }); }
 
@@ -216,11 +218,32 @@ var dom = {
     tableBgColorEvenValue: document.getElementById('tableBgColorEvenValue'),
     btnResetTableBgOdd: document.getElementById('btnResetTableBgOdd'),
     btnResetTableBgEven: document.getElementById('btnResetTableBgEven'),
-};
+    cellNoteText: document.getElementById('cellNoteText'),
+    cellNoteDisplay: document.getElementById('cellNoteDisplay'),
+    cellNoteCharCount: document.getElementById('cellNoteCharCount'),
+    btnAddNoteImage: document.getElementById('btnAddNoteImage'),
+    noteImageInput: document.getElementById('noteImageInput'),
+    noteImageList: document.getElementById('noteImageList'),
+    btnClearNoteImages: document.getElementById('btnClearNoteImages'),
+    btnSaveNote: document.getElementById('btnSaveNote'),
+    btnClearNote: document.getElementById('btnClearNote'),
+    noteTooltip: document.getElementById('noteTooltip'),
+    noteTooltipBody: document.getElementById('noteTooltipBody'),
+    noteTooltipHeader: document.getElementById('noteTooltipHeader'),
+    btnNoteTooltipClose: document.getElementById('btnNoteTooltipClose'),
+    btnNoteTooltipLayout: document.getElementById('btnNoteTooltipLayout'),
+    noteTooltipResizer: document.getElementById('noteTooltipResizer'),
+    };
 
 function normalizeCell(cell) {
-    if (typeof cell === 'object' && cell !== null && 'v' in cell && 't' in cell && 'a' in cell) return cell;
-    if (typeof cell === 'string' || typeof cell === 'number') return { v: cell === '' ? '' : String(cell), t: 0, a: 0 };
+    if (typeof cell === 'object' && cell !== null && 'v' in cell && 't' in cell && 'a' in cell) {
+        if (!cell.note || typeof cell.note !== 'object') {
+            cell.note = { text: '', images: [] };
+        }
+        if (!Array.isArray(cell.note.images)) cell.note.images = [];
+        return cell;
+    }
+    if (typeof cell === 'string' || typeof cell === 'number') return { v: cell === '' ? '' : String(cell), t: 0, a: 0, note: { text: '', images: [] } };
     return defaultCellMeta();
 }
 

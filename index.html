@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具Ver.0.1.45</title>
+    <title>终末地基质穷举数据记录与统计工具Ver.0.1.46</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -100,6 +100,20 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 单元格备注悬浮框 -->
+            <div id="noteTooltip" class="note-tooltip" style="display:none;">
+                <div class="note-tooltip-header" id="noteTooltipHeader">
+                    <span class="note-tooltip-title">📝 单元格备注</span>
+                    <div class="note-tooltip-actions">
+                        <button class="note-tooltip-btn" id="btnNoteTooltipLayout" title="切换布局">🔄</button>
+                        <button class="note-tooltip-btn" id="btnNoteTooltipClose" title="关闭">✕</button>
+                    </div>
+                </div>
+                <div class="note-tooltip-body" id="noteTooltipBody"></div>
+                <div class="note-tooltip-resizer" id="noteTooltipResizer"></div>
+            </div>
+
         </div>
 
         <!-- 右侧侧边栏 -->
@@ -200,6 +214,30 @@
                 <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
                 <button class="btn btn-block btn-clear" id="btnClearCell">清除当前单元格</button>
                 <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
+
+                <!-- 单元格备注输入面板 -->
+                <div class="panel-title" style="margin-top: 8px;">📝 单元格备注</div>
+                <div class="form-group">
+                    <label>备注内容</label>
+                    <div id="cellNoteContainer">
+                        <textarea id="cellNoteText" placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
+                            style="width:100%; resize: none; display:none;"></textarea>
+                        <span id="cellNoteDisplay" class="remark-display" style="display:none;"></span>
+                        <div class="input-hint"><span id="cellNoteCharCount">0</span>/550</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>备注图片</label>
+                    <div class="note-image-upload-row">
+                        <button class="btn btn-sm" id="btnAddNoteImage">📷 添加图片</button>
+                        <button class="btn btn-sm btn-clear" id="btnClearNoteImages">清除全部图片</button>
+                    </div>
+                    <input type="file" id="noteImageInput" accept="image/*" multiple style="display:none;">
+                    <div id="noteImageList" class="note-image-list"></div>
+                </div>
+                <button class="btn btn-primary btn-block" id="btnSaveNote">保存备注</button>
+                <button class="btn btn-block btn-clear" id="btnClearNote">清除当前备注</button>
+
                 <p class="input-hint" id="inputHint"></p>
                 <input type="file" id="importFile" accept=".json" style="display:none;">
             </aside>
@@ -248,8 +286,8 @@
 
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.45(&quot;再访基地&quot;更新)">Endfield-Essence-Exhaustive
-            // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.45("再访基地"更新)</button>
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.46(&quot;再访基地&quot;更新)">Endfield-Essence-Exhaustive
+            // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.1.46("再访基地"更新)</button>
     </footer>
 
     <!-- 数值对比弹窗 -->
@@ -646,7 +684,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">Ver.0.1.45("再访基地"更新)</div>
+                    <div class="version-ver">Ver.0.1.46("再访基地"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -690,6 +728,7 @@
     <script src="js/settings.js"></script>
     <script src="js/color-preview.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/note.js"></script>
     <script src="js/logic.js"></script>
     <script src="js/events.js"></script>
     <script src="js/main.js"></script>
