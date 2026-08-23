@@ -1,6 +1,6 @@
 /**
  * main.js - 应用入口
- * 包含：初始化流程、面板切换、数据集备注处理、数据集保护 UI
+ * 包含：初始化流程、面板切换、数据集备注处理、数据集保护 UI、默认数据集外部数据加载
  */
 
 // ========== 固定备注定义 ==========
@@ -60,9 +60,85 @@ function switchLeftPanel(panelName) {
 }
 
 /**
+ * 将 Blob 转换为 Data URL
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * 从 data/data.json 加载默认数据集（兼容 ZIP 解压格式）
+ * 图片文件从 data/images/ 中读取，转换为 Data URL
+ */
+async function loadDefaultDataset() {
+    try {
+        const response = await fetch('data/data.json');
+        if (!response.ok) throw new Error('Failed to load data/data.json');
+        const json = await response.json();
+
+        let rows = json.rows || json; // 兼容 { rows: [...] } 或直接数组
+        if (!Array.isArray(rows)) throw new Error('Invalid format');
+
+        // 转换图片引用为 Data URL
+        rows = await resolveDefaultImages(rows);
+
+        DEFAULT_ROWS = rows;
+    } catch (e) {
+        console.warn('默认数据集加载失败，使用空数据', e);
+        DEFAULT_ROWS = createInitialRows();
+    }
+}
+
+/**
+ * 将 rows 中 note.images 的文件名转换为 Data URL
+ * @param {Array} rows
+ * @returns {Promise<Array>}
+ */
+async function resolveDefaultImages(rows) {
+    for (const row of rows) {
+        for (const cell of row.data) {
+            const note = cell.note;
+            if (note && note.images && note.images.length > 0) {
+                const newImages = [];
+                for (const ref of note.images) {
+                    // 如果是 Data URL 直接使用
+                    if (typeof ref === 'string' && ref.startsWith('data:')) {
+                        newImages.push(ref);
+                    } else if (typeof ref === 'string') {
+                        // 从 data/images/ 加载
+                        try {
+                            const imgResp = await fetch('data/images/' + ref);
+                            if (imgResp.ok) {
+                                const blob = await imgResp.blob();
+                                const dataUrl = await blobToDataURL(blob);
+                                newImages.push(dataUrl);
+                            }
+                        } catch (e) {
+                            console.warn('图片加载失败:', ref, e);
+                        }
+                    }
+                }
+                note.images = newImages;
+            }
+        }
+    }
+    return rows;
+}
+
+/**
  * 应用初始化
  */
-function init() {
+async function init() {
+    // 先加载默认数据集外部文件
+    await loadDefaultDataset();
+
     // 加载主题
     loadTheme();
 
@@ -74,10 +150,10 @@ function init() {
 
     const list = getDatasetList();
 
-    // 初始化默认数据集
+    // 初始化默认数据集（如果 localStorage 中没有则写入）
     if (!list.includes(DEFAULT_STORAGE_KEY)) {
         addDatasetKey(DEFAULT_STORAGE_KEY);
-        if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS)) {
+        if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS) && DEFAULT_ROWS.length > 0) {
             localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
             if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
                 state.rows = DEFAULT_ROWS.map(row => ({

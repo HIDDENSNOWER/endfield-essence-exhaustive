@@ -1,6 +1,6 @@
 /**
  * note.js - 单元格备注功能
- * 包含：备注数据读写、备注输入面板交互、图片上传、悬浮框显示与拖拽调整
+ * 包含：备注数据读写、备注输入面板交互、图片上传、悬浮框显示与拖拽调整、悬停查看大图
  */
 
 // ========== 状态变量 ==========
@@ -9,30 +9,29 @@ let pendingCellNoteText = '';        // 暂存备注文本
 let pendingNoteImages = [];          // 暂存备注图片（base64）
 
 let noteShowTimer = null;            // 悬浮框显示定时器
-let noteHideTimer = null;            // 悬浮框隐藏定时器
+let noteHideTimer = null;            // 悬浮框/大图框隐藏定时器
 let noteTooltipVisible = false;      // 悬浮框是否可见
 
 let noteDragState = null;            // 拖拽状态
 let noteResizeState = null;          // 调整大小状态
 
+// 图片查看器相关
+let imageViewerModal = null;
+let imageViewerImage = null;
+let btnCloseImageViewer = null;
+let currentImageNaturalSize = { width: 0, height: 0 };
+let currentImageScale = 1;
+
+// 新增：鼠标是否悬停在悬浮框或大图框上（用于联动隐藏）
+let noteTooltipHover = false;
+let imageViewerHover = false;
+
 // ========== 备注数据操作 ==========
-/**
- * 获取指定单元格的备注对象
- * @param {number} rowIdx - 行索引
- * @param {number} colIdx - 列索引
- * @returns {{text: string, images: string[]}}
- */
 function getCellNote(rowIdx, colIdx) {
     const cell = normalizeCell(state.rows[rowIdx].data[colIdx]);
     return cell.note || { text: '', images: [] };
 }
 
-/**
- * 设置指定单元格的备注对象
- * @param {number} rowIdx
- * @param {number} colIdx
- * @param {{text: string, images: string[]}} note
- */
 function setCellNote(rowIdx, colIdx, note) {
     const cell = normalizeCell(state.rows[rowIdx].data[colIdx]);
     cell.note = note;
@@ -42,10 +41,6 @@ function setCellNote(rowIdx, colIdx, note) {
 }
 
 // ========== 备注输入面板 ==========
-/**
- * 更新备注显示区/输入框的可见状态
- * @param {string} text - 当前备注文本
- */
 function updateCellNoteDisplay(text) {
     const display = dom.cellNoteDisplay;
     const textarea = dom.cellNoteText;
@@ -66,11 +61,6 @@ function updateCellNoteDisplay(text) {
     }
 }
 
-/**
- * 加载备注到输入面板
- * @param {number} rowIdx
- * @param {number} colIdx
- */
 function loadNoteIntoPanel(rowIdx, colIdx) {
     currentNoteCell = { r: rowIdx, c: colIdx };
     const note = getCellNote(rowIdx, colIdx);
@@ -80,9 +70,6 @@ function loadNoteIntoPanel(rowIdx, colIdx) {
     renderNoteImageList();
 }
 
-/**
- * 渲染备注图片列表
- */
 function renderNoteImageList() {
     if (!dom.noteImageList) return;
     dom.noteImageList.innerHTML = '';
@@ -113,10 +100,6 @@ function renderNoteImageList() {
     });
 }
 
-/**
- * 提交备注文本（退出编辑状态）
- * @returns {string} 提交的文本
- */
 function commitCellNoteText() {
     const textarea = dom.cellNoteText;
     let val = textarea.value.trim();
@@ -130,24 +113,18 @@ function commitCellNoteText() {
     return val;
 }
 
-/**
- * 自动调整备注输入框高度
- */
 function autoResizeCellNote() {
     const textarea = dom.cellNoteText;
     textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+    const minHeight = 60;
+    textarea.style.height = Math.max(textarea.scrollHeight, minHeight) + 'px';
 }
 
-/**
- * 保存当前备注
- */
 function saveNoteFromPanel() {
     if (!currentNoteCell) {
         showAlert('请先在数据输入面板中选择单元格。', '提示');
         return;
     }
-    // 如果正在编辑，先提交文本
     if (dom.cellNoteText.style.display !== 'none') {
         commitCellNoteText();
     }
@@ -157,9 +134,6 @@ function saveNoteFromPanel() {
     updateCellNoteDisplay(pendingCellNoteText);
 }
 
-/**
- * 清除当前备注
- */
 function clearNoteFromPanel() {
     if (!currentNoteCell) {
         showAlert('请先在数据输入面板中选择单元格。', '提示');
@@ -174,10 +148,6 @@ function clearNoteFromPanel() {
 }
 
 // ========== 图片上传 ==========
-/**
- * 处理图片上传
- * @param {FileList} files
- */
 function handleNoteImageUpload(files) {
     Array.from(files).forEach(file => {
         if (!file.type.startsWith('image/')) return;
@@ -190,19 +160,98 @@ function handleNoteImageUpload(files) {
     });
 }
 
+// ========== 大图查看（悬停显示，联动悬浮框） ==========
+function showImageViewer(src) {
+    if (!imageViewerModal || !imageViewerImage) return;
+
+    // 先显示框，再测量尺寸
+    imageViewerModal.style.display = 'block';
+
+    const tempImg = new Image();
+    tempImg.onload = function () {
+        currentImageNaturalSize = {
+            width: tempImg.naturalWidth,
+            height: tempImg.naturalHeight
+        };
+
+        // 初始缩放：确保框体不超出视口
+        const margin = 20;
+        const paddingAndBorder = 12;
+        const maxWidth = window.innerWidth - margin * 2 - paddingAndBorder;
+        const maxHeight = window.innerHeight - margin * 2 - paddingAndBorder;
+        const scaleX = maxWidth / currentImageNaturalSize.width;
+        const scaleY = maxHeight / currentImageNaturalSize.height;
+        currentImageScale = Math.min(scaleX, scaleY, 1);
+
+        imageViewerImage.src = src;
+        applyImageScale();
+
+        requestAnimationFrame(function () {
+            positionImageViewer();
+        });
+    };
+
+    tempImg.onerror = function () {
+        hideImageViewer();
+        showAlert('图片加载失败', '错误');
+    };
+
+    tempImg.src = src;
+}
+
+function applyImageScale() {
+    const displayWidth = currentImageNaturalSize.width * currentImageScale;
+    const displayHeight = currentImageNaturalSize.height * currentImageScale;
+
+    imageViewerImage.style.width = displayWidth + 'px';
+    imageViewerImage.style.height = displayHeight + 'px';
+
+    const paddingX = 5;
+    const paddingY = 5;
+    const borderWidth = 1;
+    imageViewerModal.style.width = (displayWidth + (paddingX + borderWidth) * 2) + 'px';
+    imageViewerModal.style.height = (displayHeight + (paddingY + borderWidth) * 2) + 'px';
+}
+
+function positionImageViewer() {
+    const tooltipRect = dom.noteTooltip.getBoundingClientRect();
+    const viewerRect = imageViewerModal.getBoundingClientRect();
+    const viewerWidth = viewerRect.width;
+    const viewerHeight = viewerRect.height;
+    const margin = 20;
+
+    // 水平：选择左右空间更充足的一侧
+    const leftSpace = tooltipRect.left - margin;
+    const rightSpace = window.innerWidth - tooltipRect.right - margin;
+    let left = rightSpace >= leftSpace
+        ? tooltipRect.right + margin
+        : tooltipRect.left - viewerWidth - margin;
+
+    // 垂直：与悬浮框顶部对齐，边界保护
+    let top = tooltipRect.top;
+    if (top + viewerHeight > window.innerHeight - margin) {
+        top = window.innerHeight - viewerHeight - margin;
+    }
+    if (top < margin) top = margin;
+
+    left = Math.max(margin, Math.min(left, window.innerWidth - viewerWidth - margin));
+
+    imageViewerModal.style.left = left + 'px';
+    imageViewerModal.style.top = top + 'px';
+}
+
+function hideImageViewer() {
+    if (imageViewerModal) imageViewerModal.style.display = 'none';
+    currentImageScale = 1;
+    currentImageNaturalSize = { width: 0, height: 0 };
+    imageViewerHover = false;
+}
+
 // ========== 悬浮框显示与隐藏 ==========
-/**
- * 显示悬浮框
- * @param {number} rowIdx
- * @param {number} colIdx
- * @param {number} x - 鼠标 X 坐标
- * @param {number} y - 鼠标 Y 坐标
- */
 function showNoteTooltip(rowIdx, colIdx, x, y) {
     const note = getCellNote(rowIdx, colIdx);
     if (!note.text && (!note.images || note.images.length === 0)) return;
 
-    // 构建内容
     let html = '';
     if (note.text) {
         html += `<div class="note-text">${escapeHtml(note.text)}</div>`;
@@ -210,27 +259,20 @@ function showNoteTooltip(rowIdx, colIdx, x, y) {
     if (note.images && note.images.length > 0) {
         html += '<div class="note-image-gallery">';
         note.images.forEach(src => {
-            html += `<img src="${src}" alt="备注图片">`;
+            html += `<img src="${src}" alt="备注图片" class="note-tooltip-image">`;
         });
         html += '</div>';
     }
     dom.noteTooltipBody.innerHTML = html;
 
-    // 应用保存的布局
     const layout = localStorage.getItem('smarttable_note_layout') || 'text-top';
     dom.noteTooltip.className = `note-tooltip layout-${layout}`;
 
-    // 显示并定位
     dom.noteTooltip.style.display = 'flex';
     positionNoteTooltip(x, y);
     noteTooltipVisible = true;
 }
 
-/**
- * 定位悬浮框，防止超出视口
- * @param {number} x
- * @param {number} y
- */
 function positionNoteTooltip(x, y) {
     const tooltip = dom.noteTooltip;
     const rect = tooltip.getBoundingClientRect();
@@ -250,27 +292,25 @@ function positionNoteTooltip(x, y) {
 }
 
 /**
- * 隐藏悬浮框
- * @param {boolean} immediate - 是否立即隐藏
+ * 隐藏备注悬浮框（同时隐藏大图框）
  */
 function hideNoteTooltip(immediate) {
     if (immediate) {
         dom.noteTooltip.style.display = 'none';
+        hideImageViewer();
         noteTooltipVisible = false;
         return;
     }
     clearTimeout(noteHideTimer);
     noteHideTimer = setTimeout(() => {
+        // 如果鼠标仍在悬浮框或大图框上，则不隐藏
+        if (noteTooltipHover || imageViewerHover) return;
         dom.noteTooltip.style.display = 'none';
+        hideImageViewer();
         noteTooltipVisible = false;
     }, 1000);
 }
 
-/**
- * HTML 转义
- * @param {string} text
- * @returns {string}
- */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -278,9 +318,6 @@ function escapeHtml(text) {
 }
 
 // ========== 悬浮框拖拽与调整大小 ==========
-/**
- * 初始化悬浮框的拖拽和调整大小事件
- */
 function initNoteTooltipInteractions() {
     // 拖拽
     dom.noteTooltipHeader.addEventListener('mousedown', function (e) {
@@ -313,7 +350,6 @@ function initNoteTooltipInteractions() {
     document.addEventListener('mouseup', function () {
         noteDragState = null;
         noteResizeState = null;
-        // 保存悬浮框位置和大小
         try {
             localStorage.setItem('smarttable_note_tooltip_pos', JSON.stringify({
                 left: dom.noteTooltip.style.left,
@@ -321,12 +357,9 @@ function initNoteTooltipInteractions() {
                 width: dom.noteTooltip.style.width,
                 height: dom.noteTooltip.style.height
             }));
-        } catch (e) {
-            // 忽略存储错误
-        }
+        } catch (e) {}
     });
 
-    // 调整大小
     dom.noteTooltipResizer.addEventListener('mousedown', function (e) {
         const rect = dom.noteTooltip.getBoundingClientRect();
         noteResizeState = {
@@ -338,12 +371,10 @@ function initNoteTooltipInteractions() {
         e.preventDefault();
     });
 
-    // 关闭按钮
     dom.btnNoteTooltipClose.addEventListener('click', function () {
         hideNoteTooltip(true);
     });
 
-    // 切换布局
     dom.btnNoteTooltipLayout.addEventListener('click', function () {
         const layouts = ['text-top', 'image-top', 'horizontal'];
         const current = localStorage.getItem('smarttable_note_layout') || 'text-top';
@@ -355,9 +386,6 @@ function initNoteTooltipInteractions() {
 }
 
 // ========== 单元格悬停事件 ==========
-/**
- * 初始化单元格悬停事件
- */
 function initNoteHoverEvents() {
     dom.tableArea.addEventListener('mouseover', function (e) {
         const td = e.target.closest('td');
@@ -382,24 +410,58 @@ function initNoteHoverEvents() {
         hideNoteTooltip(false);
     });
 
-    // 悬浮框自身不触发隐藏
+    // 悬浮框自身 hover 管理
     dom.noteTooltip.addEventListener('mouseenter', function () {
+        noteTooltipHover = true;
         clearTimeout(noteHideTimer);
     });
     dom.noteTooltip.addEventListener('mouseleave', function () {
+        noteTooltipHover = false;
         hideNoteTooltip(false);
+    });
+
+    // 大图框 hover 管理
+    imageViewerModal.addEventListener('mouseenter', function () {
+        imageViewerHover = true;
+        clearTimeout(noteHideTimer);
+    });
+    imageViewerModal.addEventListener('mouseleave', function () {
+        imageViewerHover = false;
+        hideNoteTooltip(false);
+    });
+
+    // 悬浮框内图片悬停放大
+    dom.noteTooltip.addEventListener('mouseover', function (e) {
+        const img = e.target.closest('.note-tooltip-image');
+        if (img) {
+            showImageViewer(img.src);
+        }
     });
 }
 
 // ========== 初始化 ==========
-/**
- * 初始化备注功能（绑定事件、恢复状态）
- */
 function initNoteFeature() {
+    imageViewerModal = document.getElementById('imageViewerModal');
+    imageViewerImage = document.getElementById('imageViewerImage');
+    btnCloseImageViewer = document.getElementById('btnCloseImageViewer');
+
     initNoteHoverEvents();
     initNoteTooltipInteractions();
 
-    // 图片上传按钮
+    if (btnCloseImageViewer) {
+        btnCloseImageViewer.addEventListener('click', hideImageViewer);
+    }
+
+    if (imageViewerModal) {
+        imageViewerModal.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            currentImageScale = Math.max(0.1, Math.min(5, currentImageScale + delta));
+            applyImageScale();
+            positionImageViewer();
+        }, { passive: false });
+    }
+
     if (dom.btnAddNoteImage) {
         dom.btnAddNoteImage.addEventListener('click', function () {
             dom.noteImageInput.click();
@@ -420,18 +482,14 @@ function initNoteFeature() {
     if (dom.btnSaveNote) dom.btnSaveNote.addEventListener('click', saveNoteFromPanel);
     if (dom.btnClearNote) dom.btnClearNote.addEventListener('click', clearNoteFromPanel);
 
-    // 恢复上次悬浮框位置和大小
     try {
         const saved = JSON.parse(localStorage.getItem('smarttable_note_tooltip_pos') || '{}');
         if (saved.left) dom.noteTooltip.style.left = saved.left;
         if (saved.top) dom.noteTooltip.style.top = saved.top;
         if (saved.width) dom.noteTooltip.style.width = saved.width;
         if (saved.height) dom.noteTooltip.style.height = saved.height;
-    } catch (e) {
-        // 忽略解析错误
-    }
+    } catch (e) {}
 
-    // 点击显示区进入编辑
     if (dom.cellNoteDisplay) {
         dom.cellNoteDisplay.addEventListener('click', function () {
             this.style.display = 'none';
@@ -443,7 +501,6 @@ function initNoteFeature() {
         });
     }
 
-    // 备注文本输入框事件
     if (dom.cellNoteText) {
         dom.cellNoteText.addEventListener('input', function () {
             if (dom.cellNoteCharCount) {

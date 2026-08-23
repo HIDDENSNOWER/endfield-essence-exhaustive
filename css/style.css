@@ -1039,4 +1039,57 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: inherit;
+    /* 新增：至少两行高度 */
+    min-height: calc(1.4em * 2 + 10px); /* 行高1.4 × 2 + 上下内边距10px */
+}
+
+/* 悬浮框内图片可双击放大提示 */
+.note-tooltip-body .note-image-gallery img {
+    cursor: zoom-in;
+    transition: transform 0.15s;
+}
+.note-tooltip-body .note-image-gallery img:active {
+    transform: scale(0.98);
+}
+
+/* 图片查看浮动框 */
+#imageViewerModal {
+    display: none;
+    position: fixed;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    padding: 5px;
+    box-sizing: border-box;
+    z-index: 500;
+    overflow: hidden;
+    max-width: none;
+    max-height: none;
+}
+#imageViewerImage {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+#btnCloseImageViewer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+#btnCloseImageViewer:hover {
+    background: rgba(0,0,0,0.8);
 }
