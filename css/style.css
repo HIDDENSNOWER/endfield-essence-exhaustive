@@ -1093,3 +1093,87 @@ input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--accent-pri
 #btnCloseImageViewer:hover {
     background: rgba(0,0,0,0.8);
 }
+
+/* ==================== 默认数据集加载指示器 ==================== */
+.dataset-loading-indicator {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    z-index: 600;                /* 高于普通弹窗，但低于设置弹窗(300)？实际设置弹窗z-index200，我们设置600保证显示 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 200px;
+    max-width: 280px;
+    pointer-events: none;        /* 允许点击穿透，不阻塞交互 */
+    user-select: none;
+}
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border-muted);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.loading-text {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 3px;
+    transition: width 0.2s ease;
+}
+
+/* 临时提示 Toast */
+.temp-hint {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 10px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 700;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+.temp-hint.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.temp-hint-success {
+    border-left: 4px solid var(--success-primary);
+    color: var(--success-primary);
+}
+.temp-hint-error {
+    border-left: 4px solid var(--danger-primary);
+    color: var(--danger-primary);
+}
+.temp-hint-info {
+    border-left: 4px solid var(--accent-primary);
+    color: var(--accent-primary);
+}

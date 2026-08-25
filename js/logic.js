@@ -1136,28 +1136,46 @@ function clearAllData() {
 /**
  * 重置默认数据集
  */
-function resetDefaultDataset() {
+async function resetDefaultDataset() {
     if (STORAGE_KEY_DATA !== DEFAULT_STORAGE_KEY) {
         showAlert('当前不是默认数据集，无需重置。', '提示');
         return;
     }
-    if (typeof DEFAULT_ROWS === 'undefined' || !Array.isArray(DEFAULT_ROWS)) {
-        showAlert('默认数据模板缺失，无法重置。', '错误');
-        return;
-    }
 
+    // 先弹出确认对话框
     showConfirmDialog(
         '将默认数据集重置为初始数据，所有用户添加或修改的数据都将丢失，确定继续吗？',
-        () => {
-            state.rows = DEFAULT_ROWS.map(row => ({
-                name: row.name,
-                data: row.data.map(normalizeCell)
-            }));
-            saveData();
-            renderAllTables();
-            saveBaseline();
-            updateLockedUI();
-            dom.inputHint.textContent = '默认数据集已重置为初始数据。';
+        async () => {
+            // 用户确认后开始加载并重置
+            showDefaultDatasetLoading('正在重新获取默认数据集...');
+            try {
+                const defaultRows = await loadDefaultDataset((percent, message) => {
+                    updateDefaultDatasetProgress(percent, message);
+                });
+
+                if (!Array.isArray(defaultRows) || defaultRows.length === 0) {
+                    hideDefaultDatasetLoading();
+                    showAlert('默认数据为空，无法重置。', '错误');
+                    return;
+                }
+
+                state.rows = defaultRows.map(row => ({
+                    name: row.name,
+                    data: row.data.map(normalizeCell)
+                }));
+                saveData();
+                renderAllTables();
+                DEFAULT_ROWS = defaultRows;
+                saveBaseline();
+                updateLockedUI();
+                hideDefaultDatasetLoading();
+                showTemporaryHint('默认数据集已重置', 'success');
+                dom.inputHint.textContent = '默认数据集已重置为初始数据。';
+            } catch (e) {
+                hideDefaultDatasetLoading();
+                console.warn('默认数据加载失败，无法重置', e);
+                showAlert('默认数据加载失败，请刷新页面后重试。', '错误');
+            }
         },
         () => {
             dom.inputHint.textContent = '已取消重置。';
