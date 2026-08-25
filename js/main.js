@@ -83,16 +83,16 @@ async function loadDefaultDataset() {
         if (!response.ok) throw new Error('Failed to load data/data.json');
         const json = await response.json();
 
-        let rows = json.rows || json; // 兼容 { rows: [...] } 或直接数组
+        let rows = json.rows || json;
         if (!Array.isArray(rows)) throw new Error('Invalid format');
 
         // 转换图片引用为 Data URL
         rows = await resolveDefaultImages(rows);
 
-        DEFAULT_ROWS = rows;
+        return rows; // 返回数据，不直接赋值全局
     } catch (e) {
         console.warn('默认数据集加载失败，使用空数据', e);
-        DEFAULT_ROWS = createInitialRows();
+        return createInitialRows(); // 返回空数据作为兜底
     }
 }
 
@@ -136,93 +136,132 @@ async function resolveDefaultImages(rows) {
  * 应用初始化
  */
 async function init() {
-    // 先加载默认数据集外部文件
-    await loadDefaultDataset();
-
-    // 加载主题
+    // ========== 第一步：立即执行无需 DEFAULT_ROWS 的初始化 ==========
+    // 1. 加载主题
     loadTheme();
 
-    // 恢复上次使用的数据集
+    // 2. 恢复上次使用的数据集键
     const lastKey = localStorage.getItem('smarttable_current_dataset');
     if (lastKey && /^[a-zA-Z0-9_]+$/.test(lastKey)) {
         STORAGE_KEY_DATA = lastKey;
     }
 
+    // 3. 获取数据集列表
     const list = getDatasetList();
 
-    // 初始化默认数据集（如果 localStorage 中没有则写入）
-    if (!list.includes(DEFAULT_STORAGE_KEY)) {
-        addDatasetKey(DEFAULT_STORAGE_KEY);
-        if (typeof DEFAULT_ROWS !== 'undefined' && Array.isArray(DEFAULT_ROWS) && DEFAULT_ROWS.length > 0) {
-            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
-            if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
-                state.rows = DEFAULT_ROWS.map(row => ({
-                    name: row.name,
-                    data: row.data.map(normalizeCell)
-                }));
-                renderAllTables();
-            }
-        } else {
-            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(createInitialRows()));
-        }
-    }
-
-    // 初始化示例数据集
+    // 4. 初始化示例数据集（如果尚未存在）
     if (!list.includes(SAMPLE_DATASET_KEY)) {
         addDatasetKey(SAMPLE_DATASET_KEY);
         localStorage.setItem(SAMPLE_DATASET_KEY, JSON.stringify(createSampleRows()));
     }
 
+    // 5. 更新数据集显示
     updateDatasetDisplay();
     updateDatasetSelect();
 
-    // 加载当前数据集
+    // 6. 加载当前数据集（从 localStorage）
     if (!loadData()) {
         state.rows = createInitialRows();
         saveData();
     }
 
+    // 7. 填充下拉框
     populateDropdowns();
+
+    // 8. 绑定所有事件
     bindEvents();
+
+    // 9. 立即渲染表格（此时表格内容为当前数据集或空数据）
     renderAllTables();
     resetTripleInputs();
     switchPanel('input');
     initSettings();
 
-    // 保存默认数据集基准（用于保护）
-    if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
-        saveBaseline();
-    }
-
-    localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
-    dom.inputHint.textContent = '准备就绪';
-
+    // 10. 初始化单元格提示栏
     initCellTooltip();
+
+    // 11. 初始化备注功能
     initNoteFeature();
 
-    // 恢复用户自定义颜色
+    // 12. 恢复用户自定义颜色
     applySavedColors();
 
-    // 初始化数据集备注
+    // 13. 初始化数据集备注
     updateDatasetRemark();
     bindDatasetRemarkEvents();
 
-    // 左侧侧边栏按钮点击
+    // 14. 左侧侧边栏按钮事件
     dom.leftSidebarBtns.forEach(btn => {
         btn.addEventListener('click', function () {
             switchLeftPanel(this.dataset.leftPanel);
         });
     });
 
-    // 更新保护状态 UI
+    // 15. 更新保护状态 UI（此时 DEFAULT_ROWS 可能尚未加载，先根据当前状态显示）
     updateLockedUI();
 
-    // 首次访问自动显示“关于”弹窗
+    // 16. 设置当前数据集存储键
+    localStorage.setItem('smarttable_current_dataset', STORAGE_KEY_DATA);
+    dom.inputHint.textContent = '准备就绪';
+
+    // 17. 首次访问自动显示“关于”弹窗
     const aboutShown = sessionStorage.getItem('smarttable_about_shown');
     if (!aboutShown && dom.modalVersionInfo) {
         openModal(dom.modalVersionInfo);
         sessionStorage.setItem('smarttable_about_shown', '1');
     }
+
+    // ========== 第二步：异步加载默认数据集，完成后补充初始化 ==========
+    loadDefaultDataset().then(defaultRows => {
+        // 设置全局 DEFAULT_ROWS
+        DEFAULT_ROWS = defaultRows;
+
+        // 如果默认数据集尚未写入 localStorage，则写入
+        if (!getDatasetList().includes(DEFAULT_STORAGE_KEY)) {
+            addDatasetKey(DEFAULT_STORAGE_KEY);
+            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
+        }
+
+        // 如果当前数据集是默认数据集，并且之前没有加载过真实数据（例如使用了占位空数据），则更新表格
+        if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+            // 判断是否需要用 DEFAULT_ROWS 覆盖当前 state.rows
+            // 简单做法：始终用 DEFAULT_ROWS 覆盖，确保显示最新默认数据
+            // 但注意不要覆盖用户在加载期间可能进行的操作（极短时间内用户操作概率低，可接受）
+            state.rows = DEFAULT_ROWS.map(row => ({
+                name: row.name,
+                data: row.data.map(normalizeCell)
+            }));
+            renderAllTables();
+            saveData(); // 确保 localStorage 与 DEFAULT_ROWS 一致
+        }
+
+        // 保存默认数据集基准（用于保护）
+        if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+            saveBaseline();
+            updateLockedUI(); // 更新保护状态 UI
+        }
+
+        // 可选：如果当前不是默认数据集，但之前因为缺少 DEFAULT_ROWS 未能正确初始化保护逻辑，可以在这里补充
+        // 但一般不影响
+
+        // 更新提示
+        dom.inputHint.textContent = '默认数据加载完成';
+    }).catch(err => {
+        console.warn('默认数据集加载失败，使用空数据', err);
+        // 如果加载失败，使用空行数据作为兜底
+        DEFAULT_ROWS = createInitialRows();
+        // 确保默认数据集存在
+        if (!getDatasetList().includes(DEFAULT_STORAGE_KEY)) {
+            addDatasetKey(DEFAULT_STORAGE_KEY);
+            localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(DEFAULT_ROWS));
+        }
+        if (STORAGE_KEY_DATA === DEFAULT_STORAGE_KEY) {
+            state.rows = DEFAULT_ROWS.map(row => ({ ...row, data: row.data.map(normalizeCell) }));
+            renderAllTables();
+            saveBaseline();
+            updateLockedUI();
+        }
+    });
 }
 
 /**
