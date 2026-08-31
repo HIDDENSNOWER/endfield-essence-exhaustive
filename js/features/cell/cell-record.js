@@ -192,17 +192,29 @@
          */
         clearCurrentCell() {
             const dom = App.dom;
-            const subIdx = parseInt(dom.inputSubCol.value);
-            const rowIdx = parseInt(dom.inputRow.value);
-            const groupIdx = parseInt(dom.inputGroup.value);
+            const subIdx = parseInt(dom.inputSubCol.value, 10);
+            const rowIdx = parseInt(dom.inputRow.value, 10);
+            const groupIdx = parseInt(dom.inputGroup.value, 10);
             if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
 
             const colIndex = App.utils.getColumnIndex(groupIdx, subIdx);
             const cell = App.utils.normalizeCell(App.state.rows[rowIdx].data[colIndex]);
 
-            // 如果是实装基质且无数值，直接调用录入面板的清除
+            // 如果是实装基质且无数值，直接按已算好的坐标清除（修复跨面板坐标不一致导致误清的问题）
             if (cell.t > 0 && cell.v === '') {
-                this.clearCellRecord();
+                const emptyCell = { v: '', t: 0, a: 0 };
+                if (!App.datasetManager.isCellOperationAllowed(rowIdx, colIndex, emptyCell)) {
+                    App.modal.showAlert('默认数据集保护：不能清除已有实装基质。', '操作限制');
+                    return;
+                }
+                App.state.rows[rowIdx].data[colIndex] = { v: '', t: 0, a: 0, note: cell.note || { text: '', images: [] } };
+                App.tableRenderer.renderAllTables();
+                App.datasetManager.saveData();
+                const groupName = App.constants.ALL_GROUPS[groupIdx].name;
+                const rowName = App.constants.ROW_NAMES[rowIdx];
+                const subName = App.constants.ALL_GROUPS[groupIdx].sub[subIdx];
+                App.modal.showAlert(`已清除单元格：${rowName} > ${groupName} > ${subName} 的实装基质。`, '清除成功');
+                dom.inputHint.textContent = '当前单元格实装基质已清除';
                 return;
             }
 
@@ -292,14 +304,22 @@
 
         /**
          * 清空当前数据集的所有数据
-         * 若为默认数据集且有基准数据，则禁止清空（保护机制）
+         * 受保护数据集（默认 + 示例）禁止清空（保护机制）
          */
         clearAllData() {
-            // 检查默认数据集是否包含非空基准数据，如果是则阻止清空
+            // 所有受保护数据集均禁止清空（修复示例数据集可被清空的问题）
+            if (App.constants.PROTECTED_DATASETS.includes(App.storage.loadCurrentDatasetKey())) {
+                App.modal.showAlert('系统数据集受保护，不能清空。', '操作限制');
+                return;
+            }
+            // 默认数据集若包含非空基准数据，也阻止清空（原有保护逻辑，含 a>0 检查）
             if (App.storage.loadCurrentDatasetKey() === App.constants.DEFAULT_STORAGE_KEY && App.state.baselineRows) {
                 for (let r = 0; r < App.state.baselineRows.length; r++) {
-                    for (let c = 0; c < App.state.baselineRows[r].data.length; c++) {
-                        if (App.state.baselineRows[r].data[c].v !== '' || App.state.baselineRows[r].data[c].t > 0) {
+                    const row = App.state.baselineRows[r];
+                    if (!row || !row.data) continue;
+                    for (let c = 0; c < row.data.length; c++) {
+                        const base = row.data[c];
+                        if (base && (base.v !== '' || base.t > 0 || base.a > 0)) {
                             App.modal.showAlert('默认数据集包含初始数据，不能清空。', '操作限制');
                             return;
                         }
@@ -312,6 +332,8 @@
             App.tableRenderer.renderAllTables();
             App.datasetManager.saveData();
             App.dom.inputHint.textContent = '当前数据集已清空';
+            // 清空历史记录，防止撤回恢复已清空的数据
+            App.datasetManager.resetHistorySafe();
         },
 
         /**

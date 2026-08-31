@@ -46,8 +46,10 @@
          * 避免多个单元格共享同一对象导致数据串扰。
          */
         createEmptyRowData() {
-            // 创建70个空单元格，每个都是独立对象
-            return new Array(70).fill(null).map(() => this.defaultCellMeta());
+            // 列数由常量派生（COLS1 + COLS2），避免硬编码 70 与 ALL_GROUPS 漂移
+            const totalCols = App.constants.COLS1 + App.constants.COLS2;
+            // 创建 totalCols 个空单元格，每个都是独立对象
+            return new Array(totalCols).fill(null).map(() => this.defaultCellMeta());
         },
 
         /**

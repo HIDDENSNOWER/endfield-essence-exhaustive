@@ -21,7 +21,6 @@
     let pendingNoteImages = [];            // 暂存的备注图片数组（base64 Data URL）
     let noteShowTimer = null;              // 悬浮框显示定时器（延迟显示）
     let noteHideTimer = null;              // 悬浮框隐藏定时器（延迟隐藏）
-    let noteTooltipVisible = false;        // 悬浮框当前是否可见
     let noteDragState = null;              // 悬浮框拖拽状态（偏移量）
     let noteResizeState = null;            // 悬浮框调整大小状态（起始位置和尺寸）
     let noteTooltipHover = false;          // 鼠标是否悬停在悬浮框上
@@ -134,9 +133,9 @@
                 });
                 wrapper.appendChild(removeBtn);
 
-                // 点击缩略图打开原图
+                // 点击缩略图打开原图（改用应用内大图查看器，Chrome 会拦截 window.open(Data URL)）
                 wrapper.addEventListener('click', function () {
-                    window.open(imgSrc, '_blank');
+                    App.note.showImageViewer(imgSrc);
                 });
 
                 dom.noteImageList.appendChild(wrapper);
@@ -218,14 +217,25 @@
          * 处理备注图片上传
          * @param {FileList} files - 选中的图片文件列表
          *
-         * 过滤非图片文件，使用 FileReader 读取为 Data URL，
-         * 添加到暂存图片数组并重新渲染缩略图列表。
+         * 过滤非图片文件，限制单张大小与总数量（防止 localStorage 配额超限导致"假保存"），
+         * 使用 FileReader 读取为 Data URL，添加到暂存图片数组并重新渲染缩略图列表。
          */
         handleNoteImageUpload(files) {
+            const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 单张最大 1MB
+            const MAX_IMAGE_COUNT = 10;             // 单格最多 10 张
             Array.from(files).forEach(file => {
                 if (!file.type.startsWith('image/')) return;
+                if (file.size > MAX_IMAGE_SIZE) {
+                    App.modal.showAlert(`图片过大（超过 1MB），已跳过：${file.name}\n请压缩后再上传，避免超出浏览器存储配额。`, '图片上传限制');
+                    return;
+                }
+                if (pendingNoteImages.length >= MAX_IMAGE_COUNT) {
+                    App.modal.showAlert(`单个单元格最多上传 ${MAX_IMAGE_COUNT} 张图片，已忽略后续文件。`, '图片上传限制');
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    if (pendingNoteImages.length >= MAX_IMAGE_COUNT) return;
                     pendingNoteImages.push(e.target.result);
                     this.renderNoteImageList();
                 };
@@ -352,7 +362,9 @@
             if (note.images && note.images.length > 0) {
                 html += '<div class="note-image-gallery">';
                 note.images.forEach(src => {
-                    html += `<img src="${src}" alt="备注图片" class="note-tooltip-image">`;
+                    // src 可能来自导入文件，属性值必须转义防 XSS
+                    const safeSrc = App.utils.escapeHtml(src);
+                    html += `<img src="${safeSrc}" alt="备注图片" class="note-tooltip-image">`;
                 });
                 html += '</div>';
             }
@@ -363,7 +375,6 @@
 
             App.dom.noteTooltip.style.display = 'flex';
             this.positionNoteTooltip(x, y);
-            noteTooltipVisible = true;
         },
 
         /**
@@ -400,9 +411,11 @@
          */
         hideNoteTooltip(immediate) {
             if (immediate) {
+                // 清除显示定时器，防止关闭后"诈尸"重新弹出
+                if (noteShowTimer) { clearTimeout(noteShowTimer); noteShowTimer = null; }
+                if (noteHideTimer) { clearTimeout(noteHideTimer); noteHideTimer = null; }
                 App.dom.noteTooltip.style.display = 'none';
                 this.hideImageViewer();
-                noteTooltipVisible = false;
                 return;
             }
             clearTimeout(noteHideTimer);
@@ -410,7 +423,6 @@
                 if (noteTooltipHover || imageViewerHover) return;
                 App.dom.noteTooltip.style.display = 'none';
                 this.hideImageViewer();
-                noteTooltipVisible = false;
             }, 1000);
         },
 
@@ -438,12 +450,19 @@
             // 鼠标移动处理拖拽和调整大小
             document.addEventListener('mousemove', function (e) {
                 if (noteDragState) {
-                    dom.noteTooltip.style.left = (e.clientX - noteDragState.offsetX) + 'px';
-                    dom.noteTooltip.style.top = (e.clientY - noteDragState.offsetY) + 'px';
+                    // 拖拽位置钳制在视口内，防止拖出屏幕后无法找回
+                    const rect = dom.noteTooltip.getBoundingClientRect();
+                    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+                    const maxTop = Math.max(0, window.innerHeight - rect.height);
+                    const left = Math.min(maxLeft, Math.max(0, e.clientX - noteDragState.offsetX));
+                    const top = Math.min(maxTop, Math.max(0, e.clientY - noteDragState.offsetY));
+                    dom.noteTooltip.style.left = left + 'px';
+                    dom.noteTooltip.style.top = top + 'px';
                 }
                 if (noteResizeState) {
-                    const newW = Math.max(200, Math.min(500, noteResizeState.startW + (e.clientX - noteResizeState.startX)));
-                    const newH = Math.max(100, Math.min(500, noteResizeState.startH + (e.clientY - noteResizeState.startY)));
+                    // 尺寸上限与 CSS max-width/max-height 保持一致（360px）
+                    const newW = Math.max(200, Math.min(360, noteResizeState.startW + (e.clientX - noteResizeState.startX)));
+                    const newH = Math.max(100, Math.min(360, noteResizeState.startH + (e.clientY - noteResizeState.startY)));
                     dom.noteTooltip.style.width = newW + 'px';
                     dom.noteTooltip.style.height = newH + 'px';
                 }

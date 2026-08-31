@@ -203,6 +203,13 @@
     white-space: nowrap;
 }
 
+/* 第二行按钮组：顶部细分隔线区分操作分组（数据交互 / 数据集管理） */
+.action-buttons-second {
+    border-top: 1px solid var(--border-muted);
+    padding-top: 6px;
+    margin-bottom: 4px;
+}
+
 /* ==================== 弹窗 ==================== */
 
 /* 弹窗遮罩层，覆盖整个视口 */

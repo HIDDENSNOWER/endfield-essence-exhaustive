@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具Ver.0.5.1</title>
+    <title>终末地基质穷举数据记录与统计工具Ver.0.6.0</title>
 
     <!-- 样式表：按层叠顺序引入 -->
     <!-- base.css: CSS 变量定义、全局重置、字体、滚动条等基础样式，必须最先加载 -->
@@ -17,6 +17,18 @@
     <link rel="stylesheet" href="css/features.css">
     <!-- settings.css: 设置弹窗及颜色预览编辑面板专属样式 -->
     <link rel="stylesheet" href="css/settings.css">
+
+    <!-- 防主题闪烁（FOUC）：DOM 解析前按保存的偏好设置 data-theme，避免暗色用户先看到亮色 -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('smarttable_theme');
+                if (t === 'dark' || t === 'light') {
+                    document.documentElement.setAttribute('data-theme', t);
+                }
+            } catch (e) { /* localStorage 不可用时忽略 */ }
+        })();
+    </script>
 </head>
 
 <body>
@@ -65,6 +77,17 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="23 4 23 10 17 10" />
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+            </button>
+
+            <!-- 清除缓存按钮 -->
+            <!-- 点击后提示将清除的内容（全部数据集、设置等），确认后清除并重新加载页面 -->
+            <button class="btn-icon" id="btnClearCache" title="清除浏览器缓存（清除全部本地数据）">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
                 </svg>
             </button>
 
@@ -234,13 +257,16 @@
                     </div>
                 </div>
 
-                <!-- 数据集操作按钮组 -->
+                <!-- 数据集操作按钮组：数据交互与数据集管理分组 -->
                 <div class="action-buttons">
-                    <button class="btn btn-sm" id="btnExport">导出</button>
-                    <button class="btn btn-sm" id="btnImport">导入</button>
-                    <button class="btn btn-sm" id="btnNewDataset">新建</button>
-                    <button class="btn btn-sm" id="btnRename">重命名</button>
-                    <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
+                    <button class="btn btn-sm" id="btnExport" title="导出当前数据集为 ZIP/JSON">导出</button>
+                    <button class="btn btn-sm" id="btnImport" title="从 ZIP/JSON 导入数据集">导入</button>
+                    <button class="btn btn-sm" id="btnMergeDatasets" title="选择多个数据集进行覆盖或合并">合并</button>
+                </div>
+                <div class="action-buttons action-buttons-second">
+                    <button class="btn btn-sm" id="btnNewDataset" title="创建新的空白数据集">新建</button>
+                    <button class="btn btn-sm" id="btnRename" title="重命名当前数据集">重命名</button>
+                    <button class="btn btn-sm btn-danger" id="btnDeleteDataset" title="删除当前数据集">删除</button>
                 </div>
                 <!-- 重置同步按钮（仅默认数据集时显示） -->
                 <button class="btn btn-sm btn-block" id="btnResetSync">重置同步</button>
@@ -371,8 +397,8 @@
     <footer class="app-footer">
         <!-- 点击打开关于弹窗 -->
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.5.1(&quot;再访基地&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.5.1("再访基地"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.6.0(&quot;再访基地&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.6.0("再访基地"更新)
         </button>
     </footer>
 
@@ -536,6 +562,59 @@
                 <p style="font-size:0.72rem; color:var(--text-tertiary); margin-top:6px;">默认格式：数据集名_日期.zip</p>
             </div>
             <div class="modal-footer"><button class="btn" id="btnCancelExport">取消</button><button class="btn btn-primary" id="btnConfirmExport">导出</button></div>
+        </div>
+    </div>
+
+    <!-- 数据集合并选择弹窗 -->
+    <!-- 用户可勾选若干独立数据集，指定合并基准与结果保存方式 -->
+    <div class="modal-overlay" id="modalMergePicker" style="display:none;">
+        <div class="modal" style="max-width:480px;">
+            <div class="modal-header"><span>🔄 数据集合并</span><button class="btn-icon btn-sm" id="btnCloseMergePick" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
+            <div class="modal-body">
+                <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:8px;">勾选 2 个及以上数据集，第一个作为合并基准，其余依次并入：</p>
+                <div id="mergePickList" style="max-height:260px; overflow:auto; border:1px solid var(--border-color,#444); border-radius:6px; padding:8px 10px; margin-bottom:10px;"></div>
+                <div style="font-size:0.82rem; margin-bottom:6px;">合并结果保存为：</div>
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; margin-bottom:6px; cursor:pointer;">
+                    <input type="radio" name="mergeResultMode" value="new" checked> 新建数据集
+                    <input type="text" id="mergeNewName" placeholder="输入新数据集名称" style="flex:1; margin-left:6px;" maxlength="50">
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+                    <input type="radio" name="mergeResultMode" value="first"> 合并到第一个勾选的数据集（覆盖其内容）
+                </label>
+            </div>
+            <div class="modal-footer"><button class="btn" id="btnCancelMergePick">取消</button><button class="btn btn-primary" id="btnConfirmMergePick">开始合并</button></div>
+        </div>
+    </div>
+
+    <!-- 导入合并预览弹窗 -->
+    <!-- 导入数据与现有数据集重名并选择"合并"时：非冲突单元格自动合并，冲突单元格在此选择处理方式并预览结果 -->
+    <div class="modal-overlay" id="modalMergePreview" style="display:none;">
+        <style>
+            /* 合并预览冲突清单表格：固定布局防止文本撑破单元格边框 */
+            .merge-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:0.75rem; }
+            .merge-table th, .merge-table td { padding:3px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border-bottom:1px solid var(--border-color,#444); text-align:left; }
+            .merge-table th { color:var(--text-secondary); }
+            /* 表头冻结：滚动冲突清单时首行保持可见 */
+            .merge-table thead th { position:sticky; top:0; z-index:2; background-color:var(--bg-primary); }
+            .merge-table td select { width:100%; font-size:0.72rem; padding:1px 2px; }
+            .merge-table tbody tr { cursor:pointer; }
+            .merge-table tbody tr:hover { background-color: var(--bg-hover); }
+            .merge-table .col-srcname { width:13%; }
+            .merge-table .col-pos { width:22%; }
+            .merge-table .col-cur { width:14%; }
+            .merge-table .col-src { width:14%; }
+            .merge-table .col-act { width:15%; }
+            .merge-table .col-res { width:18%; }
+        </style>
+        <div class="modal" style="max-width:760px;">
+            <div class="modal-header"><span>🔄 导入合并预览</span><button class="btn-icon btn-sm" id="btnCloseMergePreview" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
+            <div class="modal-body">
+                <div id="mergeSummary" style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:10px;"></div>
+                <div id="mergeStrategyRow" style="display:flex; gap:16px; font-size:0.85rem; margin-bottom:10px; flex-wrap:wrap;"></div>
+                <div id="mergeConflictList" style="max-height:300px; overflow:auto;"></div>
+                <div id="mergeCellDetail" style="display:none; margin-top:8px; padding:8px 10px; border:1px solid var(--border-color,#444); border-radius:6px; background-color:var(--bg-hover); max-height:160px; overflow:auto;"></div>
+            </div>
+            <div class="modal-footer"><button class="btn" id="btnCancelMerge">取消</button><button class="btn btn-primary" id="btnConfirmMerge">确认应用</button></div>
         </div>
     </div>
 
@@ -708,7 +787,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">Ver.0.5.1("再访基地"更新)</div>
+                    <div class="version-ver">Ver.0.6.0("再访基地"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -800,10 +879,14 @@
     <!-- 功能层：数据管理 -->
     <!-- 数据集 CRUD、切换、保护、锁 UI -->
     <script src="js/features/data/dataset-manager.js"></script>
+    <!-- 清除浏览器缓存（全部本地数据） -->
+    <script src="js/features/data/cache-clear.js"></script>
     <!-- 数据集级备注 -->
     <script src="js/features/data/dataset-remark.js"></script>
     <!-- 数据导入导出（ZIP/JSON） -->
     <script src="js/features/data/import-export.js"></script>
+    <!-- 数据集覆盖/合并引擎（导入冲突预览） -->
+    <script src="js/features/data/dataset-merge.js"></script>
     <!-- 默认数据集异步加载 -->
     <script src="js/features/data/default-loader.js"></script>
 

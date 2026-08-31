@@ -73,67 +73,79 @@
          * 5. 触发浏览器下载
          */
         async doExportZip(fileName) {
-            // 获取备注
-            let remark = '';
-            if (App.dom.datasetRemarkDisplay.style.display !== 'none') {
-                remark = App.dom.datasetRemarkDisplay.textContent;
-            } else if (App.dom.datasetRemarkInput.style.display !== 'none') {
-                remark = App.dom.datasetRemarkInput.value.trim();
-            }
+            try {
+                // 获取备注
+                let remark = '';
+                if (App.dom.datasetRemarkDisplay.style.display !== 'none') {
+                    remark = App.dom.datasetRemarkDisplay.textContent;
+                } else if (App.dom.datasetRemarkInput.style.display !== 'none') {
+                    remark = App.dom.datasetRemarkInput.value.trim();
+                }
 
-            // 深拷贝 rows，提取图片
-            const rowsCopy = JSON.parse(JSON.stringify(App.state.rows));
-            const zip = new JSZip();
-            const imagesFolder = zip.folder('images'); // 创建 images 文件夹
-            const imageMap = {};   // 用于去重：base64 -> 文件名
-            let imageCounter = 0;
+                // 深拷贝 rows，提取图片
+                const rowsCopy = JSON.parse(JSON.stringify(App.state.rows));
+                const zip = new JSZip();
+                const imagesFolder = zip.folder('images'); // 创建 images 文件夹
+                const imageMap = {};   // 用于去重：base64 -> 文件名
+                let imageCounter = 0;
 
-            rowsCopy.forEach((row, rowIdx) => {
-                row.data.forEach((cell, colIdx) => {
-                    const note = cell.note;
-                    if (note && note.images && note.images.length > 0) {
-                        const newImageRefs = [];
-                        note.images.forEach((base64, imgIdx) => {
-                            // 如果这张图片尚未保存，则写入 zip 并记录文件名
-                            if (!imageMap[base64]) {
-                                const ext = App.utils.getImageExtension(base64);
-                                const imageFileName = `cell_${rowIdx}_${colIdx}_${imgIdx}.${ext}`;
-                                imageMap[base64] = imageFileName;
-                                const blob = App.utils.base64ToBlob(base64);
-                                imagesFolder.file(imageFileName, blob);
-                            }
-                            // 使用文件名替换 base64
-                            newImageRefs.push(imageMap[base64]);
-                        });
-                        note.images = newImageRefs;
-                    }
+                rowsCopy.forEach((row, rowIdx) => {
+                    row.data.forEach((cell, colIdx) => {
+                        const note = cell.note;
+                        if (note && note.images && note.images.length > 0) {
+                            const newImageRefs = [];
+                            note.images.forEach((base64, imgIdx) => {
+                                // 如果这张图片尚未保存，则写入 zip 并记录文件名
+                                if (!imageMap[base64]) {
+                                    const blob = App.utils.base64ToBlob(base64);
+                                    if (blob === null) {
+                                        // 非法图片数据：跳过，避免中断整个导出
+                                        console.warn('导出时跳过非法图片数据');
+                                        return;
+                                    }
+                                    const ext = App.utils.getImageExtension(base64);
+                                    const imageFileName = `cell_${rowIdx}_${colIdx}_${imgIdx}.${ext}`;
+                                    imageMap[base64] = imageFileName;
+                                    imagesFolder.file(imageFileName, blob);
+                                }
+                                // 使用文件名替换 base64
+                                newImageRefs.push(imageMap[base64]);
+                            });
+                            note.images = newImageRefs;
+                        }
+                    });
                 });
-            });
 
-            // 构建导出对象
-            const exportObj = {
-                rows: rowsCopy,
-                remark: remark,
-                version: '2.0',
-                exportedAt: new Date().toISOString()
-            };
+                // 构建导出对象
+                const exportObj = {
+                    rows: rowsCopy,
+                    remark: remark,
+                    version: '2.0',
+                    exportedAt: new Date().toISOString()
+                };
 
-            // 将 JSON 加入 ZIP
-            zip.file('data.json', JSON.stringify(exportObj, null, 2));
+                // 将 JSON 加入 ZIP
+                zip.file('data.json', JSON.stringify(exportObj, null, 2));
 
-            // 生成 ZIP 并触发下载
-            const content = await zip.generateAsync({ type: 'blob' });
-            const url = URL.createObjectURL(content);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                // 生成 ZIP 并触发下载
+                const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                // 延迟释放 URL，避免个别浏览器在下载尚未开始时中断
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-            App.modal.closeModal(App.dom.modalExport);
-            App.dom.inputHint.textContent = `已导出：${fileName}`;
+                App.modal.closeModal(App.dom.modalExport);
+                App.dom.inputHint.textContent = `已导出：${fileName}`;
+            } catch (err) {
+                console.error('导出 ZIP 失败:', err);
+                App.modal.closeModal(App.dom.modalExport);
+                App.modal.showAlert('导出失败，请重试或改用 JSON 格式导出。', '导出失败');
+            }
         },
 
         /**
@@ -202,6 +214,12 @@
          * - 根据文件名确定数据集键，处理重名冲突
          */
         async importZipData(file) {
+            // 安全限制：拒绝过大的 ZIP 文件（压缩炸弹防护），避免页面卡死
+            const MAX_ZIP_SIZE = 50 * 1024 * 1024; // 50MB
+            if (file.size > MAX_ZIP_SIZE) {
+                App.modal.showAlert('ZIP 文件过大（超过 50MB），已拒绝导入。', '导入失败');
+                return;
+            }
             try {
                 const zip = await JSZip.loadAsync(file);
                 const dataFile = zip.file('data.json');
@@ -230,13 +248,13 @@
                     return;
                 }
 
-                // 还原图片
-                rows = await this.restoreImagesFromZip(rows, zip);
+                // 还原图片（统计缺失数量）
+                const missingCount = await this.restoreImagesFromZip(rows, zip);
 
-                // 确定数据集名称
+                // 确定数据集名称（保留中文，过滤不安全字符）
                 const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
-                const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
-                this.proceedImportWithConflict(rows, newKey, remark);
+                const newKey = fileName.replace(/[^\w\u4e00-\u9fa5-]/g, '_').slice(0, 50) || 'imported';
+                this.proceedImportWithConflict(rows, newKey, remark, missingCount);
 
             } catch (err) {
                 console.error(err);
@@ -248,12 +266,14 @@
          * 从 ZIP 中还原图片为 Data URL
          * @param {Array} rows - 行数据
          * @param {JSZip} zip - ZIP 对象
-         * @returns {Promise<Array>} 还原后的行数据
+         * @returns {Promise<number>} 缺失图片数量
          *
          * 遍历所有单元格的 note.images，将文件名替换为从 ZIP 中读取的 Data URL。
+         * 图片缺失或引用非法时保留原文件名引用并计数（不再静默丢弃）。
          */
         async restoreImagesFromZip(rows, zip) {
             const imageFolder = zip.folder('images');
+            let missing = 0;
             for (const row of rows) {
                 for (const cell of row.data) {
                     const note = cell.note;
@@ -264,20 +284,32 @@
                                 // 已经是 Data URL，直接保留
                                 restoredImages.push(ref);
                             } else if (typeof ref === 'string' && imageFolder) {
+                                // 路径安全校验：拒绝包含路径穿越或绝对路径的引用
+                                if (/\.\.\/|\.\.\\|^\/|^\\/.test(ref)) {
+                                    missing++;
+                                    restoredImages.push(ref);
+                                    continue;
+                                }
                                 // 从 ZIP 中读取图片文件
                                 const imageFile = imageFolder.file(ref);
                                 if (imageFile) {
                                     const blob = await imageFile.async('blob');
                                     const dataUrl = await App.utils.blobToDataURL(blob);
                                     restoredImages.push(dataUrl);
+                                } else {
+                                    // 缺失：保留原文件名引用，避免数据不完整无感知
+                                    missing++;
+                                    restoredImages.push(ref);
                                 }
+                            } else {
+                                missing++;
                             }
                         }
                         note.images = restoredImages;
                     }
                 }
             }
-            return rows;
+            return missing;
         },
 
         /**
@@ -307,9 +339,10 @@
                     }
 
                     if (rows.length > 0 && rows[0].name && Array.isArray(rows[0].data)) {
+                        // 确定数据集名称（保留中文，过滤不安全字符）
                         const fileName = file.name.replace(/\.[^/.]+$/, '') || 'imported';
-                        const newKey = fileName.replace(/[^a-zA-Z0-9_]/g, '_');
-                        this.proceedImportWithConflict(rows, newKey, remark);
+                        const newKey = fileName.replace(/[^\w\u4e00-\u9fa5-]/g, '_').slice(0, 50) || 'imported';
+                        this.proceedImportWithConflict(rows, newKey, remark, 0);
                     } else {
                         App.modal.showAlert('文件格式不正确。', '导入失败');
                     }
@@ -325,13 +358,19 @@
          * @param {Array} rows - 行数据
          * @param {string} newKey - 预期数据集名称
          * @param {string} remark - 备注
+         * @param {number} missingCount - ZIP 导入时缺失的图片数量（0 表示无缺失）
          *
          * - 若预期名称与受保护数据集重名，自动追加 "_导入"
          * - 若名称已存在，弹出冲突对话框让用户选择覆盖、另存为或取消
          * - 否则直接执行导入
          */
-        proceedImportWithConflict(rows, newKey, remark) {
+        proceedImportWithConflict(rows, newKey, remark, missingCount = 0) {
             const existing = App.storage.getDatasetList();
+
+            // 保留键校验：导入名不得覆盖系统键（安全修复）
+            if (App.datasetManager.isReservedKey(newKey)) {
+                newKey = newKey + '_导入';
+            }
 
             if (App.constants.PROTECTED_DATASETS.includes(newKey)) {
                 newKey = newKey + '_导入';
@@ -355,22 +394,42 @@
          * - 另存为：添加时间戳后缀创建新名称
          * - 取消：关闭弹窗
          */
-        showImportConflictDialog(rows, newKey, remark) {
+        showImportConflictDialog(rows, newKey, remark, missingCount = 0) {
             // 使用自定义内容覆盖通用确认弹窗
             App.dom.confirmDialogTitle.textContent = '导入冲突';
+            const safeKey = App.utils.escapeHtml(newKey);
+            const missingTip = missingCount > 0
+                ? `<p style="font-size:0.78rem; color:var(--danger-primary,#e74c3c); margin-top:8px;">⚠️ 有 ${missingCount} 张图片在文件中未找到，导入后这些单元格图片将保留文件名引用。</p>`
+                : '';
             App.dom.confirmDialogBody.innerHTML = `
-                <p>数据集 "${newKey}" 已存在，请选择操作：</p>
-                <div style="display:flex; gap:8px; margin-top:10px;">
+                <p>数据集 "${safeKey}" 已存在，请选择操作：</p>
+                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
                     <button class="btn btn-danger" id="btnOverwrite">覆盖</button>
-                    <button class="btn btn-primary" id="btnSaveAs">另存为</button>
+                    <button class="btn btn-primary" id="btnMergeImport">合并</button>
+                    <button class="btn" id="btnSaveAs">另存为</button>
                     <button class="btn" id="btnCancelImport">取消</button>
-                </div>`;
+                </div>${missingTip}`;
+            // 清空残留回调，防止底部按钮误触发上一次确认弹窗的回调（安全修复）
+            window.__dialogConfirmCallback = null;
+            window.__dialogCancelCallback = null;
+            // 隐藏通用确认弹窗的底部按钮（本弹窗使用自定义按钮）
+            if (App.dom.btnConfirmConfirmDialog) App.dom.btnConfirmConfirmDialog.style.display = 'none';
+            if (App.dom.btnCancelConfirmDialog) App.dom.btnCancelConfirmDialog.style.display = 'none';
             App.modal.openModal(App.dom.modalConfirmDialog);
 
-            // 覆盖按钮
+            // 覆盖按钮：直接导入到已有名称
             document.getElementById('btnOverwrite').addEventListener('click', () => {
                 App.modal.closeConfirmDialog();
                 this.proceedImport(rows, newKey, remark);
+            });
+            // 合并按钮：进入差异分析 + 预览流程（非冲突自动合并，冲突由用户选择方式并预览）
+            document.getElementById('btnMergeImport').addEventListener('click', () => {
+                App.modal.closeConfirmDialog();
+                if (App.datasetMerge && App.datasetMerge.startMergeFromImport) {
+                    App.datasetMerge.startMergeFromImport(rows, newKey, remark);
+                } else {
+                    App.modal.showAlert('合并模块未加载，请刷新页面后重试。', '错误');
+                }
             });
             // 另存为按钮
             document.getElementById('btnSaveAs').addEventListener('click', () => {
@@ -393,18 +452,21 @@
          * 将数据写入 state.rows 和 localStorage，更新界面并切换到新数据集。
          */
         proceedImport(data, newKey, remark) {
+            // 保留键校验（防御：直接调用本方法时也拦截系统键覆盖）
+            if (App.datasetManager.isReservedKey(newKey)) {
+                App.modal.showAlert('导入名称不可用（不能使用系统保留名称或以 smarttable_ 开头的名称）。', '导入失败');
+                return;
+            }
             // 标准化数据
             App.state.rows = data.map(row => ({ name: row.name, data: row.data.map(App.utils.normalizeCell) }));
             App.storage.saveCurrentDatasetKey(newKey);
             App.storage.setJSON(newKey, App.state.rows);
             App.storage.addDatasetKey(newKey);
 
-            // 保存备注
+            // 保存备注（覆盖时若导入文件无备注，保留目标数据集原有备注，避免误删）
             const remarks = App.storage.getDatasetRemarks();
             if (remark) {
                 remarks[newKey] = remark;
-            } else {
-                delete remarks[newKey];
             }
             App.storage.saveDatasetRemarks(remarks);
 
@@ -413,10 +475,11 @@
             App.datasetManager.updateDatasetSelect();
             App.tableRenderer.renderAllTables();
             App.dom.inputHint.textContent = `已导入并切换到数据集: ${newKey}`;
-            App.storage.saveCurrentDatasetKey(newKey);
 
             if (typeof App.datasetRemark.updateDatasetRemark === 'function') App.datasetRemark.updateDatasetRemark();
             App.datasetManager.updateLockedUI();
+            // 清空历史记录，防止撤回写坏导入的数据
+            App.datasetManager.resetHistorySafe();
         },
 
         /**

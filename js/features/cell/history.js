@@ -146,8 +146,9 @@
          * - 重做按钮：当 historyIndex >= history.length - 1（已在最新）时禁用
          */
         updateUndoRedoButtons() {
-            App.dom.btnUndo.disabled = App.state.historyIndex < 0;
-            App.dom.btnRedo.disabled = App.state.historyIndex >= App.state.history.length - 1;
+            // 空值防护：按钮不存在时不抛异常（安全修复）
+            if (App.dom.btnUndo) App.dom.btnUndo.disabled = App.state.historyIndex < 0;
+            if (App.dom.btnRedo) App.dom.btnRedo.disabled = App.state.historyIndex >= App.state.history.length - 1;
         },
 
         /**

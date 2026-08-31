@@ -86,9 +86,11 @@
                     App.modal.showAlert('默认数据集保护：该操作会导致获取数低于基准。', '操作限制');
                     return;
                 }
-                // 应用更改
+                // 应用更改（记录历史以便撤回）
+                const oldCell = { v: cell.v, t: cell.t, a: cell.a, note: cell.note };
                 cell.a += 1;
                 App.state.rows[rowIdx].data[colIndex] = cell;
+                App.history.pushHistory(rowIdx, colIndex, oldCell, { v: cell.v, t: cell.t, a: cell.a, note: cell.note });
                 App.tableRenderer.renderAllTables();
                 App.datasetManager.saveData();
                 dom.inputHint.textContent = `已获取: ${rowName} > ${groupName} > ${subName} (拥有${cell.a}/${cell.t})`;
@@ -113,9 +115,11 @@
                     App.modal.showAlert('默认数据集保护：不能覆盖或清除已有数值。', '操作限制');
                     return;
                 }
-                // 直接设置新值
+                // 直接设置新值（记录历史以便撤回）
+                const oldCell = { v: cell.v, t: cell.t, a: cell.a, note: cell.note };
                 cell.v = String(newVal);
                 App.state.rows[rowIdx].data[colIndex] = cell;
+                App.history.pushHistory(rowIdx, colIndex, oldCell, { v: cell.v, t: cell.t, a: cell.a, note: cell.note });
                 App.tableRenderer.renderAllTables();
                 App.datasetManager.saveData();
                 dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;
@@ -162,6 +166,22 @@
                 return {
                     keepOld: oldMax > newMax,
                     reason: `总和及第三位相同，前两位最大值 ${oldMax > newMax ? '旧值更大' : '新值更大'}（旧${oldMax} vs 新${newMax}）`
+                };
+            }
+
+            // 前两位最大值相同但取值可能不同（如 [1,3] vs [3,1]）：逐位比较第一位
+            if (oldT[0] !== newT[0]) {
+                return {
+                    keepOld: oldT[0] > newT[0],
+                    reason: `前两位最大值相同，比较第一位 ${oldT[0] > newT[0] ? '旧值更大' : '新值更大'}（旧${oldT[0]} vs 新${newT[0]}）`
+                };
+            }
+
+            // 第一位相同：比较第二位
+            if (oldT[1] !== newT[1]) {
+                return {
+                    keepOld: oldT[1] > newT[1],
+                    reason: `前两位仅第二位不同 ${oldT[1] > newT[1] ? '旧值更大' : '新值更大'}（旧${oldT[1]} vs 新${newT[1]}）`
                 };
             }
 
@@ -255,9 +275,11 @@
                 App.modal.showAlert('默认数据集保护：不能替换为低于基准的数据。', '操作限制');
                 return;
             }
-            // 应用新值
+            // 应用新值（记录历史以便撤回）
+            const oldCell = { v: cell.v, t: cell.t, a: cell.a, note: cell.note };
             cell.v = String(newVal);
             App.state.rows[rowIdx].data[colIndex] = cell;
+            App.history.pushHistory(rowIdx, colIndex, oldCell, { v: cell.v, t: cell.t, a: cell.a, note: cell.note });
             App.tableRenderer.renderAllTables();
             App.datasetManager.saveData();
             App.dom.inputHint.textContent = `已更新: ${rowName} > ${groupName} > ${subName} = ${newVal}`;

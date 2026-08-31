@@ -43,7 +43,7 @@
                     const c = App.utils.normalizeCell(cell);
 
                     // 确定当前列属于哪个词条组
-                    let groupIdx = 0;
+                    let groupIdx = -1;
                     let remaining = colIndex;
                     for (let i = 0; i < C.ALL_GROUPS.length; i++) {
                         const subLen = C.ALL_GROUPS[i].sub.length;
@@ -53,14 +53,16 @@
                         }
                         remaining -= subLen;
                     }
+                    // 越界列（异常数据）不参与统计，避免归入错误分组
+                    if (groupIdx < 0) return;
 
-                    // 统计总基质数
-                    if (c.v !== '' && c.v !== null && c.v !== undefined) {
-                        // 有数值的单元格算1个基质
-                        stats[groupIdx].totalMatrix += 1;
-                    } else if (c.t > 0) {
+                    // 统计总基质数（口径统一：实装优先，纯数值按 1 计）
+                    if (c.t > 0) {
                         // 实装基质按已获取数计算
                         stats[groupIdx].totalMatrix += (c.a || 0);
+                    } else if (c.v !== '' && c.v !== null && c.v !== undefined) {
+                        // 有数值的单元格算1个基质
+                        stats[groupIdx].totalMatrix += 1;
                     }
 
                     // 累计总实装基质数和已获取数

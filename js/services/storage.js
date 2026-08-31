@@ -48,14 +48,17 @@
          * 写入字符串值
          * @param {string} key - 存储键名
          * @param {string} value - 要存储的字符串
+         * @returns {boolean} 是否写入成功
          *
-         * 捕获异常并输出警告，防止写入失败导致程序中断。
+         * 捕获异常；失败时输出警告并返回 false，供调用方提示用户（避免"假保存"）。
          */
         set(key, value) {
             try {
                 localStorage.setItem(key, value);
+                return true;
             } catch (e) {
                 console.warn('storage.set failed:', key, e);
+                return false;
             }
         },
 
@@ -94,14 +97,17 @@
          * 写入 JSON 格式数据
          * @param {string} key - 存储键名
          * @param {*} value - 要序列化并存储的数据
+         * @returns {boolean} 是否写入成功
          *
-         * 自动 JSON.stringify，捕获异常并输出警告。
+         * 自动 JSON.stringify；失败时输出警告并返回 false（配额满时调用方可提示用户）。
          */
         setJSON(key, value) {
             try {
                 localStorage.setItem(key, JSON.stringify(value));
+                return true;
             } catch (e) {
                 console.warn('storage.setJSON failed:', key, e);
+                return false;
             }
         },
 
@@ -160,19 +166,6 @@
          */
         saveDatasetRemarks(remarks) {
             this.setJSON(C.REMARKS_STORAGE_KEY, remarks);
-        },
-
-        /**
-         * 获取当前数据集的备注
-         * @returns {string} 当前数据集的备注字符串
-         *
-         * 注意：此函数存在逻辑问题，使用 App.state.rows 作为键名是错误的。
-         * 正确做法应使用 loadCurrentDatasetKey() 获取当前数据集名称。
-         * 但由于该函数在现有代码中未被调用，暂不修改。
-         */
-        getCurrentDatasetRemark() {
-            const remarks = this.getDatasetRemarks();
-            return remarks[App.state.rows ? App.state.rows : ''] || '';
         },
 
         // ==================== 用户自定义颜色 ====================

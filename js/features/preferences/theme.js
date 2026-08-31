@@ -22,16 +22,17 @@
         /**
          * 应用主题
          * @param {string} theme - 'light' 或 'dark'
+         * @param {boolean} persist - 是否持久化到 localStorage（默认 true）
          *
          * 功能：
          * - 更新全局状态 state.theme
          * - 设置 html 元素的 data-theme 属性，触发 CSS 变量切换
          * - 切换太阳/月亮图标的显示状态
-         * - 保存主题偏好到 localStorage
+         * - 保存主题偏好到 localStorage（仅用户显式选择时）
          * - 应用该主题下的用户自定义状态颜色
          * - 同步表格底色（确保奇偶行背景与主题匹配）
          */
-        applyTheme(theme) {
+        applyTheme(theme, persist = true) {
             // 更新全局状态
             App.state.theme = theme;
 
@@ -47,8 +48,10 @@
             if (iconSun) iconSun.style.display = theme === 'dark' ? 'none' : '';
             if (iconMoon) iconMoon.style.display = theme === 'dark' ? '' : 'none';
 
-            // 保存主题到 localStorage
-            App.storage.set(App.constants.STORAGE_KEY_THEME, theme);
+            // 保存主题到 localStorage（仅在用户显式选择时，避免"跟随系统"被覆盖）
+            if (persist) {
+                App.storage.set(App.constants.STORAGE_KEY_THEME, theme);
+            }
 
             // 应用用户自定义状态颜色
             this.applySavedColors();
@@ -79,8 +82,9 @@
             if (saved) {
                 this.applyTheme(saved);
             } else {
+                // 无保存偏好：跟随系统主题，但不持久化（保持"跟随系统"持续生效）
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                this.applyTheme(prefersDark ? 'dark' : 'light');
+                this.applyTheme(prefersDark ? 'dark' : 'light', false);
             }
         },
 
@@ -128,12 +132,18 @@
                 dom.btnToggleTheme.addEventListener('click', () => this.toggleTheme());
             }
 
-            // 监听系统主题变化（仅当用户未手动设置主题时）
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            // 监听系统主题变化（仅当用户未手动设置主题时）；兼容旧 Safari 的 addListener
+            const mql = window.matchMedia('(prefers-color-scheme: dark)');
+            const onSystemThemeChange = (e) => {
                 if (!App.storage.get(App.constants.STORAGE_KEY_THEME)) {
                     this.applyTheme(e.matches ? 'dark' : 'light');
                 }
-            });
+            };
+            if (typeof mql.addEventListener === 'function') {
+                mql.addEventListener('change', onSystemThemeChange);
+            } else if (typeof mql.addListener === 'function') {
+                mql.addListener(onSystemThemeChange);
+            }
         }
     };
 

@@ -18,7 +18,6 @@
     // ==================== 初始状态 ====================
     const initialState = {
         rows: [],                 // 行数据：包含12个对象，每个对象有 name 和 data（70列单元格）
-        searchQuery: '',          // 搜索关键词（保留字段，当前版本未使用）
         theme: 'light',           // 当前主题：'light' 或 'dark'
         activePanel: 'input',     // 右侧激活面板：'input' | 'record' | 'stats'
         history: [],              // 操作历史记录数组，用于撤回/重做
@@ -48,22 +47,6 @@
 
     // ==================== App.state 接口 ====================
     App.state = {
-        /**
-         * 获取整个状态对象的引用
-         * @returns {Object} 当前状态对象
-         */
-        getState() {
-            return state;
-        },
-
-        /**
-         * 批量更新状态
-         * @param {Object} partial - 需要更新的字段（键值对）
-         */
-        setState(partial) {
-            Object.assign(state, partial);
-        },
-
         // ---------- 核心状态访问器 ----------
         // 提供 rows 的 getter/setter
         get rows() { return state.rows; },

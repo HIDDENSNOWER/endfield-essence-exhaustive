@@ -105,11 +105,10 @@
                 });
             }
 
-            // 全选按钮
+            // 全选按钮：仅修改复选框勾选状态（不立即写入 state，应用时才生效）
             if (dom.btnSelectAllRows) {
                 dom.btnSelectAllRows.addEventListener('click', () => {
                     document.querySelectorAll('#rowFilterCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = true);
-                    this.updateSelectedRowsFromCheckboxes();
                 });
             }
 
@@ -117,22 +116,15 @@
             if (dom.btnSelectNoneRows) {
                 dom.btnSelectNoneRows.addEventListener('click', () => {
                     document.querySelectorAll('#rowFilterCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    this.updateSelectedRowsFromCheckboxes();
                 });
             }
 
-            // 复选框变化时更新选中状态（事件委托）
-            if (dom.rowFilterCheckboxes) {
-                dom.rowFilterCheckboxes.addEventListener('change', (e) => {
-                    if (e.target && e.target.matches('input[type="checkbox"]')) {
-                        this.updateSelectedRowsFromCheckboxes();
-                    }
-                });
-            }
+            // 复选框变化：仅维护本地勾选状态，不立即写入 state（修复"取消失效"问题）
 
-            // 应用筛选：关闭弹窗、重新渲染表格、更新按钮文本
+            // 应用筛选：一次性写入选中状态，关闭弹窗、重新渲染表格、更新按钮文本
             if (dom.btnApplyRowFilter) {
                 dom.btnApplyRowFilter.addEventListener('click', () => {
+                    this.updateSelectedRowsFromCheckboxes();
                     App.modal.closeModal(dom.modalRowFilter);
                     App.tableRenderer.renderAllTables();
                     this.updateRowFilterButtonLabel();

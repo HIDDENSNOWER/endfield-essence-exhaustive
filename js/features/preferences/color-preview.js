@@ -72,7 +72,8 @@
             }
             const total = Math.floor(Math.random() * 3) + 1; // 随机总数 1~3
             if (status === 'statusNone') return `(0/${total})`;
-            if (status === 'statusPartial') return `(${Math.floor(Math.random() * (total - 1)) + 1}/${total})`;
+            // 部分获取：总数=1 时不存在部分获取状态，直接显示 (0/1) 避免与 full 混淆
+            if (status === 'statusPartial') return total === 1 ? `(0/1)` : `(${Math.floor(Math.random() * (total - 1)) + 1}/${total})`;
             if (status === 'statusFull') return `(${total}/${total})`;
             return '';
         },
@@ -292,6 +293,12 @@
                     inp.step = step;
                 }
                 inp.dataset.type = dataType;
+                // Alpha 通道暂不支持：禁用并提示，避免用户调整后无效果造成误导
+                if (dataType === 'alpha') {
+                    inp.disabled = true;
+                    inp.title = '当前版本暂不支持透明度调整';
+                    inp.style.opacity = '0.5';
+                }
                 // 设置样式
                 inp.style.width = (dataType === 'hex' ? '80px' : '44px');
                 inp.style.fontSize = '0.65rem';
@@ -372,21 +379,34 @@
                     }
                     case 'rgb':
                     case 'rgba': {
-                        const [r, g, b] = [parseInt(inputs[0].value), parseInt(inputs[1].value), parseInt(inputs[2].value)];
-                        if ([r, g, b].some(v => isNaN(v))) return;
+                        // 数值钳制（0-255）并回写输入框，防止越界值产生错误颜色
+                        const rawRgb = [inputs[0].value, inputs[1].value, inputs[2].value];
+                        if (rawRgb.some(v => isNaN(Number(v)))) return;
+                        const clamp255 = v => Math.min(255, Math.max(0, Math.round(Number(v))));
+                        const [r, g, b] = rawRgb.map(clamp255);
+                        inputs[0].value = r; inputs[1].value = g; inputs[2].value = b;
                         hex = App.utils.rgbToHex(r, g, b);
                         break;
                     }
                     case 'cmyk': {
-                        const [c, m, y, k] = [parseFloat(inputs[0].value), parseFloat(inputs[1].value), parseFloat(inputs[2].value), parseFloat(inputs[3].value)];
-                        if ([c, m, y, k].some(isNaN)) return;
+                        // 数值钳制（0-100）并回写输入框
+                        const rawCmyk = [inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value];
+                        if (rawCmyk.some(v => isNaN(Number(v)))) return;
+                        const clamp100 = v => Math.min(100, Math.max(0, Number(v)));
+                        const [c, m, y, k] = rawCmyk.map(clamp100);
+                        [0, 1, 2, 3].forEach(i => inputs[i].value = [c, m, y, k][i]);
                         const rgb = App.utils.cmykToRgb(c, m, y, k);
                         hex = App.utils.rgbToHex(rgb.r, rgb.g, rgb.b);
                         break;
                     }
                     case 'hsla': {
-                        const [h, s, l] = [parseInt(inputs[0].value), parseInt(inputs[1].value), parseInt(inputs[2].value)];
-                        if ([h, s, l].some(isNaN)) return;
+                        // 数值钳制（H: 0-360, S/L: 0-100）并回写输入框
+                        const rawHsl = [inputs[0].value, inputs[1].value, inputs[2].value];
+                        if (rawHsl.some(v => isNaN(Number(v)))) return;
+                        const h = Math.min(360, Math.max(0, Math.round(Number(rawHsl[0]))));
+                        const s = Math.min(100, Math.max(0, Number(rawHsl[1])));
+                        const l = Math.min(100, Math.max(0, Number(rawHsl[2])));
+                        inputs[0].value = h; inputs[1].value = s; inputs[2].value = l;
                         const rgb = App.utils.hslToRgb(h, s, l);
                         hex = App.utils.rgbToHex(rgb.r, rgb.g, rgb.b);
                         break;

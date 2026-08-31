@@ -45,6 +45,10 @@
             'icon-sun',                            // 太阳图标（亮色）
             'icon-moon',                           // 月亮图标（暗色）
 
+            // ----- 导航栏维护按钮 -----
+            'btnForceRefresh',                     // 强制刷新按钮
+            'btnClearCache',                       // 清除缓存按钮
+
             // ----- 三联输入框 -----
             'inputVal1', 'inputVal2', 'inputVal3', // 三个数值输入框
 
@@ -257,7 +261,26 @@
             'noteTooltipHeader',                   // 悬浮框头部（可拖动）
             'btnNoteTooltipClose',                 // 关闭按钮
             'btnNoteTooltipLayout',                // 切换布局按钮
-            'noteTooltipResizer'                   // 调整大小手柄
+            'noteTooltipResizer',                  // 调整大小手柄
+
+            // ----- 导入合并预览弹窗 -----
+            'modalMergePreview',                   // 合并预览弹窗
+            'mergeSummary',                        // 差异摘要
+            'mergeStrategyRow',                    // 策略单选区
+            'mergeConflictList',                   // 冲突清单
+            'mergeCellDetail',                     // 单元格详情区（点击冲突行显示）
+            'btnConfirmMerge',                     // 确认应用按钮
+            'btnCancelMerge',                      // 取消按钮
+            'btnCloseMergePreview',                // 关闭按钮
+
+            // ----- 数据集合并选择弹窗 -----
+            'btnMergeDatasets',                    // 工具栏"合并"按钮
+            'modalMergePicker',                    // 数据集选择弹窗
+            'mergePickList',                       // 数据集复选框列表
+            'mergeNewName',                        // 合并结果新名称输入框
+            'btnConfirmMergePick',                 // 开始合并按钮
+            'btnCancelMergePick',                  // 取消按钮
+            'btnCloseMergePick'                    // 关闭按钮
         ];
 
         // 批量获取所有 ID 对应的元素，并缓存到 dom 对象

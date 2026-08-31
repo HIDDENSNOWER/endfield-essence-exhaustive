@@ -15,6 +15,11 @@
                 App.theme.bindThemeEvents();
             }
 
+            // 清除缓存
+            if (App.cacheClear && App.cacheClear.bindCacheClearEvents) {
+                App.cacheClear.bindCacheClearEvents();
+            }
+
             // 表格样式（尺寸、底色）
             if (App.tableStyle && App.tableStyle.bindTableStyleEvents) {
                 App.tableStyle.bindTableStyleEvents();
@@ -38,6 +43,11 @@
             // 导入导出
             if (App.importExport && App.importExport.bindImportExportEvents) {
                 App.importExport.bindImportExportEvents();
+            }
+
+            // 数据集覆盖/合并预览
+            if (App.datasetMerge && App.datasetMerge.bindDatasetMergeEvents) {
+                App.datasetMerge.bindDatasetMergeEvents();
             }
 
             // 数据集备注
@@ -118,7 +128,7 @@
             // 强制刷新
             if (dom.btnForceRefresh) {
                 dom.btnForceRefresh.addEventListener('click', function () {
-                    window.location.reload(true);
+                    window.location.reload();
                 });
             }
 

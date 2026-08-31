@@ -38,10 +38,12 @@
             // 如果当前数据集不在列表中，先添加
             if (!list.includes(currentKey)) App.storage.addDatasetKey(currentKey);
 
-            // 生成选项 HTML，受保护数据集加锁标记
+            // 生成选项 HTML（数据集名为用户输入，转义防 XSS），受保护数据集加锁标记
             App.dom.datasetSelect.innerHTML = list.map(k => {
                 const label = App.constants.PROTECTED_DATASETS.includes(k) ? k + ' 🔒' : k;
-                return `<option value="${k}" ${k === currentKey ? 'selected' : ''}>${label}</option>`;
+                const safeValue = App.utils.escapeHtml(k);
+                const safeLabel = App.utils.escapeHtml(label);
+                return `<option value="${safeValue}" ${k === currentKey ? 'selected' : ''}>${safeLabel}</option>`;
             }).join('');
 
             // 删除按钮状态：当前数据集受保护时禁用
@@ -56,6 +58,36 @@
          */
         updateDatasetDisplay() {
             App.dom.datasetName.textContent = App.storage.loadCurrentDatasetKey();
+        },
+
+        /**
+         * 校验数据集名称是否为保留键（系统键 / 受保护数据集）
+         * @param {string} name - 待校验的名称
+         * @returns {boolean} 是保留键返回 true
+         *
+         * 防止用户命名覆盖 smarttable_* 系统存储键（H2 修复），
+         * 以及重命名/新建时与受保护数据集冲突。
+         */
+        isReservedKey(name) {
+            if (typeof name !== 'string') return true;
+            // 系统元数据键前缀
+            if (name.startsWith('smarttable_')) return true;
+            // 受保护数据集名不可被占用
+            if (App.constants.PROTECTED_DATASETS.includes(name)) return true;
+            return false;
+        },
+
+        /**
+         * 重置历史记录并刷新撤回/重做按钮（跨数据集安全）
+         * 供切换/新建/删除/清空/导入/合并成功后调用。
+         */
+        resetHistorySafe() {
+            if (typeof App.state.resetHistory === 'function') {
+                App.state.resetHistory();
+            }
+            if (App.history && typeof App.history.updateUndoRedoButtons === 'function') {
+                App.history.updateUndoRedoButtons();
+            }
         },
 
         /**
@@ -106,12 +138,14 @@
                 this.saveBaseline();
             }
 
+            // 数据集已切换：清空历史记录，防止跨数据集撤回写坏数据（安全修复）
+            this.resetHistorySafe();
+
             // 更新界面
             this.updateDatasetDisplay();
             this.updateDatasetSelect();
             App.tableRenderer.renderAllTables();
             App.dom.inputHint.textContent = '已切换到数据集: ' + key;
-            App.storage.saveCurrentDatasetKey(key);
 
             // 更新备注显示（如果模块存在）
             if (typeof App.datasetRemark.updateDatasetRemark === 'function') App.datasetRemark.updateDatasetRemark();
@@ -124,12 +158,17 @@
          *
          * 将 state.rows 序列化后存储到当前数据集键下，
          * 并确保数据集在列表中。
+         * @returns {boolean} 是否保存成功（写入失败时提示用户，避免"假保存"）
          */
         saveData() {
             const currentKey = App.storage.loadCurrentDatasetKey();
-            App.storage.setJSON(currentKey, App.state.rows);
+            const ok = App.storage.setJSON(currentKey, App.state.rows);
             App.storage.addDatasetKey(currentKey);
             this.updateDatasetSelect(); // 刷新下拉框
+            if (!ok && App.modal && typeof App.modal.showTemporaryHint === 'function') {
+                App.modal.showTemporaryHint('保存失败：浏览器存储空间不足，请导出备份后清理数据', 'error');
+            }
+            return ok;
         },
 
         /**
@@ -143,11 +182,18 @@
             const currentKey = App.storage.loadCurrentDatasetKey();
             const saved = App.storage.getJSON(currentKey, null);
             if (saved && Array.isArray(saved) && saved.length > 0 && saved[0].name && Array.isArray(saved[0].data)) {
-                // 逐行标准化数据
-                App.state.rows = saved.map(row => ({
-                    name: row.name,
-                    data: row.data.map(App.utils.normalizeCell)
-                }));
+                // 逐行标准化数据（逐行校验 data 为数组，坏行跳过，防止中途抛异常）
+                const rows = [];
+                saved.forEach(row => {
+                    if (row && typeof row.name === 'string' && Array.isArray(row.data)) {
+                        rows.push({
+                            name: row.name,
+                            data: row.data.map(App.utils.normalizeCell)
+                        });
+                    }
+                });
+                if (rows.length === 0) return false;
+                App.state.rows = rows;
                 App.storage.addDatasetKey(currentKey);
                 return true;
             }
@@ -191,6 +237,9 @@
         isCellOperationAllowed(rowIdx, colIndex, newCell) {
             if (App.storage.loadCurrentDatasetKey() !== App.constants.DEFAULT_STORAGE_KEY) return true;
             if (!App.state.baselineRows) return true;
+            // 行列越界防护：越界视为允许（数据异常时避免抛异常中断操作）
+            if (!App.state.baselineRows[rowIdx] || !App.state.baselineRows[rowIdx].data ||
+                !App.state.baselineRows[rowIdx].data[colIndex]) return true;
             const baseCell = App.state.baselineRows[rowIdx].data[colIndex];
 
             // 数值 v 不允许变为空或不同值
@@ -211,7 +260,10 @@
          * - 更新提示文字
          */
         updateLockedUI() {
-            const locked = (App.storage.loadCurrentDatasetKey() === App.constants.DEFAULT_STORAGE_KEY);
+            const currentKey = App.storage.loadCurrentDatasetKey();
+            const isDefault = (currentKey === App.constants.DEFAULT_STORAGE_KEY);
+            // 所有受保护数据集（默认 + 示例）都禁用清除/清空（修复示例数据集可被清空的问题）
+            const locked = App.constants.PROTECTED_DATASETS.includes(currentKey);
             const dom = App.dom;
 
             // 禁用相关按钮（受保护时不可清除或清空）
@@ -221,13 +273,17 @@
 
             // 重置同步按钮只在默认数据集时显示
             if (dom.btnResetSync) {
-                dom.btnResetSync.style.display = locked ? '' : 'none';
+                dom.btnResetSync.style.display = isDefault ? '' : 'none';
             }
 
             // 更新提示文字
             if (locked) {
-                dom.inputHint.textContent = '🔒 默认数据集已保护：可增加，不可减少或清除已有数据';
-                dom.recordHint.textContent = '🔒 可添加新条目或增加已有实装';
+                dom.inputHint.textContent = isDefault
+                    ? '🔒 默认数据集已保护：可增加，不可减少或清除已有数据'
+                    : '🔒 系统数据集已保护：不可清除或清空';
+                dom.recordHint.textContent = isDefault
+                    ? '🔒 可添加新条目或增加已有实装'
+                    : '🔒 系统数据集仅可查看';
             } else {
                 dom.inputHint.textContent = '准备就绪';
                 dom.recordHint.textContent = '';
@@ -253,6 +309,10 @@
         confirmNewDataset() {
             const name = App.dom.newDatasetName.value.trim();
             if (!name) { App.modal.showAlert('数据集名称不能为空。'); return; }
+            if (this.isReservedKey(name)) {
+                App.modal.showAlert('该名称不可用（不能使用系统保留名称或以 smarttable_ 开头的名称）。');
+                return;
+            }
             if (App.storage.getDatasetList().includes(name)) { App.modal.showAlert('该数据集名称已存在，请使用其他名称。'); return; }
 
             // 创建空数据
@@ -268,6 +328,12 @@
             App.tableRenderer.renderAllTables();
             App.modal.closeModal(App.dom.modalNewDataset);
             App.dom.inputHint.textContent = `已创建新数据集: ${name}`;
+
+            // 刷新备注区（避免残留上一个数据集的固定备注）与锁定状态
+            if (typeof App.datasetRemark.updateDatasetRemark === 'function') App.datasetRemark.updateDatasetRemark();
+            this.updateLockedUI();
+            // 清空历史记录，防止撤回写坏新数据集
+            this.resetHistorySafe();
         },
 
         /**
@@ -293,13 +359,29 @@
             const oldKey = App.storage.loadCurrentDatasetKey();
             if (!newName) { App.modal.showAlert('新名称不能为空。'); return; }
             if (newName === oldKey) { App.modal.closeModal(App.dom.modalRenameDataset); return; }
+            // 受保护数据集不可重命名（防止绕过"只增不减"/删除保护，安全修复）
+            if (App.constants.PROTECTED_DATASETS.includes(oldKey)) {
+                App.modal.showAlert('系统数据集不可重命名。', '操作阻止');
+                App.modal.closeModal(App.dom.modalRenameDataset);
+                return;
+            }
+            if (this.isReservedKey(newName)) {
+                App.modal.showAlert('该名称不可用（不能使用系统保留名称或以 smarttable_ 开头的名称）。');
+                return;
+            }
             if (App.storage.getDatasetList().includes(newName)) { App.modal.showAlert('该名称已存在，请使用其他名称。'); return; }
 
-            // 迁移数据
+            // 迁移数据与备注（备注随数据集同步迁移，避免孤儿备注）
             const data = App.storage.get(oldKey);
             App.storage.set(newName, data || '[]');
             App.storage.removeDatasetKey(oldKey);
             App.storage.addDatasetKey(newName);
+            const remarks = App.storage.getDatasetRemarks();
+            if (remarks[oldKey] !== undefined) {
+                remarks[newName] = remarks[oldKey];
+                delete remarks[oldKey];
+                App.storage.saveDatasetRemarks(remarks);
+            }
             App.storage.saveCurrentDatasetKey(newName);
             this.saveData();
 
@@ -307,6 +389,11 @@
             this.updateDatasetSelect();
             App.modal.closeModal(App.dom.modalRenameDataset);
             App.dom.inputHint.textContent = `已重命名为: ${newName}`;
+
+            // 刷新备注区与锁定状态，清空历史记录
+            if (typeof App.datasetRemark.updateDatasetRemark === 'function') App.datasetRemark.updateDatasetRemark();
+            this.updateLockedUI();
+            this.resetHistorySafe();
         },
 
         /**
@@ -340,9 +427,14 @@
                 return;
             }
 
-            // 删除数据
+            // 删除数据与备注（清理孤儿备注）
             App.storage.remove(currentKey);
             App.storage.removeDatasetKey(currentKey);
+            const remarks = App.storage.getDatasetRemarks();
+            if (remarks[currentKey] !== undefined) {
+                delete remarks[currentKey];
+                App.storage.saveDatasetRemarks(remarks);
+            }
 
             // 切换到剩余的第一个数据集
             const remaining = App.storage.getDatasetList();
@@ -358,6 +450,11 @@
             App.tableRenderer.renderAllTables();
             App.modal.closeModal(App.dom.modalDeleteDataset);
             App.dom.inputHint.textContent = '已删除，切换至: ' + newKey;
+
+            // 刷新备注区与锁定状态，清空历史记录
+            if (typeof App.datasetRemark.updateDatasetRemark === 'function') App.datasetRemark.updateDatasetRemark();
+            this.updateLockedUI();
+            this.resetHistorySafe();
         },
 
         /**
@@ -376,6 +473,8 @@
             App.modal.showConfirmDialog(
                 '将默认数据集重置为初始数据，所有用户添加或修改的数据都将丢失，确定继续吗？',
                 () => {
+                    // 记录发起时的数据集键（竞态防护）
+                    const startKey = App.storage.loadCurrentDatasetKey();
                     // 用户确认后开始加载
                     App.defaultLoader.showDefaultDatasetLoading('正在重新获取默认数据集...');
                     App.defaultLoader.loadDefaultDataset((percent, message) => {
@@ -384,6 +483,12 @@
                         if (!Array.isArray(defaultRows) || defaultRows.length === 0) {
                             App.defaultLoader.hideDefaultDatasetLoading();
                             App.modal.showAlert('默认数据为空，无法重置。', '错误');
+                            return;
+                        }
+                        // 竞态防护：加载期间用户切换了数据集则中止，避免写错数据集
+                        if (App.storage.loadCurrentDatasetKey() !== startKey) {
+                            App.defaultLoader.hideDefaultDatasetLoading();
+                            App.modal.showAlert('已切换数据集，重置已取消。', '提示');
                             return;
                         }
                         // 应用新数据
@@ -396,6 +501,7 @@
                         DEFAULT_ROWS = defaultRows;
                         this.saveBaseline();
                         this.updateLockedUI();
+                        this.resetHistorySafe();
                         App.defaultLoader.hideDefaultDatasetLoading();
                         App.modal.showTemporaryHint('默认数据集已重置', 'success');
                         App.dom.inputHint.textContent = '默认数据集已重置为初始数据。';

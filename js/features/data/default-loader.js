@@ -74,49 +74,43 @@
          * 通过 fetch 请求 data.json，提取 rows 或整个 JSON 作为行数据。
          * 然后调用 resolveDefaultImages 将图片文件名转换为 Data URL，
          * 并在过程中通过 onProgress 报告进度。
-         * 若任何步骤失败，返回空数据并提示。
+         * 失败时 Promise reject（不再吞错返回空模板），由调用方决定如何处理，
+         * 避免用空数据覆盖用户已保存的默认数据集。
          */
         async loadDefaultDataset(onProgress) {
             if (typeof onProgress !== 'function') onProgress = () => {};
-            try {
-                onProgress(5, '正在获取 data.json ...');
-                const response = await fetch('data/data.json');
-                if (!response.ok) throw new Error('Failed to load data/data.json');
-                const json = await response.json();
+            onProgress(5, '正在获取 data.json ...');
+            const response = await fetch('data/data.json');
+            if (!response.ok) throw new Error('Failed to load data/data.json');
+            const json = await response.json();
 
-                // 支持两种格式：{rows: [...]} 或直接数组
-                let rows = json.rows || json;
-                if (!Array.isArray(rows)) throw new Error('Invalid format');
+            // 支持两种格式：{rows: [...]} 或直接数组
+            let rows = json.rows || json;
+            if (!Array.isArray(rows)) throw new Error('Invalid format');
 
-                // 统计需要转换的图片总数
-                let totalImages = 0;
-                for (const row of rows) {
-                    for (const cell of row.data) {
-                        const note = cell.note;
-                        if (note && note.images && note.images.length > 0) {
-                            totalImages += note.images.length;
-                        }
+            // 统计需要转换的图片总数
+            let totalImages = 0;
+            for (const row of rows) {
+                for (const cell of row.data) {
+                    const note = cell && cell.note;
+                    if (note && note.images && note.images.length > 0) {
+                        totalImages += note.images.length;
                     }
                 }
-                let processedImages = 0;
-
-                onProgress(15, `正在转换图片 (0/${totalImages}) ...`);
-
-                // 转换图片，并更新进度
-                rows = await this.resolveDefaultImages(rows, (imgDone, imgTotal) => {
-                    processedImages = imgDone;
-                    // 图片转换阶段占总进度的 15% ~ 95%
-                    const percent = 15 + Math.floor((processedImages / totalImages) * 80);
-                    onProgress(percent, `正在转换图片 (${processedImages}/${totalImages}) ...`);
-                });
-
-                onProgress(100, '默认数据加载完成');
-                return rows;
-            } catch (e) {
-                console.warn('默认数据集加载失败，使用空数据', e);
-                onProgress(0, '加载失败，使用空数据');
-                return App.dataModel.createInitialRows();
             }
+            let processedImages = 0;
+
+            onProgress(15, `正在转换图片 (0/${totalImages}) ...`);
+
+            // 转换图片，并更新进度（图片数为 0 时避免 0/0 = NaN）
+            rows = await this.resolveDefaultImages(rows, (imgDone, imgTotal) => {
+                processedImages = imgDone;
+                const percent = totalImages > 0 ? 15 + Math.floor((imgDone / totalImages) * 80) : 15;
+                onProgress(percent, `正在转换图片 (${imgDone}/${totalImages}) ...`);
+            });
+
+            onProgress(100, '默认数据加载完成');
+            return rows;
         },
 
         /**
@@ -161,9 +155,13 @@
                                         const blob = await imgResp.blob();
                                         const dataUrl = await App.utils.blobToDataURL(blob);
                                         newImages.push(dataUrl);
+                                    } else {
+                                        // 加载失败：保留原始文件名引用，不静默丢失图片
+                                        newImages.push(ref);
                                     }
                                 } catch (e) {
-                                    console.warn('图片加载失败:', ref, e);
+                                    console.warn('图片加载失败，保留引用:', ref, e);
+                                    newImages.push(ref);
                                 }
                             }
                             done++;
@@ -184,14 +182,23 @@
          * 使用 defaultDatasetLoadingStarted 防止重复调用。
          * 加载成功后：
          * - 设置全局 DEFAULT_ROWS
-         * - 确保默认数据集在列表中存在
-         * - 如果当前数据集是默认数据集，则更新状态、保存基准、更新 UI
+         * - 仅在默认数据集从未保存过时才写入初始数据（不覆盖用户增量，H3 修复）
+         * - 当前数据集为默认数据集时：已有用户数据则保留（只更新保护基准），
+         *   无数据时用初始数据填充
          *
-         * 加载失败时使用空数据，但保证应用不崩溃。
+         * 加载失败时：
+         * - 已有本地数据 → 保留并以其为基准（绝不覆盖，H4 修复）
+         * - 无本地数据 → 使用空模板（不持久化覆盖）
+         *
+         * 所有异步回调在写入前校验"发起时的数据集键"，防止用户切换数据集后
+         * 把默认数据写入其他数据集（H5 竞态修复）。
          */
         startLoadingDefaultDataset() {
             if (defaultDatasetLoadingStarted) return;
             defaultDatasetLoadingStarted = true;
+
+            // 记录发起时的当前数据集键（竞态防护）
+            const loadStartKey = App.storage.loadCurrentDatasetKey();
 
             this.showDefaultDatasetLoading('正在加载默认数据集...');
             this.loadDefaultDataset((percent, message) => {
@@ -199,21 +206,42 @@
             }).then(defaultRows => {
                 DEFAULT_ROWS = defaultRows;
 
-                // 确保默认数据集存在于列表
-                if (!App.storage.getDatasetList().includes(App.constants.DEFAULT_STORAGE_KEY)) {
+                // 确保默认数据集存在于列表；仅首次（无存储数据）时写入初始数据
+                const list = App.storage.getDatasetList();
+                const storedDefault = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null);
+                const hasStored = storedDefault !== null;
+                if (!list.includes(App.constants.DEFAULT_STORAGE_KEY)) {
                     App.storage.addDatasetKey(App.constants.DEFAULT_STORAGE_KEY);
+                }
+                if (!hasStored) {
                     App.storage.setJSON(App.constants.DEFAULT_STORAGE_KEY, DEFAULT_ROWS);
                 }
 
+                // 竞态防护：用户已切换数据集则不更新界面
+                if (App.storage.loadCurrentDatasetKey() !== loadStartKey) {
+                    this.hideDefaultDatasetLoading();
+                    return;
+                }
+
                 const currentKey = App.storage.loadCurrentDatasetKey();
-                // 如果当前正在查看默认数据集，立即更新界面
                 if (currentKey === App.constants.DEFAULT_STORAGE_KEY) {
-                    App.state.rows = DEFAULT_ROWS.map(row => ({
-                        name: row.name,
-                        data: row.data.map(App.utils.normalizeCell)
-                    }));
+                    // 已有用户数据：保留 state.rows（不覆盖），仅更新保护基准；
+                    // 无有效存储数据：用初始数据填充界面
+                    const validStored = hasStored && Array.isArray(storedDefault) &&
+                        storedDefault.length > 0 && storedDefault[0] && Array.isArray(storedDefault[0].data);
+                    if (!validStored) {
+                        App.state.rows = DEFAULT_ROWS.map(row => ({
+                            name: row.name,
+                            data: row.data.map(App.utils.normalizeCell)
+                        }));
+                        App.datasetManager.saveData();
+                    } else if (!App.state.rows.length) {
+                        App.state.rows = storedDefault.map(row => ({
+                            name: row.name,
+                            data: row.data.map(App.utils.normalizeCell)
+                        }));
+                    }
                     App.tableRenderer.renderAllTables();
-                    App.datasetManager.saveData();
                     App.datasetManager.saveBaseline();
                     App.datasetManager.updateLockedUI();
                 }
@@ -221,21 +249,41 @@
                 this.hideDefaultDatasetLoading();
                 App.modal.showTemporaryHint('默认数据集加载完成', 'success');
             }).catch(err => {
-                console.warn('默认数据集加载异常', err);
-                DEFAULT_ROWS = App.dataModel.createInitialRows();
-                if (!App.storage.getDatasetList().includes(App.constants.DEFAULT_STORAGE_KEY)) {
-                    App.storage.addDatasetKey(App.constants.DEFAULT_STORAGE_KEY);
-                    App.storage.setJSON(App.constants.DEFAULT_STORAGE_KEY, DEFAULT_ROWS);
+                console.warn('默认数据集加载失败', err);
+                // 失败处理：绝不覆盖已有本地数据
+                const hasStored = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null) !== null;
+                if (hasStored) {
+                    // 已有本地数据：以本地数据为基准，保留用户数据
+                    DEFAULT_ROWS = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY);
+                } else {
+                    // 首次运行且加载失败：使用空模板展示，但不覆盖任何数据
+                    DEFAULT_ROWS = App.dataModel.createInitialRows();
                 }
+                const list = App.storage.getDatasetList();
+                if (!list.includes(App.constants.DEFAULT_STORAGE_KEY)) {
+                    App.storage.addDatasetKey(App.constants.DEFAULT_STORAGE_KEY);
+                }
+
+                if (App.storage.loadCurrentDatasetKey() !== loadStartKey) {
+                    this.hideDefaultDatasetLoading();
+                    return;
+                }
+
                 const currentKey = App.storage.loadCurrentDatasetKey();
                 if (currentKey === App.constants.DEFAULT_STORAGE_KEY) {
-                    App.state.rows = DEFAULT_ROWS.map(row => ({ ...row, data: row.data.map(App.utils.normalizeCell) }));
+                    App.state.rows = DEFAULT_ROWS.map(row => ({
+                        name: row.name,
+                        data: row.data.map(App.utils.normalizeCell)
+                    }));
                     App.tableRenderer.renderAllTables();
                     App.datasetManager.saveBaseline();
                     App.datasetManager.updateLockedUI();
                 }
                 this.hideDefaultDatasetLoading();
-                App.modal.showTemporaryHint('默认数据集加载失败，已使用空数据', 'error');
+                App.modal.showTemporaryHint(
+                    hasStored ? '默认数据加载失败，已保留本地数据' : '默认数据集加载失败，已使用空数据',
+                    'error'
+                );
             });
         }
     };

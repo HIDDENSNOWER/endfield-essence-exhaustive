@@ -33,13 +33,26 @@
         normalizeCell(cell) {
             // 情况1：已经是对象且包含必要字段
             if (typeof cell === 'object' && cell !== null && 'v' in cell && 't' in cell && 'a' in cell) {
-                // 确保 note 字段存在且为对象
-                if (!cell.note || typeof cell.note !== 'object') {
-                    cell.note = { text: '', images: [] };
-                }
-                // 确保 note.images 是数组
-                if (!Array.isArray(cell.note.images)) cell.note.images = [];
-                return cell;
+                // 返回标准化新对象（不原地改写调用方数据）
+                const t = Math.max(0, Number(cell.t) || 0);
+                const a = Math.min(Math.max(0, Number(cell.a) || 0), t); // 夹紧 0 <= a <= t
+                // note 必须为非数组对象，images 逐项过滤为字符串
+                const noteRaw = cell.note;
+                const note = (!noteRaw || Array.isArray(noteRaw) || typeof noteRaw !== 'object')
+                    ? { text: '', images: [] }
+                    : {
+                        text: typeof noteRaw.text === 'string' ? noteRaw.text : '',
+                        images: Array.isArray(noteRaw.images)
+                            ? noteRaw.images.filter(img => typeof img === 'string')
+                            : []
+                      };
+                return {
+                    v: typeof cell.v === 'string' ? cell.v
+                        : (cell.v === undefined || cell.v === null ? '' : String(cell.v)),
+                    t,
+                    a,
+                    note
+                };
             }
             // 情况2：字符串或数字（旧版数据）
             if (typeof cell === 'string' || typeof cell === 'number') {
@@ -85,8 +98,10 @@
          * 每个词条组有5个副属性，因此全局列索引 = 前面所有组的副属性总数 + 当前副属性索引。
          */
         getColumnIndex(groupIdx, subIdx) {
-            let col = 0;
             const groups = App.constants.ALL_GROUPS;
+            // 越界防护：非法组索引返回 -1，由调用方处理
+            if (groupIdx < 0 || groupIdx >= groups.length) return -1;
+            let col = 0;
             // 累加之前所有组的副属性数量
             for (let i = 0; i < groupIdx; i++) col += groups[i].sub.length;
             // 加上当前组内的副属性索引
@@ -104,6 +119,10 @@
         getCellNames(rowIdx, colIndex) {
             const groups = App.constants.ALL_GROUPS;
             const rowNames = App.constants.ROW_NAMES;
+            // 越界防护：非法行列统一返回占位符
+            if (rowIdx < 0 || rowIdx >= rowNames.length || colIndex < 0) {
+                return { rowName: '?', groupName: '?', subName: '?' };
+            }
             let groupIdx = 0;
             let remaining = colIndex;
             // 找到所属的词条组
@@ -111,15 +130,15 @@
                 const subLen = groups[i].sub.length;
                 if (remaining < subLen) {
                     return {
-                        rowName: rowNames[rowIdx],
+                        rowName: rowNames[rowIdx] || '?',
                         groupName: groups[i].name,
-                        subName: groups[i].sub[remaining]
+                        subName: groups[i].sub[remaining] || '?'
                     };
                 }
                 remaining -= subLen;
             }
             // 如果超出范围，返回占位符
-            return { rowName: '?', groupName: '?', subName: '?' };
+            return { rowName: rowNames[rowIdx] || '?', groupName: '?', subName: '?' };
         },
 
         /**
@@ -157,7 +176,7 @@
             // 滚轮增减
             inputEl.addEventListener('wheel', function (e) {
                 e.preventDefault();
-                let num = parseInt(this.value);
+                let num = parseInt(this.value, 10);
                 // 如果为空或0，根据滚动方向设置默认值
                 if (isNaN(num) || num === 0) {
                     num = e.deltaY > 0 ? 9 : 1;
@@ -248,8 +267,9 @@
          * 实现方式：利用 DOM 元素的 textContent 自动转义。
          */
         escapeHtml(text) {
+            if (text === undefined || text === null) return '';
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = String(text);
             return div.innerHTML;
         },
 
@@ -261,16 +281,22 @@
          * 作用：用于导出 ZIP 时将图片数据写入文件。
          */
         base64ToBlob(base64) {
-            const parts = base64.split(',');
-            // 提取 MIME 类型
-            const contentType = parts[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
-            // 解码 base64 数据
-            const raw = atob(parts[1] || parts[0]);
-            const array = new Uint8Array(raw.length);
-            for (let i = 0; i < raw.length; i++) {
-                array[i] = raw.charCodeAt(i);
+            try {
+                const parts = String(base64).split(',');
+                // 提取 MIME 类型
+                const mimeMatch = parts[0] && parts[0].match(/:(.*?);/);
+                const contentType = (mimeMatch && mimeMatch[1]) || 'application/octet-stream';
+                // 解码 base64 数据
+                const raw = atob(parts[1] || parts[0]);
+                const array = new Uint8Array(raw.length);
+                for (let i = 0; i < raw.length; i++) {
+                    array[i] = raw.charCodeAt(i);
+                }
+                return new Blob([array], { type: contentType });
+            } catch (e) {
+                console.warn('base64ToBlob 失败，已跳过该图片:', e);
+                return null; // 非法 base64 返回 null，由调用方决定跳过
             }
-            return new Blob([array], { type: contentType });
         },
 
         /**
@@ -324,7 +350,11 @@
          * @returns {{r: number, g: number, b: number}}
          */
         hexToRgb(hex) {
-            const c = hex.substring(1), v = parseInt(c, 16);
+            let h = String(hex || '').replace('#', '');
+            // 支持 3 位简写（#abc → #aabbcc）
+            if (h.length === 3) h = h.split('').map(c => c + c).join('');
+            const v = parseInt(h, 16);
+            if (isNaN(v) || h.length !== 6) return { r: 0, g: 0, b: 0 };
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         },
 
@@ -336,6 +366,9 @@
          * @returns {string} 十六进制颜色（如 "#c8e6c9"）
          */
         rgbToHex(r, g, b) {
+            // 分量钳制到 0-255，防止越界值产生错误颜色
+            const clamp = (v) => Math.min(255, Math.max(0, Math.round(Number(v) || 0)));
+            r = clamp(r); g = clamp(g); b = clamp(b);
             return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
         },
 

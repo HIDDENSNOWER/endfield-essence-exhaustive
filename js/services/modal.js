@@ -24,6 +24,10 @@
         return App.dom;
     }
 
+    // 模块级状态：打开的弹窗计数（滚动锁引用计数）与事件绑定标志（幂等）
+    let modalOpenCount = 0;
+    let modalEventsBound = false;
+
     App.modal = {
         /**
          * 打开弹窗
@@ -34,6 +38,7 @@
          */
         openModal(el) {
             el.style.display = 'flex';
+            modalOpenCount++; // 引用计数：支持嵌套弹窗
             document.body.style.overflow = 'hidden'; // 锁定背景滚动
         },
 
@@ -41,11 +46,12 @@
          * 关闭弹窗
          * @param {HTMLElement} el - 弹窗遮罩元素
          *
-         * 隐藏弹窗并恢复 body 滚动。
+         * 隐藏弹窗；仅当所有弹窗都关闭时才恢复背景滚动（引用计数）。
          */
         closeModal(el) {
             el.style.display = 'none';
-            document.body.style.overflow = ''; // 恢复背景滚动
+            modalOpenCount = Math.max(0, modalOpenCount - 1);
+            if (modalOpenCount === 0) document.body.style.overflow = ''; // 全部关闭才恢复滚动
         },
 
         /**
@@ -59,7 +65,7 @@
         showAlert(msg, title = '提示') {
             const d = dom();
             d.alertTitle.textContent = title;
-            d.alertBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</p>`;
+            d.alertBody.innerHTML = `<div style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</div>`;
             this.openModal(d.modalAlert);
         },
 
@@ -83,17 +89,31 @@
         showConfirmDialog(msg, onConfirm, onCancel, title = '确认') {
             const d = dom();
             d.confirmDialogTitle.textContent = title;
-            d.confirmDialogBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</p>`;
+            d.confirmDialogBody.innerHTML = `<div style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</div>`;
+            // 先清空残留回调（防止上一次未消费的回调被误触发），再设置新回调
+            window.__dialogConfirmCallback = null;
+            window.__dialogCancelCallback = null;
             window.__dialogConfirmCallback = onConfirm; // 存储确认回调
             window.__dialogCancelCallback = onCancel;   // 存储取消回调
+            // 确保底部按钮可见（导入冲突自定义弹窗可能隐藏过它们）
+            if (d.btnConfirmConfirmDialog) d.btnConfirmConfirmDialog.style.display = '';
+            if (d.btnCancelConfirmDialog) d.btnCancelConfirmDialog.style.display = '';
             this.openModal(d.modalConfirmDialog);
         },
 
         /**
          * 关闭通用确认弹窗
+         *
+         * 关闭时清理全局回调并恢复底部按钮显示，
+         * 防止残留回调在后续弹窗中被误触发（安全修复）。
          */
         closeConfirmDialog() {
             this.closeModal(dom().modalConfirmDialog);
+            window.__dialogConfirmCallback = null;
+            window.__dialogCancelCallback = null;
+            const d = dom();
+            if (d.btnConfirmConfirmDialog) d.btnConfirmConfirmDialog.style.display = '';
+            if (d.btnCancelConfirmDialog) d.btnCancelConfirmDialog.style.display = '';
         },
 
         /**
@@ -105,7 +125,7 @@
          */
         showIllegalModal(reason) {
             const d = dom();
-            d.illegalBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.6;">${reason}</p>`;
+            d.illegalBody.innerHTML = `<div style="font-size:0.9rem; color:var(--text-primary); line-height:1.6;">${reason}</div>`;
             this.openModal(d.modalIllegalInput);
         },
 
@@ -124,7 +144,7 @@
          */
         showFullAcquireModal(msg) {
             const d = dom();
-            d.fullAcquireBody.innerHTML = `<p style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</p>`;
+            d.fullAcquireBody.innerHTML = `<div style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</div>`;
             this.openModal(d.modalFullAcquire);
         },
 
@@ -172,6 +192,9 @@
          * 遮罩点击（e.target === 弹窗遮罩）时关闭弹窗。
          */
         bindModalEvents() {
+            // 幂等保护：重复调用不会重复绑定事件（修复回调执行两次的问题）
+            if (modalEventsBound) return;
+            modalEventsBound = true;
             const d = dom();
 
             // ==================== 通用提示弹窗 ====================
@@ -186,35 +209,31 @@
             // ==================== 通用确认弹窗 ====================
             if (d.btnConfirmConfirmDialog) {
                 d.btnConfirmConfirmDialog.addEventListener('click', () => {
+                    const cb = window.__dialogConfirmCallback; // 先取引用，关闭时会清理
                     this.closeConfirmDialog();
-                    if (typeof window.__dialogConfirmCallback === 'function') {
-                        window.__dialogConfirmCallback();
-                    }
+                    if (typeof cb === 'function') cb();
                 });
             }
             if (d.btnCancelConfirmDialog) {
                 d.btnCancelConfirmDialog.addEventListener('click', () => {
+                    const cb = window.__dialogCancelCallback;
                     this.closeConfirmDialog();
-                    if (typeof window.__dialogCancelCallback === 'function') {
-                        window.__dialogCancelCallback();
-                    }
+                    if (typeof cb === 'function') cb();
                 });
             }
             if (d.btnCloseConfirmDialog) {
                 d.btnCloseConfirmDialog.addEventListener('click', () => {
+                    const cb = window.__dialogCancelCallback;
                     this.closeConfirmDialog();
-                    if (typeof window.__dialogCancelCallback === 'function') {
-                        window.__dialogCancelCallback();
-                    }
+                    if (typeof cb === 'function') cb();
                 });
             }
             if (d.modalConfirmDialog) {
                 d.modalConfirmDialog.addEventListener('click', (e) => {
                     if (e.target === d.modalConfirmDialog) {
+                        const cb = window.__dialogCancelCallback;
                         this.closeConfirmDialog();
-                        if (typeof window.__dialogCancelCallback === 'function') {
-                            window.__dialogCancelCallback();
-                        }
+                        if (typeof cb === 'function') cb();
                     }
                 });
             }

@@ -291,8 +291,8 @@
     .count-row { flex: 1 1 auto; }
 }
 
-/* 确保全屏设置弹窗正确覆盖视口 */
-.modal-overlay {
+/* 确保全屏设置弹窗正确覆盖视口（仅作用于设置弹窗遮罩，避免破坏其他弹窗的居中布局） */
+#modalSettingsOverlay {
     padding: 0 !important;
     align-items: flex-start;
     display: flex;
