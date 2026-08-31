@@ -3,13 +3,14 @@
 **终末地基质穷举数据记录与统计工具**  
 Ver.0.5.1 ("再访基地"更新)
 
-一个用于记录、管理和统计《终末地》中"基质"数据的纯前端工具。  
+一个用于记录、管理和统计《明日方舟：终末地》中"基质"数据的纯前端工具。  
 支持多数据集管理、数据导入导出、备注与图片、颜色个性化、明暗主题等功能。
 
 ---
 
 ## 目录结构
 
+```plaintext
 endfield-essence-exhaustive/
 ├── index.html # 应用主页面
 ├── css/ # 样式表（按层叠顺序拆分）
@@ -58,7 +59,7 @@ endfield-essence-exhaustive/
 │ ├── default.js # 默认数据占位脚本（可忽略）
 │ └── images/ # 备注图片资源
 └── README.md # 项目说明文档
-
+```
 
 ---
 
@@ -179,4 +180,4 @@ endfield-essence-exhaustive/
 ## 版本信息
 
 - 当前版本：Ver.0.5.1 ("再访基地"更新)
-- 反馈渠道：binjianxuewu@outlook.com
+- 反馈邮箱：binjianxuewu@outlook.com
