@@ -262,6 +262,7 @@
                     App.tableRenderer.renderAllTables();
                     App.datasetManager.saveBaseline();
                     App.datasetManager.updateLockedUI();
+                    App.datasetManager.updateDatasetSelect(); // 兜底：确保下拉框已渲染
                 }
 
                 this.hideDefaultDatasetLoading();
@@ -297,6 +298,7 @@
                     App.tableRenderer.renderAllTables();
                     App.datasetManager.saveBaseline();
                     App.datasetManager.updateLockedUI();
+                    App.datasetManager.updateDatasetSelect(); // 兜底：确保下拉框已渲染
                 }
                 this.hideDefaultDatasetLoading();
                 App.modal.showTemporaryHint(

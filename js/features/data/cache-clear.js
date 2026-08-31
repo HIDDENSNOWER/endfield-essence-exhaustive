@@ -172,17 +172,6 @@
          * 执行清除：localStorage / sessionStorage / Cache API，然后重新加载页面
          * 清除后页面刷新，main.js 初始化会重新加载默认数据集，应用恢复初始状态
          */
-        doClear() {
-            try {
-                localStorage.clear();
-                sessionStorage.clear();
-            } catch (e) {
-                console.warn('清除本地存储失败:', e);
-            }
-        /**
-         * 执行清除：localStorage / sessionStorage / Cache API，然后重新加载页面
-         * 清除后页面刷新，main.js 初始化会重新加载默认数据集，应用恢复初始状态
-         */
         async doClear() {
             try {
                 localStorage.clear();
