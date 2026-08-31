@@ -24,6 +24,23 @@
     // 防止重复加载默认数据集的标志
     let defaultDatasetLoadingStarted = false;
 
+    /**
+     * 判断存储的默认数据集是否为空模板（main.js 首次运行预写的全空数据）。
+     * 空模板应被视为"未初始化"，允许用真实默认数据填充；
+     * 用户已有真实数据（含只增记录）时则不得覆盖。
+     */
+    function isEmptyTemplate(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return true;
+        for (const row of rows) {
+            if (!row || !Array.isArray(row.data)) return true;
+            for (const cell of row.data) {
+                const c = App.utils.normalizeCell(cell);
+                if (c.v !== '' || c.t > 0 || c.a > 0) return false;
+            }
+        }
+        return true;
+    }
+
     App.defaultLoader = {
         /**
          * 显示默认数据集加载指示器
@@ -206,14 +223,15 @@
             }).then(defaultRows => {
                 DEFAULT_ROWS = defaultRows;
 
-                // 确保默认数据集存在于列表；仅首次（无存储数据）时写入初始数据
+                // 确保默认数据集存在于列表；仅"未初始化"（无数据或空模板）时写入初始数据
                 const list = App.storage.getDatasetList();
                 const storedDefault = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null);
-                const hasStored = storedDefault !== null;
+                const hasStored = storedDefault !== null && !isEmptyTemplate(storedDefault);
                 if (!list.includes(App.constants.DEFAULT_STORAGE_KEY)) {
                     App.storage.addDatasetKey(App.constants.DEFAULT_STORAGE_KEY);
                 }
                 if (!hasStored) {
+                    // 空模板/无数据 → 用真实默认数据填充（修复全新环境默认数据集为空的问题）
                     App.storage.setJSON(App.constants.DEFAULT_STORAGE_KEY, DEFAULT_ROWS);
                 }
 
@@ -250,13 +268,14 @@
                 App.modal.showTemporaryHint('默认数据集加载完成', 'success');
             }).catch(err => {
                 console.warn('默认数据集加载失败', err);
-                // 失败处理：绝不覆盖已有本地数据
-                const hasStored = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null) !== null;
+                // 失败处理：仅当存储中有真实数据时才保留（空模板视为未初始化，不覆盖也无妨）
+                const storedDefault = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null);
+                const hasStored = storedDefault !== null && !isEmptyTemplate(storedDefault);
                 if (hasStored) {
-                    // 已有本地数据：以本地数据为基准，保留用户数据
-                    DEFAULT_ROWS = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY);
+                    // 已有真实本地数据：以本地数据为基准，保留用户数据
+                    DEFAULT_ROWS = storedDefault;
                 } else {
-                    // 首次运行且加载失败：使用空模板展示，但不覆盖任何数据
+                    // 首次运行且加载失败：使用空模板展示，但不覆盖任何真实数据
                     DEFAULT_ROWS = App.dataModel.createInitialRows();
                 }
                 const list = App.storage.getDatasetList();
