@@ -4,19 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具Ver.0.4.1</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>终末地基质穷举数据记录与统计工具Ver.0.5.1</title>
+
+    <!-- 样式表：按层叠顺序引入 -->
+    <!-- base.css: CSS 变量定义、全局重置、字体、滚动条等基础样式，必须最先加载 -->
+    <link rel="stylesheet" href="css/base.css">
+    <!-- layout.css: 页面整体布局（导航、主布局、侧边栏、面板容器、底部等） -->
+    <link rel="stylesheet" href="css/layout.css">
+    <!-- components.css: 通用组件样式（按钮、表单、弹窗、统计卡片、行筛选等） -->
+    <link rel="stylesheet" href="css/components.css">
+    <!-- features.css: 特定功能样式（备注悬浮框、图片查看器、加载指示器等） -->
+    <link rel="stylesheet" href="css/features.css">
+    <!-- settings.css: 设置弹窗及颜色预览编辑面板专属样式 -->
+    <link rel="stylesheet" href="css/settings.css">
 </head>
 
 <body>
     <!-- ==================== 导航栏 ==================== -->
+    <!-- 顶部导航栏，包含左侧行筛选按钮和右侧操作按钮组 -->
     <nav class="navbar">
         <!-- 左侧：行筛选按钮 -->
+        <!-- 点击后打开行筛选弹窗，可勾选显示哪些行 -->
         <div class="search-bar">
             <button class="btn-row-filter" id="btnRowFilter" title="筛选显示行">
+                <!-- 筛选图标（漏斗形状） -->
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                 </svg>
+                <!-- 显示当前筛选状态的文本，如"全部行"、"已选 X/Y 行" -->
                 <span id="rowFilterLabel">全部行</span>
             </button>
         </div>
@@ -24,7 +39,9 @@
         <!-- 右侧：操作按钮组 -->
         <div class="navbar-actions">
             <!-- 切换主题按钮 -->
+            <!-- 点击在亮色/暗色主题间切换，图标随主题变化 -->
             <button class="btn-icon" id="btnToggleTheme" title="切换主题">
+                <!-- 太阳图标（亮色主题显示） -->
                 <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="5" />
                     <line x1="12" y1="1" x2="12" y2="3" />
@@ -36,12 +53,14 @@
                     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                 </svg>
+                <!-- 月亮图标（暗色主题显示），默认隐藏 -->
                 <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
             </button>
 
             <!-- 强制刷新按钮 -->
+            <!-- 点击后清空缓存并重新加载页面 -->
             <button class="btn-icon" id="btnForceRefresh" title="强制刷新（清空缓存并重新加载）">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="23 4 23 10 17 10" />
@@ -50,7 +69,9 @@
             </button>
 
             <!-- 设置按钮 -->
+            <!-- 点击打开设置弹窗（表格尺寸、底色、颜色个性化） -->
             <button class="btn-icon" id="btnOpenSettings" title="设置">
+                <!-- 齿轮图标 -->
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -60,9 +81,12 @@
     </nav>
 
     <!-- ==================== 主布局 ==================== -->
+    <!-- 页面主体，包含左侧边栏、表格区、右侧侧边栏和面板容器 -->
     <div class="main-layout">
         <!-- 左侧侧边栏：视图切换 -->
+        <!-- 用于在数据表和空白页之间切换 -->
         <nav class="sidebar left-sidebar" id="leftSidebar">
+            <!-- 数据表按钮（默认激活） -->
             <button class="sidebar-btn active" data-left-panel="table" title="数据表">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -71,6 +95,7 @@
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
             </button>
+            <!-- 空白页按钮 -->
             <button class="sidebar-btn" data-left-panel="empty" title="空白页">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9" />
@@ -80,11 +105,13 @@
         </nav>
 
         <!-- 表格区 -->
+        <!-- 包含悬停提示栏、两个表格分区和备注悬浮框 -->
         <div class="table-area" id="tableArea">
             <!-- 悬停提示栏 -->
+            <!-- 显示当前悬停或点击单元格的详细信息 -->
             <div id="cellTooltip" class="cell-tooltip">鼠标悬停单元格查看详情</div>
 
-            <!-- 第一部分表格 -->
+            <!-- 第一部分表格：强攻 ~ 残暴（7个词条组，35列） -->
             <div class="table-section" id="section1">
                 <div class="section-title">▸ 第一部分（强攻 ~ 残暴）</div>
                 <div class="main-container">
@@ -97,7 +124,7 @@
                 </div>
             </div>
 
-            <!-- 第二部分表格 -->
+            <!-- 第二部分表格：附术 ~ 效益（7个词条组，35列） -->
             <div class="table-section" id="section2">
                 <div class="section-title">▸ 第二部分（附术 ~ 效益）</div>
                 <div class="main-container">
@@ -111,34 +138,44 @@
             </div>
 
             <!-- 单元格备注悬浮框 -->
+            <!-- 鼠标悬停有备注的单元格时显示，可拖拽、调整大小、切换布局 -->
             <div id="noteTooltip" class="note-tooltip" style="display:none;">
+                <!-- 悬浮框头部（标题 + 操作按钮），可拖动 -->
                 <div class="note-tooltip-header" id="noteTooltipHeader">
                     <span class="note-tooltip-title">📝 单元格备注</span>
                     <div class="note-tooltip-actions">
+                        <!-- 切换布局按钮（文本在上/图片在上/水平排列） -->
                         <button class="note-tooltip-btn" id="btnNoteTooltipLayout" title="切换布局">🔄</button>
+                        <!-- 关闭按钮 -->
                         <button class="note-tooltip-btn" id="btnNoteTooltipClose" title="关闭">✕</button>
                     </div>
                 </div>
+                <!-- 悬浮框内容区（备注文本 + 图片画廊） -->
                 <div class="note-tooltip-body" id="noteTooltipBody"></div>
+                <!-- 右下角调整大小手柄 -->
                 <div class="note-tooltip-resizer" id="noteTooltipResizer"></div>
             </div>
         </div>
 
         <!-- 右侧侧边栏：面板切换 -->
+        <!-- 用于在数据管理、录入、统计三个面板之间切换 -->
         <nav class="sidebar" id="sidebar">
             <!-- 折叠/展开按钮 -->
+            <!-- 点击可折叠或展开右侧面板，同时隐藏/显示其他侧边栏按钮 -->
             <button class="sidebar-btn" id="btnToggleRightPanel" title="折叠面板">
+                <!-- 折叠图标（默认显示） -->
                 <svg id="icon-panel-collapse" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="11 17 6 12 11 7" />
                     <polyline points="18 17 13 12 18 7" />
                 </svg>
+                <!-- 展开图标（默认隐藏） -->
                 <svg id="icon-panel-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="13 17 18 12 13 7" />
                     <polyline points="6 17 11 12 6 7" />
                 </svg>
             </button>
 
-            <!-- 数据管理面板 -->
+            <!-- 数据管理面板按钮（默认激活） -->
             <button class="sidebar-btn active" data-panel="input" title="数据管理">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -148,7 +185,7 @@
                 </svg>
             </button>
 
-            <!-- 录入面板 -->
+            <!-- 录入面板按钮 -->
             <button class="sidebar-btn" data-panel="record" title="录入面板">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9" />
@@ -156,7 +193,7 @@
                 </svg>
             </button>
 
-            <!-- 统计信息面板 -->
+            <!-- 统计信息面板按钮 -->
             <button class="sidebar-btn" data-panel="stats" title="统计信息">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="20" x2="18" y2="10" />
@@ -167,14 +204,17 @@
         </nav>
 
         <!-- 右侧面板容器 -->
+        <!-- 包含三个面板：数据管理、统计、录入，同一时间只显示一个 -->
         <div class="panel-container" id="panelContainer">
-            <!-- 数据管理面板 -->
+            <!-- 数据管理面板（默认激活） -->
             <aside class="input-panel active-panel" id="inputPanel">
                 <div class="panel-title">📝 数据管理</div>
+                <!-- 当前数据集显示 -->
                 <div class="dataset-info">
                     <span class="dataset-label">当前数据集：</span>
                     <span class="dataset-name" id="datasetName">默认数据集</span>
                 </div>
+                <!-- 切换数据集下拉框 -->
                 <div class="form-group">
                     <label for="datasetSelect">切换数据集</label>
                     <select id="datasetSelect" title="切换数据集"></select>
@@ -184,14 +224,17 @@
                 <div class="form-group">
                     <label>备注</label>
                     <div id="remarkContainer">
+                        <!-- 备注输入框（编辑状态显示） -->
                         <textarea id="datasetRemarkInput" placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
                             style="width:100%; resize: none; display:none;"></textarea>
+                        <!-- 备注展示区（非编辑状态显示，可点击编辑） -->
                         <span id="datasetRemarkDisplay" class="remark-display" style="display:none;"></span>
+                        <!-- 字符计数 -->
                         <div class="input-hint"><span id="remarkCharCount">0</span>/550</div>
                     </div>
                 </div>
 
-                <!-- 数据集操作按钮 -->
+                <!-- 数据集操作按钮组 -->
                 <div class="action-buttons">
                     <button class="btn btn-sm" id="btnExport">导出</button>
                     <button class="btn btn-sm" id="btnImport">导入</button>
@@ -199,10 +242,12 @@
                     <button class="btn btn-sm" id="btnRename">重命名</button>
                     <button class="btn btn-sm btn-danger" id="btnDeleteDataset">删除</button>
                 </div>
+                <!-- 重置同步按钮（仅默认数据集时显示） -->
                 <button class="btn btn-sm btn-block" id="btnResetSync">重置同步</button>
 
                 <!-- 数据输入区域 -->
                 <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
+                <!-- 主属性 + 第一位数字 -->
                 <div class="form-group">
                     <label for="inputSubCol">主属性</label>
                     <div class="select-input-row">
@@ -210,6 +255,7 @@
                         <input type="text" class="triple-input" id="inputVal1" placeholder="1" maxlength="1" inputmode="numeric">
                     </div>
                 </div>
+                <!-- 副属性 + 第二位数字 -->
                 <div class="form-group">
                     <label for="inputRow">副属性</label>
                     <div class="select-input-row">
@@ -217,6 +263,7 @@
                         <input type="text" class="triple-input" id="inputVal2" placeholder="1" maxlength="1" inputmode="numeric">
                     </div>
                 </div>
+                <!-- 词条 + 第三位数字 -->
                 <div class="form-group">
                     <label for="inputGroup">词条</label>
                     <div class="select-input-row">
@@ -224,8 +271,11 @@
                         <input type="text" class="triple-input" id="inputVal3" placeholder="1" maxlength="1" inputmode="numeric">
                     </div>
                 </div>
+                <!-- 应用按钮：将三位数值写入当前单元格 -->
                 <button class="btn btn-primary btn-block" id="btnApplyValue">应用</button>
+                <!-- 清除当前单元格按钮 -->
                 <button class="btn btn-block btn-clear" id="btnClearCell">清除当前单元格</button>
+                <!-- 清空当前数据集按钮（带倒计时确认） -->
                 <button class="btn btn-block btn-clear" id="btnClearAll">清空当前数据集</button>
 
                 <!-- 单元格备注输入面板 -->
@@ -233,9 +283,12 @@
                 <div class="form-group">
                     <label>备注内容</label>
                     <div id="cellNoteContainer">
+                        <!-- 备注文本输入框 -->
                         <textarea id="cellNoteText" placeholder="请输入备注（Enter保存，Shift+Enter换行）" maxlength="550"
                             style="width:100%; resize: none; display:none;"></textarea>
+                        <!-- 备注展示区 -->
                         <span id="cellNoteDisplay" class="remark-display" style="display:none;"></span>
+                        <!-- 字符计数 -->
                         <div class="input-hint"><span id="cellNoteCharCount">0</span>/550</div>
                     </div>
                 </div>
@@ -245,49 +298,65 @@
                         <button class="btn btn-sm" id="btnAddNoteImage">📷 添加图片</button>
                         <button class="btn btn-sm btn-clear" id="btnClearNoteImages">清除全部图片</button>
                     </div>
+                    <!-- 隐藏的文件输入框 -->
                     <input type="file" id="noteImageInput" accept="image/*" multiple style="display:none;">
+                    <!-- 图片缩略图列表 -->
                     <div id="noteImageList" class="note-image-list"></div>
                 </div>
+                <!-- 保存备注按钮 -->
                 <button class="btn btn-primary btn-block" id="btnSaveNote">保存备注</button>
+                <!-- 清除当前备注按钮 -->
                 <button class="btn btn-block btn-clear" id="btnClearNote">清除当前备注</button>
 
+                <!-- 操作提示文字 -->
                 <p class="input-hint" id="inputHint"></p>
+                <!-- 隐藏的导入文件输入框 -->
                 <input type="file" id="importFile" accept=".zip,.json,application/zip,application/json" style="display:none;">
             </aside>
 
             <!-- 统计面板 -->
             <aside class="stats-panel" id="statsPanel">
                 <div class="panel-title">📊 统计信息</div>
+                <!-- 统计数据由 JS 动态生成 -->
                 <div id="statsContent" class="stats-content"></div>
             </aside>
 
             <!-- 录入面板 -->
             <aside class="record-panel" id="recordPanel">
                 <div class="panel-title">📥 录入面板</div>
+                <!-- 录入主属性 -->
                 <div class="form-group">
                     <label for="recordSubCol">主属性</label>
                     <select id="recordSubCol" title="录入主属性"></select>
                 </div>
+                <!-- 录入副属性 -->
                 <div class="form-group">
                     <label for="recordRow">副属性</label>
                     <select id="recordRow" title="录入副属性"></select>
                 </div>
+                <!-- 录入词条 -->
                 <div class="form-group">
                     <label for="recordGroup">词条</label>
                     <select id="recordGroup" title="录入词条"></select>
                 </div>
+                <!-- 撤回/重做按钮组 -->
                 <div class="action-buttons" style="margin-bottom: 8px;">
                     <button class="btn btn-sm" id="btnUndo" title="撤回" disabled>撤回</button>
                     <button class="btn btn-sm" id="btnRedo" title="重做" disabled>重做</button>
                 </div>
+                <!-- 录入按钮：增加实装基质重复数 -->
                 <button class="btn btn-primary btn-block" id="btnRecordApply">录入</button>
+                <!-- 撤减按钮：减少实装基质重复数 -->
                 <button class="btn btn-block btn-clear" id="btnRecordDecrement">撤减</button>
+                <!-- 清除按钮：清除当前单元格实装属性 -->
                 <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
+                <!-- 录入提示文字 -->
                 <p class="input-hint" id="recordHint"></p>
             </aside>
         </div>
 
         <!-- 空页面容器 -->
+        <!-- 左侧面板切换到"空白页"时显示 -->
         <div class="empty-page" id="emptyPage" style="display:none;">
             <div class="empty-page-content">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
@@ -300,13 +369,18 @@
 
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
+        <!-- 点击打开关于弹窗 -->
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.4.1(&quot;再访基地&quot;更新)">Endfield-Essence-Exhaustive
-            // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.4.1("再访基地"更新)</button>
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.5.1(&quot;再访基地&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // Ver.0.5.1("再访基地"更新)
+        </button>
     </footer>
 
     <!-- ==================== 弹窗区域 ==================== -->
+    <!-- 以下所有弹窗默认隐藏（display:none），由 JS 控制显示 -->
+
     <!-- 数值对比弹窗 -->
+    <!-- 当用户尝试覆盖已有数值时弹出，显示新旧值对比和建议 -->
     <div class="modal-overlay" id="modalCompare" style="display:none;">
         <div class="modal" style="max-width:450px;">
             <div class="modal-header"><span>📊 数值对比</span><button class="btn-icon btn-sm" id="btnCloseCompare" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -316,6 +390,7 @@
     </div>
 
     <!-- 二次确认弹窗 -->
+    <!-- 用户选择与系统建议相反的操作时弹出 -->
     <div class="modal-overlay" id="modalConfirm" style="display:none;">
         <div class="modal" style="max-width:420px;">
             <div class="modal-header"><span>⚠️ 操作确认</span><button class="btn-icon btn-sm" id="btnCloseConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -325,6 +400,7 @@
     </div>
 
     <!-- 全部获取提示弹窗 -->
+    <!-- 尝试录入已全部获取的实装基质时弹出 -->
     <div class="modal-overlay" id="modalFullAcquire" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>ℹ️ 录入提示</span><button class="btn-icon btn-sm" id="btnCloseFullAcquire" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -334,6 +410,7 @@
     </div>
 
     <!-- 非法输入提示弹窗 -->
+    <!-- 输入内容不合法时弹出 -->
     <div class="modal-overlay" id="modalIllegalInput" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>⚠️ 非法输入</span><button class="btn-icon btn-sm" id="btnCloseIllegal" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -356,13 +433,14 @@
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>重命名数据集</span><button class="btn-icon btn-sm" id="btnCloseRenameDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body">
-                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span id="renameOldName"></span></p><input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
+                <p style="margin-bottom:8px; font-size:0.85rem; color:var(--text-secondary);">原名称：<span id="renameOldName"></span></p>
+                <input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
             </div>
             <div class="modal-footer"><button class="btn" id="btnCancelRenameDataset">取消</button><button class="btn btn-primary" id="btnConfirmRenameDataset">确认</button></div>
         </div>
     </div>
 
-    <!-- 删除数据集弹窗 -->
+    <!-- 删除数据集弹窗（旧版简单确认，实际使用专用删除确认弹窗） -->
     <div class="modal-overlay" id="modalDeleteDataset" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>删除数据集</span><button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -374,6 +452,7 @@
     </div>
 
     <!-- 通用提示弹窗 -->
+    <!-- 显示各种提示消息，单按钮确定 -->
     <div class="modal-overlay" id="modalAlert" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span id="alertTitle">提示</span><button class="btn-icon btn-sm" id="btnCloseAlert" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -383,6 +462,7 @@
     </div>
 
     <!-- 通用确认弹窗 -->
+    <!-- 显示确认消息，带确认/取消两个按钮和回调 -->
     <div class="modal-overlay" id="modalConfirmDialog" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span id="confirmDialogTitle">确认</span><button class="btn-icon btn-sm" id="btnCloseConfirmDialog" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -392,6 +472,7 @@
     </div>
 
     <!-- 清空数据集专用确认弹窗 -->
+    <!-- 带15秒倒计时和文字确认，防止误操作 -->
     <div class="modal-overlay" id="modalClearAll" style="display:none;">
         <div class="modal" style="max-width:430px;">
             <div class="modal-header"><span>⚠️ 清空确认</span><button class="btn-icon btn-sm" id="btnCloseClearAll" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -406,6 +487,7 @@
     </div>
 
     <!-- 清空操作输入错误提示弹窗 -->
+    <!-- 用户输入文字不正确时弹出，5秒后自动关闭 -->
     <div class="modal-overlay" id="modalClearError" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>⚠️ 输入有误</span><button class="btn-icon btn-sm" id="btnCloseClearError" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -417,6 +499,7 @@
     </div>
 
     <!-- 删除数据集专用确认弹窗 -->
+    <!-- 带15秒倒计时和文字确认，防止误删除 -->
     <div class="modal-overlay" id="modalDeleteConfirm" style="display:none;">
         <div class="modal" style="max-width:430px;">
             <div class="modal-header"><span>⚠️ 删除确认</span><button class="btn-icon btn-sm" id="btnCloseDeleteConfirm" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -431,6 +514,7 @@
     </div>
 
     <!-- 删除操作输入错误提示弹窗 -->
+    <!-- 用户输入文字不正确时弹出，5秒后自动关闭 -->
     <div class="modal-overlay" id="modalDeleteError" style="display:none;">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header"><span>⚠️ 输入有误</span><button class="btn-icon btn-sm" id="btnCloseDeleteError" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
@@ -442,11 +526,13 @@
     </div>
 
     <!-- 导出文件名确认弹窗 -->
+    <!-- 设置导出文件名，默认格式为"数据集名_日期.zip" -->
     <div class="modal-overlay" id="modalExport" style="display:none;">
         <div class="modal" style="max-width:420px;">
             <div class="modal-header"><span>📥 导出数据</span><button class="btn-icon btn-sm" id="btnCloseExport" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
             <div class="modal-body">
-                <p style="font-size:0.85rem; margin-bottom:8px;">设置导出文件名：</p><input type="text" id="exportFileName" style="width:100%;" placeholder="文件名.json">
+                <p style="font-size:0.85rem; margin-bottom:8px;">设置导出文件名：</p>
+                <input type="text" id="exportFileName" style="width:100%;" placeholder="文件名.json">
                 <p style="font-size:0.72rem; color:var(--text-tertiary); margin-top:6px;">默认格式：数据集名_日期.zip</p>
             </div>
             <div class="modal-footer"><button class="btn" id="btnCancelExport">取消</button><button class="btn btn-primary" id="btnConfirmExport">导出</button></div>
@@ -454,6 +540,7 @@
     </div>
 
     <!-- 设置弹窗 -->
+    <!-- 包含两个面板：表格设置（尺寸、底色）和表格个性化（颜色预览与编辑） -->
     <div class="modal-overlay" id="modalSettingsOverlay" style="display:none;">
         <div class="modal settings-modal" id="modalSettingsContent">
             <div class="modal-header">
@@ -467,14 +554,17 @@
             </div>
             <div class="modal-body settings-modal-body" id="settingsModalBody">
                 <div class="settings-layout">
+                    <!-- 设置弹窗左侧导航 -->
                     <nav class="settings-nav" id="settingsNav">
                         <button class="settings-nav-btn active" data-settings-panel="table">表格设置</button>
                         <button class="settings-nav-btn" data-settings-panel="color">表格个性化</button>
                     </nav>
+                    <!-- 设置面板内容区 -->
                     <div class="settings-panels">
-                        <!-- 表格设置面板 -->
+                        <!-- 表格设置面板（默认激活） -->
                         <div class="settings-panel-content active" id="settingsPanelTable">
                             <div class="panel-title">📏 表格设置</div>
+                            <!-- 列宽设置：数字输入框 + 滑块 + 数值显示 -->
                             <div class="form-group">
                                 <label>列宽 (30-60px)</label>
                                 <div style="display:flex; align-items:center; gap:8px;">
@@ -483,6 +573,7 @@
                                     <span class="range-value" id="colWidthValue" style="min-width:30px;">36</span>
                                 </div>
                             </div>
+                            <!-- 行高设置：数字输入框 + 滑块 + 数值显示 -->
                             <div class="form-group">
                                 <label>行高 (20-40px)</label>
                                 <div style="display:flex; align-items:center; gap:8px;">
@@ -493,6 +584,7 @@
                             </div>
                             <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
                         </div>
+
                         <!-- 单元格颜色设置面板 -->
                         <div class="settings-panel-content" id="settingsPanelColor">
                             <div class="panel-title">🎨 单元格颜色</div>
@@ -500,6 +592,7 @@
 
                             <!-- 表格底色设置 -->
                             <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+                                <!-- 奇数行底色 -->
                                 <div class="form-group" style="flex:1; min-width:200px;">
                                     <label>奇数行底色</label>
                                     <div style="display:flex; align-items:center; gap:8px;">
@@ -508,6 +601,7 @@
                                         <button class="btn btn-sm btn-outline-gray" id="btnResetTableBgOdd">重置为默认</button>
                                     </div>
                                 </div>
+                                <!-- 偶数行底色 -->
                                 <div class="form-group" style="flex:1; min-width:200px;">
                                     <label>偶数行底色</label>
                                     <div style="display:flex; align-items:center; gap:8px;">
@@ -518,39 +612,48 @@
                                 </div>
                             </div>
                             <hr style="border:0; border-top:1px solid var(--border-muted); margin:12px 0;">
+
+                            <!-- 颜色预览区 -->
                             <div class="color-preview-layout">
                                 <!-- 左侧预览表格 -->
                                 <div class="color-preview-main-wrapper" id="colorPreviewMain"></div>
                                 <!-- 右侧数量控制区 -->
                                 <div class="color-preview-controls" id="colorPreviewControls">
+                                    <!-- 已拥有数量 -->
                                     <div class="count-row">
                                         <span class="count-label has-value-label">已拥有</span>
                                         <input type="number" id="previewCountHasValue" class="count-input" min="0" max="120" value="10" step="1">
                                     </div>
+                                    <!-- 未获取数量 -->
                                     <div class="count-row">
                                         <span class="count-label status-none-label">未获取</span>
                                         <input type="number" id="previewCountStatusNone" class="count-input" min="0" max="120" value="10" step="1">
                                     </div>
+                                    <!-- 部分获取数量 -->
                                     <div class="count-row">
                                         <span class="count-label status-partial-label">部分获取</span>
                                         <input type="number" id="previewCountStatusPartial" class="count-input" min="0" max="120" value="10" step="1">
                                     </div>
+                                    <!-- 全部获取数量 -->
                                     <div class="count-row">
                                         <span class="count-label status-full-label">全部获取</span>
                                         <input type="number" id="previewCountStatusFull" class="count-input" min="0" max="120" value="10" step="1">
                                     </div>
+                                    <!-- 剩余空格提示 -->
                                     <p class="input-hint" style="margin-top:8px; font-size:0.7rem;" id="previewRemainHint">剩余空格：80</p>
                                 </div>
                             </div>
 
                             <!-- 颜色编辑区域 -->
                             <div class="color-edit-panel">
+                                <!-- 状态切换按钮 -->
                                 <div class="color-states-row">
                                     <button class="color-state-btn active" data-state="hasValue">已拥有</button>
                                     <button class="color-state-btn" data-state="statusNone">未获取</button>
                                     <button class="color-state-btn" data-state="statusPartial">部分获取</button>
                                     <button class="color-state-btn" data-state="statusFull">全部获取</button>
                                 </div>
+                                <!-- 颜色选择与格式编辑 -->
                                 <div class="color-edit-row">
                                     <div class="color-box-group">
                                         <span class="color-box-label">当前</span>
@@ -559,6 +662,7 @@
                                     </div>
                                     <input type="color" id="sharedColorPicker" class="color-picker-input" value="#c8e6c9">
                                     <div class="color-format-row">
+                                        <!-- 颜色格式选择 -->
                                         <select id="colorFormatSelect" class="color-format-select">
                                             <option value="hex">HEX</option>
                                             <option value="rgb">RGB</option>
@@ -566,9 +670,11 @@
                                             <option value="cmyk">CMYK</option>
                                             <option value="hsla">HSLA</option>
                                         </select>
+                                        <!-- 动态生成的格式输入控件 -->
                                         <div id="colorInputsContainer" class="color-inputs-container"></div>
                                     </div>
                                 </div>
+                                <!-- 颜色操作按钮组 -->
                                 <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
                                     <button class="btn btn-sm btn-outline-gray" id="btnUndoColors">撤销当前颜色</button>
                                     <button class="btn btn-sm btn-outline-gray" id="btnUndoAllColors">撤销全部修改</button>
@@ -586,7 +692,7 @@
         </div>
     </div>
 
-    <!-- 版本信息弹窗 -->
+    <!-- 版本信息弹窗（关于） -->
     <div class="modal-overlay" id="modalVersionInfo" style="display:none;">
         <div class="modal" style="max-width:600px;">
             <div class="modal-header">
@@ -602,7 +708,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">Ver.0.4.1("再访基地"更新)</div>
+                    <div class="version-ver">Ver.0.5.1("再访基地"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -615,6 +721,7 @@
     </div>
 
     <!-- 行筛选弹窗 -->
+    <!-- 可勾选显示哪些行，支持全选/全不选 -->
     <div class="modal-overlay" id="modalRowFilter" style="display:none;">
         <div class="modal" style="max-width:360px;">
             <div class="modal-header">
@@ -627,10 +734,12 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- 全选/全不选按钮 -->
                 <div class="row-filter-actions">
                     <button class="btn btn-sm" id="btnSelectAllRows">全选</button>
                     <button class="btn btn-sm" id="btnSelectNoneRows">全不选</button>
                 </div>
+                <!-- 行复选框列表（由 JS 动态生成） -->
                 <div id="rowFilterCheckboxes" class="row-filter-list"></div>
             </div>
             <div class="modal-footer">
@@ -640,7 +749,8 @@
         </div>
     </div>
 
-    <!-- 图片查看浮动框（无遮罩，位于悬浮框旁边） -->
+    <!-- 图片查看浮动框 -->
+    <!-- 无遮罩，位于备注悬浮框旁边，用于放大查看备注图片 -->
     <div id="imageViewerModal" style="display:none; position:fixed; background:var(--bg-primary); border:1px solid var(--border-default); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.4); padding:5px; box-sizing:border-box; z-index:500; overflow:hidden; max-width:none; max-height:none;">
         <img id="imageViewerImage" src="" alt="图片查看"
             style="display:block; max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;">
@@ -654,6 +764,7 @@
     </div>
 
     <!-- 默认数据集加载指示器（非模态） -->
+    <!-- 页面右上角显示加载动画、文字和进度条 -->
     <div id="defaultDatasetLoading" class="dataset-loading-indicator" style="display:none;">
         <div class="loading-spinner"></div>
         <div class="loading-text" id="defaultDatasetLoadingText">正在加载默认数据集...</div>
@@ -663,15 +774,73 @@
     </div>
 
     <!-- ==================== 脚本加载 ==================== -->
-    <script src="data/default.js"></script>
-    <script src="js/core.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/color-preview.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/note.js"></script>
+    <!-- 脚本按依赖顺序加载：外部库 → 核心层 → 服务层 → 功能层 → 入口 -->
+
+    <!-- 外部库：JSZip 用于导出/导入 ZIP 文件 -->
     <script src="js/lib/jszip.min.js"></script>
-    <script src="js/logic.js"></script>
+
+    <!-- 核心层 -->
+    <!-- 常量定义（存储键、词条组、行名、颜色变量等） -->
+    <script src="js/core/constants.js"></script>
+    <!-- 全局状态管理 -->
+    <script src="js/core/state.js"></script>
+    <!-- DOM 元素缓存 -->
+    <script src="js/core/dom.js"></script>
+    <!-- 通用工具函数 -->
+    <script src="js/core/utils.js"></script>
+    <!-- 数据模型工厂函数 -->
+    <script src="js/core/data-model.js"></script>
+
+    <!-- 服务层 -->
+    <!-- localStorage 统一封装 -->
+    <script src="js/services/storage.js"></script>
+    <!-- 弹窗管理与 Toast 轻提示 -->
+    <script src="js/services/modal.js"></script>
+
+    <!-- 功能层：数据管理 -->
+    <!-- 数据集 CRUD、切换、保护、锁 UI -->
+    <script src="js/features/data/dataset-manager.js"></script>
+    <!-- 数据集级备注 -->
+    <script src="js/features/data/dataset-remark.js"></script>
+    <!-- 数据导入导出（ZIP/JSON） -->
+    <script src="js/features/data/import-export.js"></script>
+    <!-- 默认数据集异步加载 -->
+    <script src="js/features/data/default-loader.js"></script>
+
+    <!-- 功能层：表格 -->
+    <!-- 表格渲染与单元格高亮 -->
+    <script src="js/features/table/table-renderer.js"></script>
+    <!-- 行筛选功能 -->
+    <script src="js/features/table/row-filter.js"></script>
+    <!-- 统计面板渲染 -->
+    <script src="js/features/table/stats.js"></script>
+    <!-- 单元格悬停提示栏 -->
+    <script src="js/features/table/cell-tooltip.js"></script>
+
+    <!-- 功能层：单元格操作 -->
+    <!-- 数值应用与对比弹窗 -->
+    <script src="js/features/cell/cell-value.js"></script>
+    <!-- 录入、撤减、清除、清空确认 -->
+    <script src="js/features/cell/cell-record.js"></script>
+    <!-- 撤回/重做 -->
+    <script src="js/features/cell/history.js"></script>
+
+    <!-- 功能层：设置与个性化 -->
+    <!-- 主题切换与颜色恢复 -->
+    <script src="js/features/preferences/theme.js"></script>
+    <!-- 表格尺寸与底色管理 -->
+    <script src="js/features/preferences/table-style.js"></script>
+    <!-- 颜色预览与编辑 -->
+    <script src="js/features/preferences/color-preview.js"></script>
+
+    <!-- 功能层：备注 -->
+    <!-- 单元格备注、图片、悬浮框 -->
+    <script src="js/features/note/note.js"></script>
+
+    <!-- 入口 -->
+    <!-- 统一事件绑定 -->
     <script src="js/events.js"></script>
+    <!-- 应用初始化 -->
     <script src="js/main.js"></script>
 </body>
 

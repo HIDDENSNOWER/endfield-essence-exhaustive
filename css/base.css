@@ -1,0 +1,164 @@
+/* ==================== 主题变量 ==================== */
+/* 定义全局 CSS 变量，供所有样式使用。通过更改变量值可快速切换主题或调整整体风格。 */
+:root {
+    /* 背景色 */
+    --bg-primary: #f5f7fa;          /* 主背景色（导航栏、面板等） */
+    --bg-secondary: #eef1f5;        /* 次背景色（页面整体背景） */
+    --bg-tertiary: #e2e6ec;         /* 三级背景色（表头、输入框等） */
+    --bg-hover: #dde2e8;            /* 悬停背景色 */
+
+    /* 文本颜色 */
+    --text-primary: #1f2328;        /* 主要文本颜色 */
+    --text-secondary: #57606a;      /* 次要文本颜色（标签、描述等） */
+    --text-tertiary: #8b949e;       /* 弱化文本颜色（提示、占位符等） */
+
+    /* 边框颜色 */
+    --border-default: #afb8c1;      /* 默认边框 */
+    --border-muted: #c0c7ce;        /* 柔和边框（表格线、分割线等） */
+    --border-emphasis: #8b949e;     /* 强调边框（分组边界、重要分隔等） */
+
+    /* 功能颜色 */
+    --accent-primary: #0969da;      /* 主色调（按钮、高亮、链接） */
+    --danger-primary: #d1242f;      /* 危险色（删除、错误提示） */
+    --danger-bg: #fff1f0;           /* 危险背景色（删除按钮悬停等） */
+    --success-primary: #1a7f37;     /* 成功色（成功提示、正向操作） */
+
+    /* 阴影与圆角 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06); /* 轻微阴影 */
+    --radius-md: 6px;               /* 常用圆角 */
+
+    /* 字体 */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Arial, sans-serif;
+
+    /* 过渡动画 */
+    --transition-fast: 0.12s ease;  /* 快速过渡，用于悬停、焦点等 */
+
+    /* 滚动条 */
+    --scrollbar-thumb: #c1c7cd;     /* 滚动条滑块颜色 */
+
+    /* 表格奇偶行背景 */
+    --group-even-bg: #eaf0f6;       /* 偶数行背景 */
+    --group-odd-bg: #f8fafc;        /* 奇数行背景 */
+    --group-header-even-bg: #dce4ed;/* 表头偶数单元格背景 */
+    --group-header-odd-bg: #e9edf2; /* 表头奇数单元格背景 */
+
+    /* 输入框背景 */
+    --input-bg: #ffffff;
+
+    /* 表格尺寸变量 */
+    --col-width: 36px;              /* 列宽 */
+    --row-height: 24px;             /* 行高 */
+    --name-col-width: 90px;         /* 第一列（行标题）宽度 */
+    --sidebar-width: 50px;          /* 侧边栏宽度 */
+    --panel-width: 260px;           /* 右侧面板宽度 */
+
+    /* 基质状态颜色 */
+    --has-value-bg: #c8e6c9;        /* 已有数值背景（普通基质） */
+    --status-none-bg: #cfd8dc;      /* 未获取背景 */
+    --status-partial-bg: #ffe0b2;   /* 部分获取背景 */
+    --status-full-bg: #a5d6a7;      /* 全部获取背景 */
+
+    /* 单元格文本颜色与字号 */
+    --text-cell: #1f2328;           /* 单元格文字颜色 */
+    --cell-font-size: 12px;         /* 单元格文字大小 */
+}
+
+/* 暗色主题变量 */
+[data-theme="dark"] {
+    /* 覆盖亮色主题中的所有变量，切换为暗色配色 */
+
+    /* 背景色 */
+    --bg-primary: #0d1117;          /* 主背景色（导航栏、面板等） */
+    --bg-secondary: #161b22;        /* 次背景色（页面整体背景） */
+    --bg-tertiary: #1c2128;         /* 三级背景色（表头、输入框等） */
+    --bg-hover: #1f2428;            /* 悬停背景色 */
+
+    /* 文本颜色 */
+    --text-primary: #e6edf3;        /* 主要文本颜色 */
+    --text-secondary: #8b949e;      /* 次要文本颜色 */
+    --text-tertiary: #6e7681;       /* 弱化文本颜色 */
+
+    /* 边框颜色 */
+    --border-default: #484f58;      /* 默认边框 */
+    --border-muted: #343a42;        /* 柔和边框 */
+    --border-emphasis: #6e7681;     /* 强调边框 */
+
+    /* 功能颜色 */
+    --accent-primary: #58a6ff;      /* 主色调（按钮、高亮） */
+    --danger-primary: #f85149;      /* 危险色（删除、错误） */
+    --danger-bg: #490202;           /* 危险背景色 */
+    --success-primary: #3fb950;     /* 成功色 */
+
+    /* 阴影与圆角 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3); /* 轻微阴影（暗色下更深） */
+    /* 圆角变量未覆盖，沿用亮色值 */
+
+    /* 滚动条 */
+    --scrollbar-thumb: #484f58;     /* 滚动条滑块颜色 */
+
+    /* 表格奇偶行背景 */
+    --group-even-bg: #1b2636;       /* 偶数行背景 */
+    --group-odd-bg: #0f1722;        /* 奇数行背景 */
+    --group-header-even-bg: #1f2c3d;/* 表头偶数单元格背景 */
+    --group-header-odd-bg: #17202b; /* 表头奇数单元格背景 */
+
+    /* 输入框背景 */
+    --input-bg: #1c2128;
+
+    /* 基质状态颜色 */
+    --has-value-bg: #2a4a35;        /* 已有数值背景 */
+    --status-none-bg: #3a3f47;      /* 未获取背景 */
+    --status-partial-bg: #5a4a28;   /* 部分获取背景 */
+    --status-full-bg: #2e5a3b;      /* 全部获取背景 */
+
+    /* 单元格文本颜色与字号 */
+    --text-cell: #e6edf3;           /* 单元格文字颜色 */
+    --cell-font-size: 12px;         /* 单元格文字大小 */
+
+    /* 弹窗输入框背景 */
+    --modal-input-bg: #0a0e14;      /* 暗色下弹窗输入框背景 */
+}
+
+/* ==================== 全局重置与基础 ==================== */
+/* 清除所有元素默认外边距和内边距，并设置盒模型 */
+* {
+    box-sizing: border-box;         /* 盒模型包含内边距和边框，避免尺寸计算问题 */
+    margin: 0;
+    padding: 0;
+}
+
+/* 根字体大小 */
+html {
+    font-size: 14px;                /* 1rem = 14px，作为全局基准 */
+}
+
+/* body 基础样式 */
+body {
+    font-family: var(--font-sans);                     /* 使用全局字体变量 */
+    background-color: var(--bg-secondary);             /* 页面背景 */
+    color: var(--text-primary);                        /* 文字颜色 */
+    line-height: 1.4;                                  /* 行高，提升可读性 */
+    height: 100vh;                                     /* 占满视口高度 */
+    transition: background-color 0.2s, color 0.2s;     /* 主题切换过渡 */
+    display: flex;                                     /* 使用弹性布局 */
+    flex-direction: column;                            /* 垂直排列子元素 */
+    overflow: hidden;                                  /* 防止出现滚动条（由内部区域滚动） */
+}
+
+/* 确保所有表单控件继承字体 */
+body, button, input, select, textarea {
+    font-family: var(--font-sans);                     /* 统一字体，避免控件使用默认字体 */
+}
+
+/* 自定义滚动条样式（仅 WebKit 内核浏览器） */
+::-webkit-scrollbar {
+    width: 6px;                                        /* 垂直滚动条宽度 */
+    height: 6px;                                       /* 水平滚动条高度 */
+}
+::-webkit-scrollbar-track {
+    background: transparent;                           /* 滚动条轨道透明 */
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);               /* 滑块颜色 */
+    border-radius: 10px;                               /* 滑块圆角 */
+}

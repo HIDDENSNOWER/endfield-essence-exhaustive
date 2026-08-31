@@ -1,0 +1,388 @@
+/* ==================== 备注显示区域 ==================== */
+
+/* 备注展示容器（数据集备注、单元格备注共用） */
+.remark-display {
+    display: block;                /* 块级显示 */
+    padding: 5px 8px;              /* 内边距 */
+    border: 1px solid var(--border-default); /* 边框 */
+    border-radius: 4px;            /* 圆角 */
+    background: var(--bg-primary); /* 背景色 */
+    color: var(--text-primary);    /* 文字颜色 */
+    font-size: 0.8rem;             /* 字号 */
+    line-height: 1.4;              /* 行高 */
+    white-space: pre-wrap;         /* 保留换行和空格 */
+    word-break: break-word;        /* 长单词自动换行 */
+    max-height: calc(1.4em * 5 + 10px); /* 最大高度（最多显示5行） */
+    overflow-y: auto;              /* 超出滚动 */
+    cursor: default;               /* 默认光标 */
+    min-height: 28px;              /* 最小高度 */
+}
+
+/* 可编辑状态的备注展示容器（点击可编辑） */
+.remark-display.editable {
+    cursor: pointer;               /* 鼠标悬停显示手型 */
+}
+
+/* 可编辑状态的备注展示容器悬停效果 */
+.remark-display.editable:hover {
+    background: var(--bg-hover);   /* 悬停改变背景 */
+}
+
+/* 数据集备注编辑框（textarea） */
+#datasetRemarkInput {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;              /* 内容超出时纵向滚动 */
+    padding: 5px 8px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;          /* 继承页面字体 */
+}
+
+/* ==================== 单元格备注功能 ==================== */
+
+/* 备注图片上传按钮所在的行 */
+.note-image-upload-row {
+    display: flex;                 /* 弹性布局 */
+    gap: 8px;                      /* 按钮间距 */
+    flex-wrap: wrap;               /* 窄屏自动换行 */
+}
+
+/* 备注图片缩略图列表 */
+.note-image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+/* 单个备注图片缩略图容器 */
+.note-image-thumb {
+    position: relative;            /* 为删除按钮定位 */
+    width: 60px;
+    height: 60px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    overflow: hidden;              /* 隐藏超出部分 */
+    cursor: pointer;
+}
+
+/* 缩略图中的图片 */
+.note-image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;             /* 保持比例裁剪填充 */
+}
+
+/* 缩略图上的删除按钮 */
+.note-image-thumb .note-image-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0,0,0,0.6);   /* 半透明黑色背景 */
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* 缩略图删除按钮悬停状态 */
+.note-image-thumb .note-image-remove:hover {
+    background: rgba(220, 50, 50, 0.8); /* 悬停变红 */
+}
+
+/* 备注悬浮框（显示在单元格附近） */
+.note-tooltip {
+    position: fixed;               /* 固定定位，由 JS 设置位置 */
+    z-index: 400;                  /* 高于普通弹窗 */
+    min-width: 220px;
+    min-height: 100px;
+    max-width: 360px;
+    max-height: 360px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;              /* 内容超出隐藏 */
+    resize: both;                  /* 允许用户手动调整大小 */
+    user-select: none;             /* 防止拖拽时选中文字 */
+}
+
+/* 悬浮框头部（标题栏 + 操作按钮） */
+.note-tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-muted);
+    cursor: move;                  /* 指示可拖动 */
+    flex-shrink: 0;                /* 头部固定，不压缩 */
+}
+
+/* 悬浮框标题文字 */
+.note-tooltip-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* 悬浮框头部操作按钮组 */
+.note-tooltip-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* 悬浮框头部的小按钮（切换布局、关闭） */
+.note-tooltip-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+/* 悬浮框头部小按钮悬停状态 */
+.note-tooltip-btn:hover {
+    background: var(--bg-hover);
+}
+
+/* 悬浮框内容区域 */
+.note-tooltip-body {
+    padding: 10px;
+    overflow-y: auto;              /* 内容超出纵向滚动 */
+    flex: 1;                       /* 占据剩余空间 */
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    cursor: default;
+    user-select: text;             /* 允许选择文字 */
+}
+
+/* 悬浮框内容中的图片 */
+.note-tooltip-body img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+/* 悬浮框中的备注文本 */
+.note-tooltip-body .note-text {
+    white-space: pre-wrap;         /* 保留换行 */
+    word-break: break-word;        /* 长单词换行 */
+}
+
+/* 悬浮框中的图片画廊 */
+.note-tooltip-body .note-image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* 画廊中的图片缩略图 */
+.note-tooltip-body .note-image-gallery img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    cursor: pointer;               /* 可点击查看大图 */
+}
+
+/* 悬浮框右下角调整大小手柄 */
+.note-tooltip-resizer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;           /* 斜向调整大小光标 */
+    background: linear-gradient(135deg, transparent 50%, var(--border-emphasis) 50%);
+}
+
+/* ==================== 悬浮框布局切换 ==================== */
+
+/* 文本在上，图片在下 */
+.note-tooltip.layout-text-top .note-tooltip-body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 图片在上，文本在下 */
+.note-tooltip.layout-image-top .note-tooltip-body {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+/* 文本与图片水平排列 */
+.note-tooltip.layout-horizontal .note-tooltip-body {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+/* 水平布局时文本区域占据一半 */
+.note-tooltip.layout-horizontal .note-text {
+    flex: 1;
+}
+
+/* 水平布局时图片区域占据一半 */
+.note-tooltip.layout-horizontal .note-image-gallery {
+    flex: 1;
+}
+
+/* 单元格备注输入框（textarea） */
+#cellNoteText {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    padding: 5px 8px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    min-height: calc(1.4em * 2 + 10px); /* 至少两行高度 */
+}
+
+/* 悬浮框内图片可双击放大提示 */
+.note-tooltip-body .note-image-gallery img {
+    cursor: zoom-in;               /* 放大光标 */
+    transition: transform 0.15s;   /* 点击缩放过渡 */
+}
+
+/* 图片被按下时的缩放效果 */
+.note-tooltip-body .note-image-gallery img:active {
+    transform: scale(0.98);
+}
+
+/* ==================== 图片查看浮动框 ==================== */
+
+/* 图片查看器容器（无遮罩，位于悬浮框旁） */
+#imageViewerModal {
+    display: none;                 /* 默认隐藏，由 JS 控制显示 */
+    position: fixed;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    padding: 5px;
+    box-sizing: border-box;
+    z-index: 500;
+    overflow: hidden;
+    max-width: none;
+    max-height: none;
+}
+
+/* 查看器中的图片 */
+#imageViewerImage {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;           /* 完整显示，不变形 */
+    border-radius: 8px;
+}
+
+/* 查看器关闭按钮 */
+#btnCloseImageViewer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;           /* 圆形按钮 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* 查看器关闭按钮悬停状态 */
+#btnCloseImageViewer:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+/* ==================== 默认数据集加载指示器 ==================== */
+
+/* 加载指示器容器（非模态，右上角显示） */
+.dataset-loading-indicator {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 200px;
+    max-width: 280px;
+    pointer-events: none;          /* 点击穿透，不阻塞交互 */
+    user-select: none;
+}
+
+/* 加载旋转动画 */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border-muted);
+    border-top-color: var(--accent-primary); /* 顶部高亮形成旋转效果 */
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* 旋转动画关键帧 */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 加载提示文字 */
+.loading-text {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* 进度条轨道 */
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+/* 进度条填充部分 */
+.progress-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 3px;
+    transition: width 0.2s ease;   /* 进度变化平滑过渡 */
+}

@@ -1,0 +1,374 @@
+/* ==================== 导航栏 ==================== */
+
+/* 顶部导航栏 */
+.navbar {
+    background-color: var(--bg-primary);      /* 背景色 */
+    border-bottom: 1px solid var(--border-default); /* 底部分隔线 */
+    padding: 0 16px;                          /* 左右内边距 */
+    height: 44px;                             /* 固定高度 */
+    display: flex;                            /* 弹性布局 */
+    align-items: center;                      /* 垂直居中 */
+    justify-content: space-between;           /* 左右两端对齐 */
+    box-shadow: var(--shadow-sm);             /* 轻微阴影 */
+    flex-shrink: 0;                           /* 防止压缩 */
+    z-index: 20;                              /* 层级 */
+}
+
+/* 导航栏左侧搜索/筛选区域 */
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 导航栏右侧操作按钮组 */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ==================== 主布局 ==================== */
+
+/* 主内容布局容器（左侧边栏 + 表格区 + 右侧面板） */
+.main-layout {
+    display: flex;
+    flex: 1;                    /* 占满剩余高度 */
+    min-height: 0;              /* 允许子元素滚动 */
+    overflow: hidden;           /* 防止溢出 */
+}
+
+/* 表格区域 */
+.table-area {
+    flex: 1;                    /* 占据中间剩余空间 */
+    min-height: 0;
+    overflow-y: auto;           /* 纵向滚动 */
+    overflow-x: hidden;         /* 横向隐藏 */
+    padding: 12px 8px;
+}
+
+/* 表格分区（第一部分、第二部分） */
+.table-section {
+    margin-bottom: 16px;
+}
+
+/* 分区标题 */
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 6px 0;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border-muted); /* 标题下划线 */
+}
+
+/* 表格外层容器（用于横向滚动和背景） */
+.main-container {
+    background-color: var(--group-odd-bg);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow-x: auto;           /* 横向滚动 */
+    box-shadow: var(--shadow-sm);
+    display: inline-block;      /* 收缩包裹内容 */
+    vertical-align: top;
+    max-width: 100%;
+}
+
+/* 表格包装器 */
+.table-wrapper {
+    overflow: visible;
+}
+
+/* 表格基础样式 */
+table {
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    white-space: nowrap;        /* 单元格文字不换行 */
+    width: auto;
+    table-layout: fixed;        /* 固定布局 */
+}
+
+/* 表头单元格和表体单元格 */
+thead th,
+tbody td {
+    padding: 0 2px;
+    border: 1px solid var(--border-muted);
+    text-align: center;
+    height: var(--row-height);
+    vertical-align: middle;
+}
+
+/* 表头单元格特殊样式 */
+thead th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* 偶数行背景 */
+.group-even {
+    background-color: var(--group-even-bg);
+}
+
+/* 奇数行背景 */
+.group-odd {
+    background-color: var(--group-odd-bg);
+}
+
+/* 表头偶数单元格背景 */
+thead th.group-even {
+    background-color: var(--group-header-even-bg);
+}
+
+/* 表头奇数单元格背景 */
+thead th.group-odd {
+    background-color: var(--group-header-odd-bg);
+}
+
+/* 分组之间的加粗右边框 */
+.border-group-right {
+    border-right: 2px solid var(--border-emphasis) !important;
+}
+
+/* 第一列（行标题）固定在左侧 */
+thead tr:first-child th:first-child,
+tbody td:first-child {
+    position: sticky;               /* 粘性定位 */
+    left: 0;                        /* 固定在左侧 */
+    z-index: 2;
+    background-color: var(--bg-tertiary) !important;
+    font-weight: 600;
+    text-align: left;
+    width: var(--name-col-width);
+    min-width: var(--name-col-width);
+    padding-left: 8px;
+    border-right: 2px solid var(--border-emphasis);
+}
+
+/* 表头第一列层级更高 */
+thead tr:first-child th:first-child {
+    z-index: 3;
+}
+
+/* 表体第一列背景色 */
+tbody td:first-child {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* 空值单元格文字 */
+.empty-value {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* 单元格悬停高亮（数据单元格） */
+tbody td:hover {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    z-index: 5;
+    position: relative;
+}
+
+/* 单元格悬停高亮（第一列） */
+tbody td:first-child:hover {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    z-index: 5;
+    position: relative;
+}
+
+/* 基质状态颜色：未获取 */
+.status-none {
+    background-color: var(--status-none-bg) !important;
+    color: var(--text-cell) !important;
+}
+
+/* 基质状态颜色：部分获取 */
+.status-partial {
+    background-color: var(--status-partial-bg) !important;
+}
+
+/* 基质状态颜色：全部获取 */
+.status-full {
+    background-color: var(--status-full-bg) !important;
+}
+
+/* 基质状态颜色：已有数值 */
+.has-value {
+    background-color: var(--has-value-bg) !important;
+}
+
+/* ==================== 侧边栏 ==================== */
+
+/* 右侧或左侧侧边栏 */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-primary);
+    border-left: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+/* 左侧边栏特殊样式 */
+.left-sidebar {
+    border-left: none;
+    border-right: 1px solid var(--border-default);
+}
+
+/* 侧边栏按钮 */
+.sidebar-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    transition: all var(--transition-fast);
+}
+
+/* 侧边栏按钮悬停状态 */
+.sidebar-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* 侧边栏按钮激活状态 */
+.sidebar-btn.active {
+    background-color: var(--bg-hover);
+    border-color: var(--border-default);
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ==================== 空页面 ==================== */
+
+/* 空白页面容器（切换左侧面板时显示） */
+.empty-page {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-secondary);
+}
+
+/* 空白页面内容 */
+.empty-page-content {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+
+/* 空白页面文字 */
+.empty-page-content p {
+    margin-top: 16px;
+    font-size: 1rem;
+}
+
+/* ==================== 面板容器 ==================== */
+
+/* 右侧面板容器（数据管理、录入、统计） */
+.panel-container {
+    width: var(--panel-width);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-default);
+    background-color: var(--input-bg);
+    overflow-y: auto;
+}
+
+/* 面板默认隐藏 */
+.panel-container > aside {
+    display: none;
+}
+
+/* 激活的面板显示 */
+.panel-container > aside.active-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 16px;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+/* ==================== 底部版本信息 ==================== */
+
+/* 底部信息栏 */
+.app-footer {
+    height: 28px;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    z-index: 10;
+    user-select: none;            /* 禁止选中文字 */
+}
+
+/* 底部版本信息按钮 */
+.footer-version-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+
+/* 底部版本信息按钮悬停状态 */
+.footer-version-btn:hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+}
+
+/* ==================== 响应式布局调整 ==================== */
+
+/* 小屏幕设备（如平板） */
+@media (max-width: 768px) {
+    /* 主布局改为纵向排列 */
+    .main-layout {
+        flex-direction: column;
+    }
+    /* 侧边栏改为横向排列 */
+    .sidebar {
+        flex-direction: row;
+        width: 100%;
+        height: 44px;
+        border-left: none;
+        border-bottom: 1px solid var(--border-default);
+    }
+    /* 面板容器占满宽度 */
+    .panel-container {
+        width: 100%;
+        border-left: none;
+        flex-shrink: 1;
+    }
+}
+
+/* ==================== 右侧面板折叠系统 ==================== */
+
+/* 当主布局具有 right-collapsed 类时，隐藏右侧面板容器 */
+.main-layout.right-collapsed .panel-container {
+    display: none;
+}
+
+/* 折叠状态下隐藏除折叠按钮外的所有侧边栏按钮 */
+.main-layout.right-collapsed #sidebar .sidebar-btn:not(#btnToggleRightPanel) {
+    display: none;
+}

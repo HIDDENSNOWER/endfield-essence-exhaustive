@@ -1,0 +1,619 @@
+/* ==================== 按钮系统 ==================== */
+
+/* 基础按钮样式，所有按钮共用的外观和行为 */
+.btn {
+    display: inline-flex;           /* 使用弹性布局，使按钮内容水平排列 */
+    align-items: center;            /* 垂直居中 */
+    justify-content: center;        /* 水平居中 */
+    gap: 6px;                       /* 按钮内元素间距（如图标与文字） */
+    padding: 6px 14px;              /* 内边距：上下6px，左右14px */
+    font-size: 0.82rem;             /* 字号 */
+    font-weight: 500;               /* 字重 */
+    border-radius: var(--radius-md);/* 圆角，使用全局变量 */
+    cursor: pointer;                /* 鼠标悬停显示手型 */
+    border: 1px solid var(--border-default); /* 边框 */
+    background-color: var(--bg-primary);      /* 背景色 */
+    color: var(--text-primary);     /* 文字颜色 */
+    transition: all var(--transition-fast);   /* 所有属性快速过渡 */
+}
+
+/* 主要按钮（如“应用”、“确认”等） */
+.btn-primary {
+    background-color: var(--accent-primary); /* 使用主色调背景 */
+    border-color: var(--accent-primary);     /* 边框同色 */
+    color: #fff;                             /* 文字白色 */
+    font-weight: 600;                        /* 加粗 */
+}
+/* 主要按钮悬停状态 */
+.btn-primary:hover {
+    filter: brightness(1.1);                 /* 悬停时略微提亮 */
+}
+
+/* 危险按钮（删除、清空等危险操作） */
+.btn-danger {
+    background-color: transparent;           /* 透明背景 */
+    border: 1px solid var(--danger-primary); /* 危险色边框 */
+    color: var(--danger-primary);            /* 危险色文字 */
+}
+/* 危险按钮悬停状态 */
+.btn-danger:hover {
+    background-color: var(--danger-bg);      /* 悬停时使用危险背景色 */
+}
+
+/* 成功按钮（如“确认”、“确定”等正向操作） */
+.btn-success {
+    background-color: var(--success-primary); /* 成功色背景 */
+    border-color: var(--success-primary);     /* 边框同色 */
+    color: #fff;                               /* 文字白色 */
+    font-weight: 600;                          /* 加粗 */
+}
+
+/* 灰色轮廓按钮（次要操作） */
+.btn-outline-gray {
+    background-color: transparent;             /* 透明背景 */
+    border: 1px solid var(--border-default);   /* 默认边框 */
+    color: var(--text-secondary);              /* 次要文字颜色 */
+    font-weight: 500;
+}
+/* 灰色轮廓按钮悬停状态 */
+.btn-outline-gray:hover {
+    background-color: var(--bg-hover);         /* 悬停时改变背景 */
+    border-color: var(--border-emphasis);      /* 边框加强 */
+}
+
+/* 小尺寸按钮 */
+.btn-sm {
+    padding: 3px 10px;                         /* 更小的内边距 */
+    font-size: 0.75rem;
+}
+
+/* 块级按钮，占满整行 */
+.btn-block {
+    width: 100%;
+}
+
+/* 清除样式按钮（通常用于取消、撤销等） */
+.btn-clear {
+    background-color: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+/* 清除样式按钮悬停状态 */
+.btn-clear:hover {
+    background-color: var(--bg-hover);
+}
+
+/* 图标按钮（导航栏、弹窗标题栏中的小按钮） */
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+/* 图标按钮悬停状态 */
+.btn-icon:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+/* 图标按钮内的 SVG 图标尺寸 */
+.btn-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 输入提示文字（面板底部或表单说明） */
+.input-hint {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+}
+
+/* ==================== 表单 ==================== */
+
+/* 表单组：将标签和输入控件垂直排列 */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+/* 表单组中的标签 */
+.form-group label {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+/* 表单组中的选择框和输入框 */
+.form-group select,
+.form-group input {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* 选择器与输入框并排的行（用于三联输入） */
+.select-input-row {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+/* 并排行中的下拉选择框 */
+.select-input-row select {
+    flex: 2 1 0;               /* 选择框占据更多空间 */
+    min-width: 0;
+}
+/* 并排行中的数字输入框 */
+.select-input-row .triple-input {
+    flex: 1 1 0;               /* 输入框占据较少空间 */
+    min-width: 0;
+    text-align: center;
+    width: auto;
+}
+
+/* ==================== 面板内通用元素 ==================== */
+
+/* 面板标题（数据管理、录入面板等） */
+.panel-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+/* 数据集信息展示行（当前数据集名称） */
+.dataset-info {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+}
+/* 数据集信息中的标签 */
+.dataset-label {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+/* 数据集信息中的名称 */
+.dataset-name {
+    font-weight: 600;
+    color: var(--accent-primary);
+    word-break: break-all;        /* 名称过长时自动换行 */
+}
+
+/* 按钮组（水平排列，常用于导出、导入等操作） */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+/* 按钮组中的小尺寸按钮 */
+.action-buttons .btn-sm {
+    flex: 1;
+    font-size: 0.72rem;
+    padding: 4px 6px;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* ==================== 弹窗 ==================== */
+
+/* 弹窗遮罩层，覆盖整个视口 */
+.modal-overlay {
+    position: fixed;
+    inset: 0;                          /* 等同于 top:0; right:0; bottom:0; left:0; */
+    background: rgba(0, 0, 0, 0.5);    /* 半透明黑色背景 */
+    display: flex;
+    align-items: center;               /* 垂直居中弹窗 */
+    justify-content: center;           /* 水平居中弹窗 */
+    z-index: 200;                      /* 置于页面内容之上 */
+    padding: 20px;                     /* 防止弹窗紧贴边缘 */
+}
+
+/* 弹窗主体 */
+.modal {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* 弹窗阴影 */
+    width: 100%;
+    max-width: 450px;                 /* 默认最大宽度，特定弹窗可覆盖 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 弹窗头部（标题与关闭按钮） */
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+/* 弹窗内容区 */
+.modal-body {
+    padding: 20px;
+}
+
+/* 弹窗底部（操作按钮） */
+.modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-muted);
+    display: flex;
+    justify-content: flex-end;         /* 按钮靠右 */
+    gap: 8px;
+}
+
+/* 弹窗内的输入框和选择框 */
+.modal-body input,
+.modal-body select {
+    background-color: var(--modal-input-bg, var(--bg-primary)); /* 暗色主题专用背景 */
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+
+/* ==================== 统计面板 ==================== */
+
+/* 统计内容容器 */
+.stats-content {
+    font-size: 0.78rem;
+}
+/* 统计内容中的表格 */
+.stats-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 0.75rem;
+}
+/* 统计表格中的单元格 */
+.stats-content th,
+.stats-content td {
+    padding: 6px 8px;
+    border: 1px solid var(--border-muted);
+    text-align: center;
+}
+/* 统计表格中的表头 */
+.stats-content th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+}
+/* 统计表格第一列（标签列） */
+.stats-content td:first-child {
+    text-align: left;
+    font-weight: 500;
+    background-color: inherit !important; /* 防止继承表头背景 */
+}
+
+/* 统计卡片（每个词条组一块） */
+.stat-card {
+    margin-bottom: 10px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+/* 统计卡片内的表格 */
+.stat-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    table-layout: fixed;
+}
+/* 统计卡片表头 */
+.stat-card th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+/* 统计卡片单元格 */
+.stat-card td {
+    padding: 4px 6px;
+    border: 1px solid var(--border-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* 统计卡片中的标签单元格 */
+.stat-card .data-label {
+    text-align: right;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+/* 统计卡片中的数值单元格 */
+.stat-card .data-value {
+    font-weight: bold;
+}
+
+/* 高亮数值（排序依据列） */
+.highlight-value {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--accent-primary);
+}
+
+/* 统计摘要表格（总基质数、总实装等） */
+.stats-summary {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+/* 摘要表格 */
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+/* 摘要表格单元格 */
+.summary-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border-muted);
+    text-align: center;
+}
+/* 摘要表格第一列（标签列） */
+.summary-table td:first-child {
+    text-align: right;
+    font-weight: 500;
+    color: var(--text-secondary);
+    width: 60%;
+}
+/* 摘要表格第二列（数值列） */
+.summary-table td:last-child {
+    font-weight: bold;
+}
+
+/* 统计排序控件 */
+.stats-sort-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 0.78rem;
+}
+/* 排序控件中的每一行 */
+.stats-sort-controls > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+/* 排序控件中的标签 */
+.stats-sort-controls label {
+    white-space: nowrap;
+    width: 60px;
+}
+/* 排序控件中的下拉选择框 */
+.stats-sort-controls select {
+    flex: 1;
+    padding: 4px 6px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+}
+
+/* ==================== 行筛选 ==================== */
+
+/* 导航栏中的行筛选按钮 */
+.btn-row-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    height: 32px;
+    min-width: 120px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+/* 行筛选按钮悬停状态 */
+.btn-row-filter:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-emphasis);
+}
+/* 行筛选按钮内的 SVG 图标 */
+.btn-row-filter svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+/* 行筛选按钮内的文字 */
+.btn-row-filter span {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+/* 行筛选弹窗中的复选框列表 */
+.row-filter-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;   /* 两列布局 */
+    gap: 10px 12px;
+    max-height: 320px;                /* 限高，超出滚动 */
+    overflow-y: auto;
+    padding: 4px;
+}
+/* 每个行筛选条目 */
+.row-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: background var(--transition-fast);
+    cursor: pointer;
+}
+/* 行筛选条目悬停状态 */
+.row-filter-item:hover {
+    background: var(--bg-hover);
+}
+/* 行筛选条目中的复选框 */
+.row-filter-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* 全选/全不选按钮组 */
+.row-filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+/* 全选/全不选按钮组中的按钮 */
+.row-filter-actions .btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+/* ==================== 单元格悬停提示栏 ==================== */
+
+/* 表格顶部的提示栏，用于显示当前悬停单元格的详细信息 */
+.cell-tooltip {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    min-height: 26px;
+    line-height: 1.5;
+    white-space: nowrap;              /* 单行显示，超出省略 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    position: sticky;                 /* 粘性定位，滚动时保持在顶部 */
+    top: 0;
+    z-index: 30;
+    width: 100%;
+    margin: -12px -8px 6px -8px;      /* 抵消表格区的内边距 */
+}
+
+/* ==================== 单元格闪烁高亮 ==================== */
+
+/* 闪烁边框动画，用于突出当前选中的单元格 */
+@keyframes blink-border {
+    0%, 100% { outline-color: var(--accent-primary); }
+    50% { outline-color: transparent; }
+}
+/* 应用闪烁高亮效果的单元格 */
+.cell-highlight-blink {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;             /* 边框向内偏移，避免遮挡内容 */
+    animation: blink-border 1.2s infinite;
+    z-index: 5;
+    position: relative;
+}
+
+/* ==================== 临时提示 Toast ==================== */
+
+/* 页面底部临时弹出的提示消息 */
+.temp-hint {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px); /* 初始下移，渐显时上滑 */
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 10px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 700;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;             /* 不响应鼠标事件，避免遮挡 */
+}
+/* 提示消息显示状态（由 JS 添加 .show 类） */
+.temp-hint.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+/* 成功类型的提示条 */
+.temp-hint-success {
+    border-left: 4px solid var(--success-primary);
+    color: var(--success-primary);
+}
+/* 错误类型的提示条 */
+.temp-hint-error {
+    border-left: 4px solid var(--danger-primary);
+    color: var(--danger-primary);
+}
+/* 信息类型的提示条 */
+.temp-hint-info {
+    border-left: 4px solid var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* ==================== 版本信息弹窗内容 ==================== */
+
+/* 关于弹窗中的内容布局 */
+.version-info-content {
+    padding: 8px 0;
+}
+/* 大标题（英文名） */
+.version-title-lg {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+}
+/* 副标题（中文名） */
+.version-title-md {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+}
+/* 版本号 */
+.version-ver {
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 16px;
+}
+/* 分割线 */
+.version-divider {
+    border: 0;
+    border-top: 1px solid var(--border-default);
+    margin: 16px 0;
+}
+/* 联系方式标签 */
+.version-contact-label {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+/* 邮箱地址 */
+.version-email {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
