@@ -104,7 +104,122 @@
         MAX_ROW_HEIGHT: 40,       // 行高最大值
 
         // 颜色预览表格总单元格数（12行 × 10列）
-        TOTAL_CELLS: 120
+        TOTAL_CELLS: 120,
+
+        // ==================== 界面颜色个性化 ====================
+        INTERFACE_COLOR_GROUPS: [
+            {
+                name: '导航栏与面板背景',
+                vars: {
+                    '--bg-primary': '导航栏/面板背景',
+                    '--bg-secondary': '页面主体背景',
+                    '--bg-tertiary': '表头/提升项背景',
+                    '--bg-hover': '悬停高亮背景',
+                    '--input-bg': '输入框背景',
+                    '--modal-input-bg': '弹窗输入框背景'
+                }
+            },
+            {
+                name: '文字颜色',
+                vars: {
+                    '--text-primary': '主要文字',
+                    '--text-secondary': '次要文字',
+                    '--text-tertiary': '弱化文字/占位符',
+                    '--text-cell': '单元格文字'
+                }
+            },
+            {
+                name: '边框颜色',
+                vars: {
+                    '--border-default': '普通边框',
+                    '--border-muted': '柔和边框（表格线）',
+                    '--border-emphasis': '强调边框（分组分隔）'
+                }
+            },
+            {
+                name: '功能颜色',
+                vars: {
+                    '--accent-primary': '主色调（应用/确认按钮）',
+                    '--danger-primary': '危险色（删除/错误文字）',
+                    '--danger-bg': '危险背景色',
+                    '--success-primary': '成功色（成功按钮）'
+                }
+            },
+            {
+                name: '表头背景',
+                vars: {
+                    '--group-header-even-bg': '表头偶数单元格背景',
+                    '--group-header-odd-bg': '表头奇数单元格背景'
+                }
+            },
+            {
+                name: '表格行背景',
+                vars: {
+                    '--group-even-bg': '数据区偶数行背景',
+                    '--group-odd-bg': '数据区奇数行背景'
+                }
+            },
+            {
+                name: '滚动条',
+                vars: {
+                    '--scrollbar-thumb': '滚动条滑块颜色'
+                }
+            }
+        ],
+
+        DEFAULT_INTERFACE_COLORS_LIGHT: {
+            '--bg-primary': '#f5f7fa',
+            '--bg-secondary': '#eef1f5',
+            '--bg-tertiary': '#e2e6ec',
+            '--bg-hover': '#dde2e8',
+            '--input-bg': '#ffffff',
+            '--text-primary': '#1f2328',
+            '--text-secondary': '#57606a',
+            '--text-tertiary': '#8b949e',
+            '--text-cell': '#1f2328',
+            '--border-default': '#afb8c1',
+            '--border-muted': '#c0c7ce',
+            '--border-emphasis': '#8b949e',
+            '--accent-primary': '#0969da',
+            '--danger-primary': '#d1242f',
+            '--danger-bg': '#fff1f0',
+            '--success-primary': '#1a7f37',
+            '--group-header-even-bg': '#dce4ed',
+            '--group-header-odd-bg': '#e9edf2',
+            '--scrollbar-thumb': '#c1c7cd',
+            '--modal-input-bg': '#ffffff',
+            '--group-even-bg': '#eaf0f6',
+            '--group-odd-bg': '#f8fafc',
+        },
+
+        DEFAULT_INTERFACE_COLORS_DARK: {
+            '--bg-primary': '#0d1117',
+            '--bg-secondary': '#161b22',
+            '--bg-tertiary': '#1c2128',
+            '--bg-hover': '#1f2428',
+            '--input-bg': '#1c2128',
+            '--text-primary': '#e6edf3',
+            '--text-secondary': '#8b949e',
+            '--text-tertiary': '#6e7681',
+            '--text-cell': '#e6edf3',
+            '--border-default': '#484f58',
+            '--border-muted': '#343a42',
+            '--border-emphasis': '#6e7681',
+            '--accent-primary': '#58a6ff',
+            '--danger-primary': '#f85149',
+            '--danger-bg': '#490202',
+            '--success-primary': '#3fb950',
+            '--group-header-even-bg': '#1f2c3d',
+            '--group-header-odd-bg': '#17202b',
+            '--scrollbar-thumb': '#484f58',
+            '--modal-input-bg': '#0a0e14',
+            '--group-even-bg': '#1b2636',
+            '--group-odd-bg': '#0f1722',
+
+        },
+
+        INTERFACE_COLORS_STORAGE_KEY: 'smarttable_interface_colors'
+
     };
 
     // ==================== 分组与列数 ====================

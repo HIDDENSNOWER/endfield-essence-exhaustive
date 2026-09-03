@@ -280,7 +280,38 @@
             'mergeNewName',                        // 合并结果新名称输入框
             'btnConfirmMergePick',                 // 开始合并按钮
             'btnCancelMergePick',                  // 取消按钮
-            'btnCloseMergePick'                    // 关闭按钮
+            'btnCloseMergePick',                    // 关闭按钮
+
+            // ----- 方案管理 -----
+            'btnSchemeSave',
+            'btnSchemeExport',
+            'btnSchemeImport',
+            'schemeImportFile',
+            'schemeNewName',
+            'schemeCurrentName',
+            'schemeList',
+
+            // ----- 颜色编辑器新增按钮 -----
+            'btnDiscardChanges',
+            'btnRestoreScheme',
+            'btnSaveToScheme',
+            'btnSaveAsNewScheme',
+            'btnExportColors',
+            'btnImportColors',
+            'colorImportFile',
+            'btnRestoreSystemLight',
+            'btnRestoreSystemDark',
+
+            // ----- 界面颜色面板 -----
+            'interfaceColorPanel',
+
+            'stateColorSchemeList', 
+            'stateColorSchemeCurrentName', 
+            'stateColorSchemeNewName',
+            'btnStateColorSchemeSave', 
+            'btnStateColorSchemeExport', 
+            'btnStateColorSchemeImport',
+            'stateColorSchemeImportFile',
         ];
 
         // 批量获取所有 ID 对应的元素，并缓存到 dom 对象

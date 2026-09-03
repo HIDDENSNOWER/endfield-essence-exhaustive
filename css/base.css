@@ -44,6 +44,7 @@
 
     /* 输入框背景 */
     --input-bg: #ffffff;
+    --modal-input-bg: #ffffff;
 
     /* 表格尺寸变量 */
     --col-width: 36px;              /* 列宽 */

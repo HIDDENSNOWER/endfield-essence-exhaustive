@@ -89,8 +89,13 @@
          * 获取默认表格底色
          * @returns {{odd: string, even: string}} 当前主题下的默认奇偶行背景色
          */
-        getDefaultTableBgColors() {
-            return App.storage.getDefaultTableBgColors(App.state.isDarkTheme() ? 'dark' : 'light');
+        getDefaultTableBgColors(theme) {
+            const C = App.constants;
+            return {
+                odd: C.DEFAULT_INTERFACE_COLORS_LIGHT['--group-odd-bg'],
+                even: C.DEFAULT_INTERFACE_COLORS_LIGHT['--group-even-bg']
+            };
+            // 实际需根据 theme 动态返回
         },
 
         /**
@@ -271,9 +276,9 @@
                 });
             }
 
-            // ---------- 表格底色实时更新 ----------
+            // 将原来的 input 事件改为 change 事件（非实时）
             if (dom.tableBgColorOdd) {
-                dom.tableBgColorOdd.addEventListener('input', function () {
+                dom.tableBgColorOdd.addEventListener('change', function () {
                     const colors = self.loadTableBgColors();
                     colors.odd = this.value;
                     self.applyTableBgColors(colors);
@@ -282,7 +287,7 @@
                 });
             }
             if (dom.tableBgColorEven) {
-                dom.tableBgColorEven.addEventListener('input', function () {
+                dom.tableBgColorEven.addEventListener('change', function () {
                     const colors = self.loadTableBgColors();
                     colors.even = this.value;
                     self.applyTableBgColors(colors);

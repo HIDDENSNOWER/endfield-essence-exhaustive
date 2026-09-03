@@ -25,9 +25,24 @@
                 App.tableStyle.bindTableStyleEvents();
             }
 
-            // 颜色预览（设置弹窗内）
+            // 颜色预览
             if (App.colorPreview && App.colorPreview.bindColorPreviewEvents) {
                 App.colorPreview.bindColorPreviewEvents();
+            }
+
+            // 界面颜色
+            if (App.interfaceColors && App.interfaceColors.bindPanelEvents) {
+                // interfaceColors 的面板事件在 renderPanel 时绑定，无需额外操作
+            }
+
+            // 方案管理
+            if (App.schemeManager && App.schemeManager.bindSchemeEvents) {
+                App.schemeManager.bindSchemeEvents();
+            }
+
+            // 状态颜色方案管理
+            if (App.stateColorSchemeManager && App.stateColorSchemeManager.initPanel) {
+                App.stateColorSchemeManager.initPanel();
             }
 
             // 行筛选
@@ -132,7 +147,7 @@
                 });
             }
 
-            // ---------- 下拉框联动 ----------
+            // 下拉框联动
             if (dom.inputGroup) {
                 dom.inputGroup.addEventListener('change', function () {
                     App.utils.updateSubColOptions(parseInt(this.value));
@@ -144,7 +159,7 @@
                 });
             }
 
-            // ---------- 下拉框滚轮切换 ----------
+            // 下拉框滚轮切换
             [
                 dom.inputSubCol, dom.inputRow, dom.inputGroup,
                 dom.recordSubCol, dom.recordRow, dom.recordGroup,
@@ -153,7 +168,7 @@
                 if (select) App.utils.enableWheelSelect(select);
             });
 
-            // ---------- 单元格高亮更新 ----------
+            // 单元格高亮更新
             [
                 dom.inputSubCol, dom.inputRow, dom.inputGroup,
                 dom.recordSubCol, dom.recordRow, dom.recordGroup
@@ -165,22 +180,34 @@
                 }
             });
 
-            // ---------- 三联输入框滚轮 ----------
+            // 三联输入框滚轮
             [dom.inputVal1, dom.inputVal2, dom.inputVal3].forEach(input => {
                 if (input) App.utils.enableTripleInputScroll(input);
             });
 
-            // ---------- 设置弹窗打开 ----------
+            // 设置弹窗打开
             if (dom.btnOpenSettings) {
                 dom.btnOpenSettings.addEventListener('click', function () {
                     App.modal.openModal(dom.modalSettingsOverlay);
                     if (App.colorPreview && App.colorPreview.initColorPreview) {
                         App.colorPreview.initColorPreview();
                     }
+                    // 渲染界面颜色面板
+                    if (App.interfaceColors && App.interfaceColors.renderPanel) {
+                        const container = document.getElementById('interfaceColorPanel');
+                        if (container) App.interfaceColors.renderPanel(container);
+                    }
+                    // 渲染方案管理列表
+                    if (App.schemeManager && App.schemeManager.renderSchemeList) {
+                        App.schemeManager.renderSchemeList();
+                    }
+                    if (App.stateColorSchemeManager && App.stateColorSchemeManager.initPanel) {
+                        App.stateColorSchemeManager.initPanel();
+                    }
                 });
             }
 
-            // ---------- 设置弹窗关闭 ----------
+            // 设置弹窗关闭
             if (dom.btnCloseSettingsModal) {
                 dom.btnCloseSettingsModal.addEventListener('click', function () {
                     App.modal.closeModal(dom.modalSettingsOverlay);
@@ -199,7 +226,7 @@
                 });
             }
 
-            // ---------- 设置弹窗导航 ----------
+            // 设置弹窗导航
             if (dom.settingsNavBtns) {
                 dom.settingsNavBtns.forEach(btn => {
                     btn.addEventListener('click', function () {
@@ -209,11 +236,25 @@
                         dom.settingsPanelContents.forEach(p => p.classList.remove('active'));
                         const targetPanel = document.getElementById('settingsPanel' + panelId.charAt(0).toUpperCase() + panelId.slice(1));
                         if (targetPanel) targetPanel.classList.add('active');
+                        // 切换到方案面板时刷新方案列表
+                        if (panelId === 'scheme') {
+                            if (App.schemeManager && App.schemeManager.renderSchemeList) {
+                                App.schemeManager.renderSchemeList();
+                            }
+                            if (App.stateColorSchemeManager && App.stateColorSchemeManager.initPanel) {
+                                App.stateColorSchemeManager.initPanel();
+                            }
+                        }
+                        // 切换到表格个性化面板时刷新界面颜色面板
+                        if (panelId === 'color' && App.interfaceColors) {
+                            const container = document.getElementById('interfaceColorPanel');
+                            if (container) App.interfaceColors.renderPanel(container);
+                        }
                     });
                 });
             }
 
-            // ---------- 版本信息弹窗 ----------
+            // 版本信息弹窗
             if (dom.btnVersionInfo) {
                 dom.btnVersionInfo.addEventListener('click', function () {
                     App.modal.openModal(dom.modalVersionInfo);

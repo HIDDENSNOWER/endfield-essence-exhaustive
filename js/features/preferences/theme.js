@@ -53,6 +53,11 @@
                 App.storage.set(App.constants.STORAGE_KEY_THEME, theme);
             }
 
+            // 应用用户自定义界面颜色
+            if (App.interfaceColors && App.interfaceColors.applyCurrentTheme) {
+                App.interfaceColors.applyCurrentTheme();
+            }
+
             // 应用用户自定义状态颜色
             this.applySavedColors();
 

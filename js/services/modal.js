@@ -86,19 +86,38 @@
          * 设置标题和内容后打开 modalConfirmDialog 弹窗，
          * 并将回调函数存储到 window 对象上，供 bindModalEvents 中的按钮事件调用。
          */
-        showConfirmDialog(msg, onConfirm, onCancel, title = '确认') {
+        showConfirmDialog(msg, onConfirm, onCancel, title = '确认', confirmText = '确认', cancelText = '取消') {
             const d = dom();
             d.confirmDialogTitle.textContent = title;
             d.confirmDialogBody.innerHTML = `<div style="font-size:0.9rem; color:var(--text-primary); line-height:1.5;">${msg}</div>`;
-            // 先清空残留回调（防止上一次未消费的回调被误触发），再设置新回调
             window.__dialogConfirmCallback = null;
             window.__dialogCancelCallback = null;
-            window.__dialogConfirmCallback = onConfirm; // 存储确认回调
-            window.__dialogCancelCallback = onCancel;   // 存储取消回调
-            // 确保底部按钮可见（导入冲突自定义弹窗可能隐藏过它们）
-            if (d.btnConfirmConfirmDialog) d.btnConfirmConfirmDialog.style.display = '';
-            if (d.btnCancelConfirmDialog) d.btnCancelConfirmDialog.style.display = '';
+            window.__dialogConfirmCallback = onConfirm;
+            window.__dialogCancelCallback = onCancel;
+            if (d.btnConfirmConfirmDialog) {
+                d.btnConfirmConfirmDialog.style.display = '';
+                d.btnConfirmConfirmDialog.textContent = confirmText;
+            }
+            if (d.btnCancelConfirmDialog) {
+                d.btnCancelConfirmDialog.style.display = '';
+                d.btnCancelConfirmDialog.textContent = cancelText;
+            }
             this.openModal(d.modalConfirmDialog);
+        },
+        
+        closeConfirmDialog() {
+            this.closeModal(dom().modalConfirmDialog);
+            window.__dialogConfirmCallback = null;
+            window.__dialogCancelCallback = null;
+            const d = dom();
+            if (d.btnConfirmConfirmDialog) {
+                d.btnConfirmConfirmDialog.style.display = '';
+                d.btnConfirmConfirmDialog.textContent = '确认';
+            }
+            if (d.btnCancelConfirmDialog) {
+                d.btnCancelConfirmDialog.style.display = '';
+                d.btnCancelConfirmDialog.textContent = '取消';
+            }
         },
 
         /**
@@ -112,8 +131,14 @@
             window.__dialogConfirmCallback = null;
             window.__dialogCancelCallback = null;
             const d = dom();
-            if (d.btnConfirmConfirmDialog) d.btnConfirmConfirmDialog.style.display = '';
-            if (d.btnCancelConfirmDialog) d.btnCancelConfirmDialog.style.display = '';
+            if (d.btnConfirmConfirmDialog) {
+                d.btnConfirmConfirmDialog.style.display = '';
+                d.btnConfirmConfirmDialog.textContent = '确认';
+            }
+            if (d.btnCancelConfirmDialog) {
+                d.btnCancelConfirmDialog.style.display = '';
+                d.btnCancelConfirmDialog.textContent = '取消';
+            }
         },
 
         /**

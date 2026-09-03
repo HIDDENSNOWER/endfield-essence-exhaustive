@@ -1,124 +1,76 @@
 /**
- * color-preview.js - 颜色预览与编辑
+ * color-preview.js - 单元格状态颜色预览与编辑
  * 挂载到 App.colorPreview
  *
- * 本模块负责设置弹窗中的颜色预览与编辑功能，包括：
- * - 渲染一个 12行×10列 的预览表格，随机填充四种状态和空单元格
- * - 允许用户调节各状态的数量，实时更新预览
- * - 提供颜色编辑器，支持 HEX、RGB、RGBA、CMYK、HSLA 五种格式
- * - 修改颜色后实时更新预览表格中对应状态的单元格背景色
- * - 支持撤销当前颜色、撤销全部修改、重置为默认颜色、应用颜色
- *
- * 模块内部维护：
- * - tempColors：临时颜色状态，编辑中的颜色值
- * - initialColors：进入设置时从全局 CSS 变量读取的初始颜色
- * - currentEditState：当前正在编辑的状态类型（hasValue/statusNone/statusPartial/statusFull）
- *
- * 颜色应用后保存到 localStorage，并立即应用到主表格。
+ * 负责设置弹窗中单元格状态颜色预览与编辑，包括：
+ * - 渲染 12×10 预览表格，随机填充四种状态和空单元格
+ * - 调节各状态数量，实时更新预览
+ * - 颜色编辑器（HEX/RGB/RGBA/CMYK/HSLA）
+ * - 方案操作：应用、放弃、恢复方案颜色、恢复系统默认（白天/黑夜）、保存到方案、另存为新方案、导入导出
+ * - 应用后自动保存为“用户自定义方案”
  */
 (function (App) {
     'use strict';
 
-    // 获取常量引用，简化后续代码
     const C = App.constants;
-    const TOTAL_CELLS = C.TOTAL_CELLS;          // 预览表格总单元格数（120）
-    const STATUS_TYPES = C.STATUS_TYPES;        // 四种状态类型
-    const COUNT_IDS = C.COUNT_IDS;              // 数量输入框的 DOM ID 映射
-    const COLOR_VARS = C.COLOR_VARS;            // 状态颜色 CSS 变量名映射
+    const TOTAL_CELLS = C.TOTAL_CELLS;
+    const STATUS_TYPES = C.STATUS_TYPES;
+    const COUNT_IDS = C.COUNT_IDS;
+    const COLOR_VARS = C.COLOR_VARS;
 
-    // 模块内部状态
-    let tempColors = {};            // 当前编辑的颜色（状态 -> 十六进制颜色值）
-    let initialColors = {};         // 初始颜色（进入设置时的颜色）
-    let currentEditState = 'hasValue'; // 当前编辑的状态类型
+    let tempColors = {};
+    let initialColors = {};
+    let currentEditState = 'hasValue';
 
     App.colorPreview = {
-        /**
-         * 获取全局 CSS 变量颜色
-         * @param {string} type - 状态类型（hasValue/statusNone/statusPartial/statusFull）
-         * @returns {string} 颜色值（如 "#c8e6c9"）
-         *
-         * 从文档根元素的计算样式中读取对应状态的颜色变量值。
-         */
         getGlobalColor(type) {
             return getComputedStyle(document.documentElement).getPropertyValue(COLOR_VARS[type]).trim() || '#ffffff';
         },
 
-        /**
-         * 获取单元格文本颜色
-         * @returns {string} 文本颜色值
-         *
-         * 读取全局 CSS 变量 --text-cell 的值，用于预览表格中的文字颜色。
-         */
         getTextColor() {
             return getComputedStyle(document.documentElement).getPropertyValue('--text-cell').trim() || '#1f2328';
         },
 
-        /**
-         * 生成随机单元格文本
-         * @param {string} status - 单元格状态类型
-         * @returns {string} 显示在单元格中的文本
-         *
-         * 根据不同状态生成对应格式的文本：
-         * - preview-empty：破折号
-         * - hasValue：三位随机数字（每位数1~9）
-         * - statusNone：格式 (0/总数)
-         * - statusPartial：格式 (已获取数/总数)
-         * - statusFull：格式 (总数/总数)
-         */
         generateCellText(status) {
             if (status === 'preview-empty') return '—';
             if (status === 'hasValue') {
                 return `${Math.floor(Math.random() * 9) + 1}${Math.floor(Math.random() * 9) + 1}${Math.floor(Math.random() * 9) + 1}`;
             }
-            const total = Math.floor(Math.random() * 3) + 1; // 随机总数 1~3
+            const total = Math.floor(Math.random() * 3) + 1;
             if (status === 'statusNone') return `(0/${total})`;
-            // 部分获取：总数=1 时不存在部分获取状态，直接显示 (0/1) 避免与 full 混淆
             if (status === 'statusPartial') return total === 1 ? `(0/1)` : `(${Math.floor(Math.random() * (total - 1)) + 1}/${total})`;
             if (status === 'statusFull') return `(${total}/${total})`;
             return '';
         },
 
-        /**
-         * 渲染预览表格
-         *
-         * 根据各状态的数量输入框的值，构建 12×10 的预览表格。
-         * 单元格状态随机分布，应用临时颜色作为背景。
-         * 如果总数超过 120，按比例缩减并重新分配。
-         */
         renderPreviewTable() {
             const container = document.getElementById('colorPreviewMain');
             if (!container) return;
-            container.innerHTML = ''; // 清空现有内容
+            container.innerHTML = '';
 
-            // 读取各状态数量
             const counts = {};
             for (const type of STATUS_TYPES) {
                 const inp = document.getElementById(COUNT_IDS[type]);
                 counts[type] = inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
             }
 
-            // 如果总数超过 TOTAL_CELLS，按比例缩减
             let sum = Object.values(counts).reduce((a, b) => a + b, 0);
             if (sum > TOTAL_CELLS) {
                 for (const type of STATUS_TYPES) {
                     counts[type] = Math.floor(counts[type] * TOTAL_CELLS / sum);
                 }
-                // 处理舍入误差，按顺序补足差额
                 let diff = TOTAL_CELLS - Object.values(counts).reduce((a, b) => a + b, 0);
                 for (let i = 0; diff > 0; i = (i + 1) % STATUS_TYPES.length) {
                     counts[STATUS_TYPES[i]]++;
                     diff--;
                 }
-                // 将调整后的数量写回输入框
                 for (const type of STATUS_TYPES) {
                     document.getElementById(COUNT_IDS[type]).value = counts[type];
                 }
             }
 
-            // 计算剩余空格数量
             const remaining = TOTAL_CELLS - Object.values(counts).reduce((a, b) => a + b, 0);
 
-            // 构建单元格状态数组，然后随机打乱
             const cellTypes = [];
             for (const type of STATUS_TYPES) {
                 for (let i = 0; i < counts[type]; i++) cellTypes.push(type);
@@ -126,7 +78,6 @@
             for (let i = 0; i < remaining; i++) cellTypes.push('preview-empty');
             App.utils.shuffle(cellTypes);
 
-            // 预览表格使用两个固定词条组（强攻、压制）
             const groups = [
                 { name: '强攻', sub: ['敏捷', '力量', '意志', '智识', '主能力'] },
                 { name: '压制', sub: ['敏捷', '力量', '意志', '智识', '主能力'] }
@@ -134,11 +85,9 @@
             const rowNames = C.ROW_NAMES.slice(0, 12);
             const textColor = this.getTextColor();
 
-            // 创建表格
             const table = document.createElement('table');
             const thead = document.createElement('thead');
 
-            // 表头第一行：角标 + 组名
             const tr1 = document.createElement('tr');
             const corner = document.createElement('th');
             corner.rowSpan = 2;
@@ -154,7 +103,6 @@
             });
             thead.appendChild(tr1);
 
-            // 表头第二行：副属性名
             const tr2 = document.createElement('tr');
             groups.forEach((g, gIdx) => {
                 g.sub.forEach((sub, sIdx) => {
@@ -168,7 +116,6 @@
             thead.appendChild(tr2);
             table.appendChild(thead);
 
-            // 表体：12行，每行10个数据单元格
             const tbody = document.createElement('tbody');
             for (let r = 0; r < 12; r++) {
                 const tr = document.createElement('tr');
@@ -185,13 +132,11 @@
                         const text = this.generateCellText(status);
                         const td = document.createElement('td');
 
-                        // 设置状态类
                         td.className = status;
                         td.classList.add(gIdx % 2 === 0 ? 'group-even' : 'group-odd');
                         if (sIdx === g.sub.length - 1 && gIdx < groups.length - 1) td.classList.add('border-group-right');
                         if (status === 'preview-empty') td.classList.add('empty-value');
 
-                        // 设置样式
                         td.style.textAlign = 'center';
                         td.style.verticalAlign = 'middle';
                         td.style.fontSize = '0.72rem';
@@ -202,7 +147,6 @@
                         td.style.overflow = 'hidden';
                         td.style.textOverflow = 'ellipsis';
 
-                        // 应用临时颜色
                         if (status !== 'preview-empty' && tempColors[status]) {
                             td.style.backgroundColor = tempColors[status];
                         }
@@ -215,17 +159,10 @@
             table.appendChild(tbody);
             container.appendChild(table);
 
-            // 更新剩余空格提示
             const hint = document.getElementById('previewRemainHint');
             if (hint) hint.textContent = `剩余空格：${remaining}`;
         },
 
-        /**
-         * 更新颜色编辑器 UI
-         *
-         * 根据当前编辑状态，更新颜色显示框、十六进制文本、
-         * 颜色选择器、格式输入控件以及状态按钮激活样式。
-         */
         updateColorEditor() {
             const color = tempColors[currentEditState] || '#c8e6c9';
             document.getElementById('currentColorBox').style.backgroundColor = color;
@@ -237,45 +174,22 @@
             });
         },
 
-        /**
-         * 构建颜色格式输入控件
-         * @param {string} format - 颜色格式（hex/rgb/rgba/cmyk/hsla）
-         *
-         * 根据当前格式生成对应的输入控件（文本框或数字输入框），
-         * 带有标签（如 R、G、B）和滚轮调整功能。
-         */
         buildInputs(format) {
             const container = document.getElementById('colorInputsContainer');
             if (!container) return;
-            container.innerHTML = ''; // 清空现有控件
+            container.innerHTML = '';
 
             const hex = tempColors[currentEditState] || '#c8e6c9';
-            const utils = App.utils;
-            // 将当前颜色转换为各格式的值
-            const rgb = utils.hexToRgb(hex);
-            const cmyk = utils.rgbToCmyk(rgb.r, rgb.g, rgb.b);
-            const hsl = utils.rgbToHsl(rgb.r, rgb.g, rgb.b);
+            const rgb = App.utils.hexToRgb(hex);
+            const cmyk = App.utils.rgbToCmyk(rgb.r, rgb.g, rgb.b);
+            const hsl = App.utils.rgbToHsl(rgb.r, rgb.g, rgb.b);
 
-            /**
-             * 创建单个输入控件
-             * @param {string} label - 标签文字（如 'R'、'G'、'B'，空字符串表示无标签）
-             * @param {string|number} value - 初始值
-             * @param {number} min - 最小值（仅数字输入）
-             * @param {number} max - 最大值（仅数字输入）
-             * @param {number} step - 步长（仅数字输入）
-             * @param {string} dataType - 数据类型标识（hex/r/g/b/alpha/c/m/y/k/h/s/l）
-             * @returns {HTMLElement} 包装好的 span 元素
-             *
-             * 注意：此函数作为普通函数定义，通过 createInput.call(this, ...) 调用，
-             * 确保 this 指向 App.colorPreview 对象，以便在输入事件中正确调用方法。
-             */
             function createInput(label, value, min, max, step, dataType) {
                 const wrap = document.createElement('span');
                 wrap.style.display = 'inline-flex';
                 wrap.style.alignItems = 'center';
                 wrap.style.gap = '2px';
 
-                // 添加标签
                 if (label) {
                     const l = document.createElement('span');
                     l.textContent = label;
@@ -293,13 +207,11 @@
                     inp.step = step;
                 }
                 inp.dataset.type = dataType;
-                // Alpha 通道暂不支持：禁用并提示，避免用户调整后无效果造成误导
                 if (dataType === 'alpha') {
                     inp.disabled = true;
                     inp.title = '当前版本暂不支持透明度调整';
                     inp.style.opacity = '0.5';
                 }
-                // 设置样式
                 inp.style.width = (dataType === 'hex' ? '80px' : '44px');
                 inp.style.fontSize = '0.65rem';
                 inp.style.padding = '1px 2px';
@@ -309,10 +221,8 @@
                 inp.style.color = 'var(--text-primary)';
                 inp.style.textAlign = 'center';
 
-                // 输入事件：更新颜色
                 inp.addEventListener('input', () => this.updateColorFromInputs());
 
-                // 数字输入框支持滚轮调整
                 if (dataType !== 'hex') {
                     inp.addEventListener('wheel', e => {
                         e.preventDefault();
@@ -327,7 +237,6 @@
                 return wrap;
             }
 
-            // 根据格式创建对应的输入控件组
             switch (format) {
                 case 'hex':
                     container.appendChild(createInput.call(this, '', hex, 0, 0, 1, 'hex'));
@@ -358,13 +267,6 @@
             }
         },
 
-        /**
-         * 从输入控件更新当前颜色
-         *
-         * 读取当前格式的所有输入控件值，转换为十六进制颜色，
-         * 更新临时颜色、颜色选择器、颜色显示框，并刷新预览表格。
-         * 若解析失败则忽略（保持原颜色）。
-         */
         updateColorFromInputs() {
             const format = document.getElementById('colorFormatSelect').value;
             const inputs = document.querySelectorAll('#colorInputsContainer input');
@@ -373,13 +275,11 @@
                 switch (format) {
                     case 'hex': {
                         const v = inputs[0].value.trim();
-                        // 验证十六进制格式
                         if (/^#[0-9A-Fa-f]{6}$/.test(v)) hex = v;
                         break;
                     }
                     case 'rgb':
                     case 'rgba': {
-                        // 数值钳制（0-255）并回写输入框，防止越界值产生错误颜色
                         const rawRgb = [inputs[0].value, inputs[1].value, inputs[2].value];
                         if (rawRgb.some(v => isNaN(Number(v)))) return;
                         const clamp255 = v => Math.min(255, Math.max(0, Math.round(Number(v))));
@@ -389,7 +289,6 @@
                         break;
                     }
                     case 'cmyk': {
-                        // 数值钳制（0-100）并回写输入框
                         const rawCmyk = [inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value];
                         if (rawCmyk.some(v => isNaN(Number(v)))) return;
                         const clamp100 = v => Math.min(100, Math.max(0, Number(v)));
@@ -400,7 +299,6 @@
                         break;
                     }
                     case 'hsla': {
-                        // 数值钳制（H: 0-360, S/L: 0-100）并回写输入框
                         const rawHsl = [inputs[0].value, inputs[1].value, inputs[2].value];
                         if (rawHsl.some(v => isNaN(Number(v)))) return;
                         const h = Math.min(360, Math.max(0, Math.round(Number(rawHsl[0]))));
@@ -412,37 +310,20 @@
                         break;
                     }
                 }
-                // 更新临时颜色和 UI
                 tempColors[currentEditState] = hex;
                 document.getElementById('sharedColorPicker').value = hex;
                 document.getElementById('currentColorBox').style.backgroundColor = hex;
                 document.getElementById('currentColorHex').textContent = hex;
                 this.updatePreviewCellColors(currentEditState, hex);
-            } catch (e) {
-                // 忽略解析错误，保留原颜色
-            }
+            } catch (e) {}
         },
 
-        /**
-         * 更新预览表格中指定状态的颜色
-         * @param {string} status - 状态类型
-         * @param {string} hex - 十六进制颜色值
-         *
-         * 遍历预览表格中具有对应状态类的所有单元格，更新背景色。
-         */
         updatePreviewCellColors(status, hex) {
             document.querySelectorAll(`#colorPreviewMain td.${status}`).forEach(td => {
                 td.style.backgroundColor = hex;
             });
         },
 
-        /**
-         * 初始化颜色预览模块
-         *
-         * 从全局 CSS 变量读取当前四种状态颜色作为初始值，
-         * 重置数量输入框为默认值 10，渲染预览表格并更新编辑器。
-         * 通常在打开设置弹窗时调用。
-         */
         initColorPreview() {
             tempColors = {
                 hasValue: this.getGlobalColor('hasValue'),
@@ -452,7 +333,6 @@
             };
             initialColors = { ...tempColors };
 
-            // 设置数量输入框默认值
             document.getElementById(COUNT_IDS.hasValue).value = 10;
             document.getElementById(COUNT_IDS.statusNone).value = 10;
             document.getElementById(COUNT_IDS.statusPartial).value = 10;
@@ -462,22 +342,9 @@
             this.updateColorEditor();
         },
 
-        /**
-         * 绑定颜色预览事件
-         * 由 events.js 统一调用
-         *
-         * 绑定以下事件：
-         * - 数量输入框的 input 和 wheel 事件（实时更新预览）
-         * - 状态按钮点击（切换当前编辑状态）
-         * - 颜色选择器 input（更新当前颜色）
-         * - 颜色格式下拉框 change 和 wheel（切换格式、滚轮切换）
-         * - 应用颜色按钮（保存并应用）
-         * - 撤销当前颜色、撤销全部修改、重置为默认按钮
-         */
         bindColorPreviewEvents() {
             const self = this;
 
-            // 数量输入框事件
             for (const type of STATUS_TYPES) {
                 const input = document.getElementById(COUNT_IDS[type]);
                 if (!input) continue;
@@ -492,7 +359,6 @@
                 });
             }
 
-            // 颜色状态按钮切换
             document.querySelectorAll('.color-state-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     currentEditState = btn.dataset.state;
@@ -500,7 +366,6 @@
                 });
             });
 
-            // 颜色选择器
             document.getElementById('sharedColorPicker').addEventListener('input', function () {
                 tempColors[currentEditState] = this.value;
                 document.getElementById('currentColorBox').style.backgroundColor = this.value;
@@ -509,7 +374,6 @@
                 self.updatePreviewCellColors(currentEditState, this.value);
             });
 
-            // 颜色格式下拉框
             const fmtSelect = document.getElementById('colorFormatSelect');
             fmtSelect.addEventListener('change', () => self.buildInputs(fmtSelect.value));
             fmtSelect.addEventListener('wheel', e => {
@@ -522,11 +386,10 @@
                 fmtSelect.dispatchEvent(new Event('change', { bubbles: true }));
             });
 
-            // 应用颜色按钮
+            // 应用颜色
             document.getElementById('btnApplyColors').addEventListener('click', () => {
                 const theme = App.state.isDarkTheme() ? 'dark' : 'light';
                 const saved = App.storage.loadUserColors(theme) || {};
-                // 将临时颜色写入 CSS 变量和 localStorage
                 for (const type of STATUS_TYPES) {
                     const hex = tempColors[type];
                     if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
@@ -535,20 +398,15 @@
                     }
                 }
                 App.storage.saveUserColors(theme, saved);
-                // 重新渲染主表格应用新颜色
-                if (typeof App.tableRenderer.renderAllTables === 'function') App.tableRenderer.renderAllTables();
+                App.tableRenderer.renderAllTables();
                 App.modal.showAlert('颜色已应用', '成功');
+                if (App.stateColorSchemeManager && App.stateColorSchemeManager.autoSaveToCustomScheme) {
+                    App.stateColorSchemeManager.autoSaveToCustomScheme();
+                }
             });
 
-            // 撤销当前颜色
-            document.getElementById('btnUndoColors').addEventListener('click', () => {
-                tempColors[currentEditState] = initialColors[currentEditState];
-                self.updatePreviewCellColors(currentEditState, tempColors[currentEditState]);
-                self.updateColorEditor();
-            });
-
-            // 撤销全部修改
-            document.getElementById('btnUndoAllColors').addEventListener('click', () => {
+            // 放弃修改
+            document.getElementById('btnDiscardChanges').addEventListener('click', () => {
                 tempColors = { ...initialColors };
                 for (const type of STATUS_TYPES) {
                     self.updatePreviewCellColors(type, tempColors[type] || self.getGlobalColor(type));
@@ -556,17 +414,144 @@
                 self.updateColorEditor();
             });
 
-            // 重置为默认颜色
-            document.getElementById('btnResetToDefault').addEventListener('click', () => {
-                const defaults = C.DEFAULT_COLORS[App.state.isDarkTheme() ? 'dark' : 'light'];
-                tempColors = { ...defaults };
-                for (const type of STATUS_TYPES) {
-                    self.updatePreviewCellColors(type, tempColors[type]);
-                }
+            // 恢复方案颜色
+            document.getElementById('btnRestoreScheme').addEventListener('click', () => {
+                const scheme = App.stateColorSchemeManager.getActiveScheme();
+                let schemeColors = scheme ? scheme.colors : null;
+                if (!schemeColors) schemeColors = C.DEFAULT_COLORS[App.state.isDarkTheme() ? 'dark' : 'light'];
+                tempColors = { ...schemeColors };
+                for (const type of STATUS_TYPES) self.updatePreviewCellColors(type, tempColors[type]);
                 self.updateColorEditor();
-                App.modal.showAlert('已重置为默认颜色，点击“确认应用”生效', '提示');
+                App.modal.showAlert('已恢复为当前单元格颜色方案，点击"应用颜色"生效', '提示');
             });
+
+            // 恢复系统默认：白天
+            document.getElementById('btnRestoreSystemLight').addEventListener('click', () => {
+                tempColors = { ...C.DEFAULT_COLORS.light };
+                for (const type of STATUS_TYPES) self.updatePreviewCellColors(type, tempColors[type]);
+                self.updateColorEditor();
+                App.modal.showAlert('已恢复为白天系统默认颜色，点击"应用颜色"生效', '提示');
+            });
+
+            // 恢复系统默认：黑夜
+            document.getElementById('btnRestoreSystemDark').addEventListener('click', () => {
+                tempColors = { ...C.DEFAULT_COLORS.dark };
+                for (const type of STATUS_TYPES) self.updatePreviewCellColors(type, tempColors[type]);
+                self.updateColorEditor();
+                App.modal.showAlert('已恢复为黑夜系统默认颜色，点击"应用颜色"生效', '提示');
+            });
+
+            // 保存到方案
+            document.getElementById('btnSaveToScheme').addEventListener('click', () => {
+                App.stateColorSchemeManager.saveToCurrentScheme();
+            });
+
+            // 另存为新方案（悬浮窗口）
+            document.getElementById('btnSaveAsNewScheme').addEventListener('click', () => {
+                App.modal.showConfirmDialog(
+                    '请输入新方案名称：<br><input type="text" id="cellStateColorNewSchemeName" placeholder="方案名称" maxlength="50" style="width:100%; margin-top:8px;">',
+                    () => {
+                        const nameInput = document.getElementById('cellStateColorNewSchemeName');
+                        if (!nameInput) return;
+                        const name = nameInput.value.trim();
+                        if (name) {
+                            if (App.stateColorSchemeManager.saveAsNewScheme(name)) {
+                                App.modal.showAlert('方案已创建', '成功');
+                            } else {
+                                App.modal.showAlert('方案名称已存在', '错误');
+                            }
+                        } else {
+                            App.modal.showAlert('方案名称不能为空', '提示');
+                        }
+                    },
+                    () => {},
+                    '另存为新方案',
+                    '保存',
+                    '取消'
+                );
+            });
+
+            // 导出颜色（悬浮窗口输入文件名）
+            document.getElementById('btnExportColors').addEventListener('click', () => {
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const defaultName = `单元格状态颜色_${dateStr}.json`;
+                App.modal.showConfirmDialog(
+                    `设置导出文件名：<br><input type="text" id="cellStateColorExportFileName" value="${defaultName}" style="width:100%; margin-top:8px;">`,
+                    () => {
+                        const nameInput = document.getElementById('cellStateColorExportFileName');
+                        const fileName = nameInput ? nameInput.value.trim() || defaultName : defaultName;
+                        const exportData = {
+                            type: 'eee_state_color_scheme',
+                            version: '1.0',
+                            name: '单元格状态颜色方案',
+                            theme: App.state.isDarkTheme() ? 'dark' : 'light',
+                            colors: { ...tempColors }
+                        };
+                        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    },
+                    () => {},
+                    '导出颜色',
+                    '导出',
+                    '取消'
+                );
+            });
+
+            // 导入颜色（文件选择）
+            document.getElementById('btnImportColors').addEventListener('click', () => {
+                document.getElementById('colorImportFile').click();
+            });
+
+            // 处理导入文件
+            const colorImportFile = document.getElementById('colorImportFile');
+            if (colorImportFile) {
+                colorImportFile.addEventListener('change', (e) => {
+                    if (!e.target.files[0]) return;
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const parsed = JSON.parse(ev.target.result);
+                            if (parsed.type === 'eee_state_color_scheme') {
+                                // 正确格式：展示对比后导入
+                                if (App.stateColorSchemeManager && App.stateColorSchemeManager.showImportCompare) {
+                                    App.stateColorSchemeManager.showImportCompare(file);
+                                } else {
+                                    App.modal.showAlert('单元格颜色方案模块未加载', '错误');
+                                }
+                            } else if (parsed.type === 'eee_interface_colors') {
+                                // 跨格式：提示并直接导入（带对比）
+                                App.modal.showConfirmDialog(
+                                    '检测到这是<strong>界面颜色</strong>文件，是否切换到界面颜色导入？',
+                                    () => {
+                                        if (App.interfaceColors && App.interfaceColors.showImportCompare) {
+                                            App.interfaceColors.showImportCompare(file);
+                                        } else {
+                                            App.modal.showAlert('界面颜色模块未加载', '错误');
+                                        }
+                                    },
+                                    () => {},
+                                    '导入提示',
+                                    '导入',
+                                    '取消'
+                                );
+                            } else {
+                                App.modal.showAlert('非法格式：文件既不是单元格状态颜色方案，也不是界面颜色。', '导入失败');
+                            }
+                        } catch (err) {
+                            App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
+                        }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                });
+            }
         }
     };
-
 })(window.App = window.App || {});

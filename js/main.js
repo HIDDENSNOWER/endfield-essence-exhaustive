@@ -90,6 +90,13 @@
         // 3. 加载主题
         safeCall(() => App.theme.loadTheme(), '主题加载');
 
+        // 3.5 初始化界面颜色（新增）
+        safeCall(() => {
+            if (App.interfaceColors && App.interfaceColors.applyCurrentTheme) {
+                App.interfaceColors.applyCurrentTheme();
+            }
+        }, '界面颜色初始化');
+
         // 4. 确保示例数据集存在
         safeCall(() => {
             const list = App.storage.getDatasetList();
@@ -110,8 +117,6 @@
         }, '数据集加载');
 
         // 5.5 渲染数据集切换下拉框
-        // loadData 成功时不会触发 saveData 内部的 updateDatasetSelect，
-        // 必须显式渲染，否则刷新后下拉框为空（修复）
         safeCall(() => App.datasetManager.updateDatasetSelect(), '数据集下拉框渲染');
 
         // 6. 填充下拉框

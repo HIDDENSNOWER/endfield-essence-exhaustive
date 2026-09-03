@@ -1,7 +1,7 @@
 # Endfield-Essence-Exhaustive (EEE)
 
 **终末地基质穷举数据记录与统计工具**  
-Ver.0.6.1 ("再访基地"更新)
+Ver.0.7.1 ("再访基地"更新)
 
 一个用于记录、管理和统计《明日方舟：终末地》中"基质"数据的**纯前端工具**，零构建、随手可用。  
 支持多数据集管理、数据覆盖/合并、导入导出、备注与图片、颜色个性化、明暗主题、清除缓存等功能。
@@ -14,11 +14,11 @@ Ver.0.6.1 ("再访基地"更新)
 
 - **推荐**：双击根目录的 `一键本地运行.bat`（自动用 Python 或 Node 的 http-server 启动，并打开 `http://localhost:8000`）
 - 或手动执行任一命令：
-  ```bash
-  python -m http.server 8000        # Python
-  npx http-server -p 8000           # Node
-  ```
-  然后浏览器访问 `http://localhost:8000`
+
+    python -m http.server 8000
+    npx http-server -p 8000
+
+然后浏览器访问 `http://localhost:8000`
 
 > 无需安装任何依赖、无需构建、无需数据库，所有数据保存在浏览器 `localStorage` 中。
 
@@ -26,58 +26,62 @@ Ver.0.6.1 ("再访基地"更新)
 
 ## 目录结构
 
-```plaintext
-endfield-essence-exhaustive/
-├── index.html                 # 应用主页面（全部 UI 结构 + 脚本/样式引入）
-├── 一键本地运行.bat            # 一键启动本地 HTTP 服务器
-├── css/                       # 样式表（按层叠顺序拆分）
-│ ├── base.css                 # 基础样式与 CSS 变量（含亮/暗两套主题）
-│ ├── layout.css               # 页面整体布局（导航、侧边栏、面板、响应式）
-│ ├── components.css           # 通用组件样式（按钮、表单、弹窗、Toast 等）
-│ ├── features.css             # 功能特性样式（备注悬浮框、图片查看器等）
-│ └── settings.css             # 设置弹窗与颜色编辑面板样式
-├── js/
-│ ├── lib/
-│ │ └── jszip.min.js           # JSZip（ZIP 导入导出）
-│ ├── core/                    # 核心层
-│ │ ├── constants.js           # 全局常量（存储键、词条组/行名、颜色、尺寸）
-│ │ ├── state.js               # 全局状态管理（getter/setter + 历史 + 基准）
-│ │ ├── dom.js                 # DOM 元素一次性缓存
-│ │ ├── utils.js               # 通用工具（标准化、颜色转换、HTML 转义、图片转换）
-│ │ └── data-model.js          # 数据模型工厂（空单元格/行/初始行/示例）
-│ ├── services/                # 服务层
-│ │ ├── storage.js             # localStorage 统一封装（含写入成败返回）
-│ │ └── modal.js               # 弹窗管理与 Toast 轻提示（幂等、滚动锁）
-│ ├── features/                # 功能层
-│ │ ├── data/                  # 数据管理
-│ │ │ ├── dataset-manager.js   # 数据集 CRUD、切换、保护、锁定 UI
-│ │ │ ├── dataset-remark.js    # 数据集级备注
-│ │ │ ├── dataset-merge.js     # 数据集覆盖/合并引擎（多源 + 冲突预览）
-│ │ │ ├── import-export.js     # 数据导入导出（ZIP/JSON、重名冲突）
-│ │ │ ├── default-loader.js    # 默认数据集异步加载
-│ │ │ └── cache-clear.js       # 清除浏览器缓存（浏览已存数据后清除）
-│ │ ├── table/                 # 表格
-│ │ │ ├── table-renderer.js    # 表格渲染与高亮
-│ │ │ ├── row-filter.js        # 行筛选
-│ │ │ ├── stats.js             # 统计面板（可排序）
-│ │ │ └── cell-tooltip.js      # 单元格悬停提示
-│ │ ├── cell/                  # 单元格操作
-│ │ │ ├── cell-value.js        # 数值应用与对比、智能建议
-│ │ │ ├── cell-record.js       # 录入、撤减、清除、清空/删除确认
-│ │ │ └── history.js           # 撤回/重做
-│ │ ├── preferences/           # 设置与个性化
-│ │ │ ├── theme.js             # 明暗主题切换
-│ │ │ ├── table-style.js       # 表格尺寸与底色
-│ │ │ └── color-preview.js     # 颜色预览与编辑
-│ │ └── note/note.js           # 单元格备注、图片、悬浮框、图片查看器
-│ ├── events.js                # 统一事件绑定入口
-│ └── main.js                  # 应用初始化与布局管理
-├── data/
-│ ├── data.json                # 默认数据集（12 提升项，含备注与图片引用）
-│ ├── default.js               # 默认数据占位脚本（可忽略）
-│ └── images/                  # 备注图片资源
-└── README.md
-```
+    endfield-essence-exhaustive/
+    ├── index.html                 # 应用主页面（全部 UI 结构 + 脚本/样式引入）
+    ├── 一键本地运行.bat            # 一键启动本地 HTTP 服务器
+    ├── css/                       # 样式表（按层叠顺序拆分）
+    │   ├── base.css               # 基础样式与 CSS 变量（含亮/暗两套主题）
+    │   ├── layout.css             # 页面整体布局（导航、侧边栏、面板、响应式）
+    │   ├── components.css         # 通用组件样式（按钮、表单、弹窗、Toast 等）
+    │   ├── features.css           # 功能特性样式（备注悬浮框、图片查看器等）
+    │   └── settings.css           # 设置弹窗与颜色编辑面板样式
+    ├── js/
+    │   ├── lib/
+    │   │   └── jszip.min.js       # JSZip（ZIP 导入导出）
+    │   ├── core/                  # 核心层
+    │   │   ├── constants.js       # 全局常量（存储键、词条组/行名、颜色、尺寸）
+    │   │   ├── state.js           # 全局状态管理（getter/setter + 历史 + 基准）
+    │   │   ├── dom.js             # DOM 元素一次性缓存
+    │   │   ├── utils.js           # 通用工具（标准化、颜色转换、HTML 转义、图片转换）
+    │   │   └── data-model.js      # 数据模型工厂（空单元格/行/初始行/示例）
+    │   ├── services/              # 服务层
+    │   │   ├── storage.js         # localStorage 统一封装（含写入成败返回）
+    │   │   └── modal.js           # 弹窗管理与 Toast 轻提示（幂等、滚动锁）
+    │   ├── features/              # 功能层
+    │   │   ├── data/              # 数据管理
+    │   │   │   ├── dataset-manager.js   # 数据集 CRUD、切换、保护、锁定 UI
+    │   │   │   ├── dataset-remark.js    # 数据集级备注
+    │   │   │   ├── dataset-merge.js     # 数据集覆盖/合并引擎（多源 + 冲突预览）
+    │   │   │   ├── import-export.js     # 数据导入导出（ZIP/JSON、重名冲突）
+    │   │   │   ├── default-loader.js    # 默认数据集异步加载
+    │   │   │   └── cache-clear.js       # 清除浏览器缓存（浏览已存数据后清除）
+    │   │   ├── table/             # 表格
+    │   │   │   ├── table-renderer.js    # 表格渲染与高亮
+    │   │   │   ├── row-filter.js        # 行筛选
+    │   │   │   ├── stats.js             # 统计面板（可排序）
+    │   │   │   └── cell-tooltip.js      # 单元格悬停提示
+    │   │   ├── cell/              # 单元格操作
+    │   │   │   ├── cell-value.js        # 数值应用与对比、智能建议
+    │   │   │   ├── cell-record.js       # 录入、撤减、清除、清空/删除确认
+    │   │   │   └── history.js           # 撤回/重做
+    │   │   ├── preferences/       # 设置与个性化
+    │   │   │   ├── theme.js             # 明暗主题切换
+    │   │   │   ├── table-style.js       # 表格尺寸与底色
+    │   │   │   ├── color-preview.js     # 单元格状态颜色预览与编辑
+    │   │   │   ├── interface-colors.js  # 界面颜色个性化（含完整预览）
+    │   │   │   ├── scheme-manager.js    # 界面颜色方案管理
+    │   │   │   └── state-color-scheme-manager.js # 单元格颜色方案管理
+    │   │   └── note/
+    │   │       └── note.js              # 单元格备注、图片、悬浮框、图片查看器
+    │   ├── events.js              # 统一事件绑定入口
+    │   └── main.js                # 应用初始化与布局管理
+    ├── data/
+    │   ├── data.json              # 默认数据集（12 提升项，含备注与图片引用）
+    │   ├── default.js             # 占位脚本（当前未使用，可忽略）
+    │   └── images/                # 备注图片资源
+    ├── ARCHITECTURE.md            # 开发者架构文档
+    ├── LICENSE
+    └── README.md
 
 ---
 
@@ -107,10 +111,17 @@ endfield-essence-exhaustive/
 - **单元格备注**：文本 + 图片（悬浮框拖拽/缩放/布局切换、应用内大图查看）
 - **行筛选**、**统计面板（可排序）**
 - **明暗主题**（跟随系统 + 手动切换，无 FOUC 闪烁）
-- **表格尺寸 / 底色自定义**、**状态颜色个性化**（HEX/RGB/CMYK/HSLA 编辑，越界值自动钳制）
+- **表格尺寸 / 底色自定义**
+- **单元格状态颜色个性化**（HEX/RGB/CMYK/HSLA 编辑，越界值自动钳制）
+- **界面颜色个性化**：所有界面颜色变量均可调，并提供完整的主界面预览（导航栏、表格、弹窗、悬浮窗等），修改实时反映
+- **方案管理**：
+  - 界面颜色方案与单元格颜色方案**独立管理**
+  - 内置白天/黑夜默认方案，支持用户自定义方案
+  - 未另存时，所有改动自动保存到“用户自定义方案”
+  - 方案支持保存、另存、导入、导出，并支持格式检测与重定向导入（含对比预览）
 - **数据导入 / 导出**：ZIP（含图片）与 JSON；导入带大小限制、缺失图片提示、重名冲突处理
 - **默认数据集保护**（只增不减，刷新不覆盖用户数据）
-- **清除浏览器缓存**：点击后展示当前已保存的全部数据内容，确认后清理并无刷新初始化 `localStorage`/`sessionStorage`/Cache API
+- **清除浏览器缓存**：点击后展示当前已保存的全部数据内容，确认后清理并刷新
 
 ---
 
@@ -140,10 +151,11 @@ endfield-essence-exhaustive/
 - 写入失败（如存储空间不足）会**明确提示**，避免"假保存"；图片上传有大小/数量限制
 - 导入 ZIP 有大小限制与缺失图片提示，导出对损坏数据容错
 - 弹窗、下拉框、备注、合并预览等处对用户输入做 **HTML 转义**，防范注入
+- 个性化设置（界面颜色、状态颜色、方案）均按主题分别存储，应用时严格隔离
 
 ---
 
 ## 版本信息
 
-- **当前版本**：Ver.0.6.1 ("再访基地"更新)
+- **当前版本**：Ver.0.7.1 ("再访基地"更新)
 - **反馈邮箱**：binjianxuewu@outlook.com
