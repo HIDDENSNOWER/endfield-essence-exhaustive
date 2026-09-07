@@ -1,0 +1,499 @@
+/* ==========================================================================
+   settings-color-preview.css — 设置弹窗中的“状态颜色预览”与“颜色编辑器”样式
+   --------------------------------------------------------------------------
+   依赖：settings-base.css 中的基础变量与布局
+   对应 HTML：index.html 中 id="settingsPanelColor" 内的状态颜色预览区域
+   包含模块：
+     1. 状态颜色预览整体布局
+     2. 预览左侧区域
+     3. 预览表格容器
+     4. 预览表格基础样式
+     5. 预览表格单元格样式
+     6. 预览表格第一列样式
+     7. 预览表格数据列样式
+     8. 图例提示条
+     9. 图例项
+    10. 图例色点
+    11. 四种状态图例颜色
+    12. 预览右侧控制区
+    13. 数量控制行
+    14. 数量标签
+    15. 数量输入框
+    16. 颜色编辑器面板
+    17. 状态切换按钮行
+    18. 状态按钮
+    19. 颜色编辑行
+    20. 当前颜色预览块
+    21. 颜色选择器
+    22. 颜色格式选择行
+    23. 颜色分量输入容器
+    24. 操作按钮分组（状态颜色专用）
+    25. 恢复默认分组
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. 状态颜色预览整体布局
+   对应 HTML：<div class="color-preview-layout">
+   作用：将左侧预览表格与右侧控制区水平排列，并支持换行。
+   说明：使用 flex 布局，间距 18px，顶部对齐，允许在窄屏时自动换行。
+   ========================================================================== */
+   .color-preview-layout {
+    display: flex;                      /* 弹性布局 */
+    gap: 18px;                          /* 左右两列之间的间距 */
+    align-items: flex-start;            /* 顶部对齐 */
+    flex-wrap: wrap;                    /* 允许换行，适应窄屏 */
+}
+
+
+/* ==========================================================================
+   2. 预览左侧区域
+   对应 HTML：<div class="color-preview-left">
+   作用：包含预览表格和图例，占据主要宽度。
+   说明：flex: 1 1 auto 使其尽量伸展，但限制最大宽度 60%，
+         内部纵向排列，间距 10px。
+   ========================================================================== */
+.color-preview-left {
+    flex: 1 1 auto;                     /* 可伸展可收缩 */
+    min-width: 280px;                   /* 最小宽度，防止过窄 */
+    max-width: 60%;                     /* 最大宽度限制 */
+    display: flex;                      /* 弹性布局 */
+    flex-direction: column;             /* 纵向排列预览表格与图例 */
+    gap: 10px;                          /* 子元素间距 */
+}
+
+
+/* ==========================================================================
+   3. 预览表格容器
+   对应 HTML：<div class="color-preview-main-wrapper" id="colorPreviewMain">
+   作用：包裹预览表格，提供边框、圆角和横向滚动。
+   说明：当表格宽度超出容器时，可出现横向滚动条，避免溢出。
+   ========================================================================== */
+.color-preview-main-wrapper {
+    width: 100%;                        /* 占满父容器宽度 */
+    overflow-x: auto;                   /* 横向滚动 */
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    padding: 4px;                       /* 内边距，使表格与边框有间隙 */
+}
+
+
+/* ==========================================================================
+   4. 预览表格基础样式
+   对应 HTML：<table>（由 JS 动态生成）
+   作用：定义预览表格的布局、边框、字体和文字颜色。
+   说明：表格宽度由列宽变量决定，固定布局，防止单元格内容撑破。
+   ========================================================================== */
+.color-preview-main-wrapper table {
+    table-layout: fixed;                /* 固定布局，列宽由 col 元素控制 */
+    width: calc(var(--name-col-width) + 10 * var(--col-width)); /* 总宽度 */
+    border-collapse: collapse;          /* 边框合并 */
+    font-size: 0.72rem;                 /* 表格文字大小 */
+    color: var(--text-cell);            /* 单元格文字颜色 */
+}
+
+
+/* ==========================================================================
+   5. 预览表格单元格样式
+   对应 HTML：<th> 和 <td>
+   作用：统一定义预览表格中表头与数据单元格的外观。
+   说明：文字居中，垂直居中，禁止换行，超出隐藏并显示省略号。
+   ========================================================================== */
+.color-preview-main-wrapper th,
+.color-preview-main-wrapper td {
+    border: 1px solid var(--border-muted); /* 柔和边框 */
+    text-align: center;                 /* 水平居中 */
+    vertical-align: middle;             /* 垂直居中 */
+    padding: 0 2px;                     /* 左右内边距很小，节省空间 */
+    height: var(--row-height);          /* 单元格高度 */
+    line-height: var(--row-height);     /* 行高与高度一致，确保垂直居中 */
+    font-size: 0.72rem !important;      /* 覆盖其他可能的字号设置 */
+    color: var(--text-cell) !important; /* 覆盖其他可能的颜色设置 */
+    white-space: nowrap;                /* 禁止换行 */
+    overflow: hidden;                   /* 隐藏溢出内容 */
+    text-overflow: ellipsis;            /* 超出显示省略号 */
+}
+
+
+/* ==========================================================================
+   6. 预览表格第一列样式（提升项列）
+   对应 HTML：<th> 和 <td> 的第一个子元素
+   作用：为第一列（提升项列）设置特定宽度和最小宽度。
+   说明：使用变量 --name-col-width 定义，通常为 90px。
+   ========================================================================== */
+.color-preview-main-wrapper td:first-child,
+.color-preview-main-wrapper th:first-child {
+    width: var(--name-col-width);       /* 宽度为提升项列宽度 */
+    min-width: var(--name-col-width);   /* 最小宽度，防止被压缩 */
+}
+
+
+/* ==========================================================================
+   7. 预览表格数据列样式
+   对应 HTML：除第一列外的所有 <th> 和 <td>
+   作用：为数据列统一设置宽度、最小宽度和最大宽度。
+   说明：宽度由 --col-width 变量控制，确保每列等宽。
+   ========================================================================== */
+.color-preview-main-wrapper td:not(:first-child),
+.color-preview-main-wrapper th:not(:first-child):not([colspan]) {
+    width: var(--col-width);            /* 宽度为数据列宽度 */
+    min-width: var(--col-width);
+    max-width: var(--col-width);
+}
+
+
+/* ==========================================================================
+   8. 图例提示条
+   对应 HTML：<div class="color-legend">
+   作用：展示四种状态颜色对应的图例说明，帮助用户理解颜色含义。
+   说明：水平排列多个图例项，可换行，有边框和背景。
+   ========================================================================== */
+.color-legend {
+    display: flex;                      /* 弹性布局 */
+    gap: 14px;                          /* 图例项之间的间距 */
+    flex-wrap: wrap;                    /* 允许换行 */
+    padding: 8px 10px;
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+}
+
+
+/* ==========================================================================
+   9. 图例项
+   对应 HTML：<span class="legend-item">
+   作用：单个图例项（色点 + 文字）。
+   说明：使用 inline-flex 使色点与文字垂直居中。
+   ========================================================================== */
+.legend-item {
+    display: inline-flex;               /* 行内弹性布局 */
+    align-items: center;                /* 垂直居中 */
+    gap: 5px;                           /* 色点与文字间距 */
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================================
+   10. 图例色点
+   对应 HTML：<span class="legend-dot">
+   作用：显示状态颜色的小方块。
+   说明：尺寸 12×12，圆角 3px，带边框。
+   ========================================================================== */
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border-default);
+}
+
+
+/* ==========================================================================
+   11. 四种状态图例颜色
+   对应 HTML：<span class="legend-dot has-value-legend"> 等
+   作用：分别设置四种状态图例色点的背景颜色。
+   说明：颜色来自 CSS 变量，跟随主题变化。
+   ========================================================================== */
+.has-value-legend {
+    background-color: var(--has-value-bg);      /* 已拥有 */
+}
+.status-none-legend {
+    background-color: var(--status-none-bg);    /* 未获取 */
+}
+.status-partial-legend {
+    background-color: var(--status-partial-bg); /* 部分获取 */
+}
+.status-full-legend {
+    background-color: var(--status-full-bg);    /* 全部获取 */
+}
+
+
+/* ==========================================================================
+   12. 预览右侧控制区
+   对应 HTML：<div class="color-preview-right">
+   作用：包含各状态数量输入框和（历史遗留的）表格底色设置。
+   说明：目前表格底色已并入界面颜色面板，此处保留数量控制相关样式。
+   ========================================================================== */
+.color-preview-right {
+    flex: 0 0 auto;                     /* 不伸展不收缩 */
+    min-width: 180px;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+
+/* ==========================================================================
+   13. 数量控制行
+   对应 HTML：<div class="count-row">
+   作用：水平排列“状态名称”和“数量输入框”，用于调整各状态在预览中的数量。
+   ========================================================================== */
+.count-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+
+/* ==========================================================================
+   14. 数量标签
+   对应 HTML：<span class="count-label has-value-label"> 等
+   作用：显示状态名称（已拥有、未获取、部分获取、全部获取）。
+   ========================================================================== */
+.count-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;                /* 禁止换行 */
+}
+
+
+/* ==========================================================================
+   15. 数量输入框
+   对应 HTML：<input type="number" id="previewCountHasValue" class="count-input">
+   作用：允许用户输入各状态的显示数量（0~120），实时更新预览表格。
+   ========================================================================== */
+.count-input {
+    width: 65px;
+    padding: 4px;
+    font-size: 0.78rem;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+
+/* ==========================================================================
+   16. 颜色编辑器面板
+   对应 HTML：<div class="color-edit-panel">
+   作用：包裹状态颜色编辑器的所有控件。
+   说明：有边框、圆角和三级背景色，与预览区域区分。
+   ========================================================================== */
+.color-edit-panel {
+    border: 1px solid var(--border-muted);
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--bg-tertiary);
+}
+
+
+/* ==========================================================================
+   17. 状态切换按钮行
+   对应 HTML：<div class="color-states-row">
+   作用：水平排列四个状态按钮，用于选择当前编辑的状态颜色。
+   ========================================================================== */
+.color-states-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;                    /* 允许换行 */
+}
+
+
+/* ==========================================================================
+   18. 状态按钮
+   对应 HTML：<button class="color-state-btn" data-state="hasValue"> 等
+   作用：单个状态选择按钮，点击后切换当前编辑的颜色状态。
+   说明：默认样式为浅色背景，激活时为强调色背景。
+   ========================================================================== */
+.color-state-btn {
+    flex: 1;                            /* 按钮等宽伸展 */
+    min-width: 70px;                    /* 最小宽度，保证可点击 */
+    padding: 7px 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--border-default);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+/* 激活状态 */
+.color-state-btn.active {
+    background: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+
+/* ==========================================================================
+   19. 颜色编辑行
+   对应 HTML：<div class="color-edit-row">
+   作用：水平排列颜色预览块、颜色选择器和格式输入控件。
+   说明：使用 flex 布局，允许换行。
+   ========================================================================== */
+.color-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+
+/* ==========================================================================
+   20. 当前颜色预览块
+   对应 HTML：<div class="color-box-group"> 内部包含 .color-box 和 .color-box-hex
+   作用：显示当前正在编辑的颜色色块及十六进制值。
+   ========================================================================== */
+.color-box-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+/* 色块标签 */
+.color-box-label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+/* 色块本身 */
+.color-box {
+    width: 36px;
+    height: 20px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 十六进制值文本 */
+.color-box-hex {
+    font-size: 0.65rem;
+    font-family: monospace;
+    color: var(--text-tertiary);
+}
+
+
+/* ==========================================================================
+   21. 颜色选择器
+   对应 HTML：<input type="color" id="sharedColorPicker" class="color-picker-input">
+   作用：使用浏览器原生的颜色选择器快速选取颜色。
+   ========================================================================== */
+.color-picker-input {
+    width: 32px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+
+/* ==========================================================================
+   22. 颜色格式选择行
+   对应 HTML：<div class="color-format-row">
+   作用：水平排列格式下拉框和颜色分量输入控件。
+   ========================================================================== */
+.color-format-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 格式下拉框 */
+.color-format-select {
+    padding: 3px 6px;
+    font-size: 0.75rem;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================================
+   23. 颜色分量输入容器
+   对应 HTML：<div id="colorInputsContainer" class="color-inputs-container">
+   作用：根据所选格式动态生成 R/G/B、C/M/Y/K 等输入框。
+   说明：使用 flex 布局，自动换行。
+   ========================================================================== */
+.color-inputs-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* 分量输入框通用样式 */
+.color-inputs-container input {
+    width: 44px;
+    padding: 3px 4px;
+    font-size: 0.7rem;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* HEX 输入框稍宽 */
+.color-inputs-container input[data-type="hex"] {
+    width: 80px;
+}
+
+
+/* ==========================================================================
+   24. 操作按钮分组（状态颜色专用）
+   对应 HTML：<div class="color-action-buttons"> 内部含 .color-action-group 等
+   作用：将“应用颜色”、“放弃修改”、“保存到方案”等按钮按功能分组。
+   说明：纵向排列多个按钮组，组间有间距；按钮组内部水平排列并允许换行。
+   ========================================================================== */
+.color-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* 按钮组 */
+.color-action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+/* 按钮统一样式 */
+.color-action-buttons .btn {
+    flex: 0 0 auto;
+    min-width: 90px;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 5px 10px;
+}
+
+/* 主要按钮（应用颜色）稍宽 */
+.color-action-buttons .btn-primary {
+    min-width: 110px;
+    font-weight: 600;
+}
+
+
+/* ==========================================================================
+   25. 恢复默认分组
+   对应 HTML：<div class="color-action-group system-default-group">
+   作用：将“恢复白天默认”和“恢复黑夜默认”按钮与其他按钮组用虚线分隔。
+   说明：顶部添加虚线和间距，视觉上独立成组。
+   ========================================================================== */
+.system-default-group {
+    border-top: 1px dashed var(--border-muted);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+/* 分组标签文字 */
+.group-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-right: 4px;
+}

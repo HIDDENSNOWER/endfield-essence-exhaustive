@@ -1,0 +1,410 @@
+/* ==========================================================================
+   settings-storage.css — 设置弹窗中的“存储管理”面板样式
+   --------------------------------------------------------------------------
+   依赖：settings-base.css 中的基础变量与布局
+   对应 HTML：index.html 中 id="settingsPanelStorage" 面板
+   包含模块：
+     1. 存储使用情况总览
+     2. 存储配额行
+     3. 存储进度条
+     4. 进度条警示状态
+     5. 进度条刷新动画
+     6. 自定义配额设置
+     7. 配额设置行
+     8. 配额状态消息
+     9. 数据占用明细
+    10. 明细项
+    11. 明细标签
+    12. 明细数值
+    13. 明细进度条
+    14. 数据集详细统计列表
+    15. 空数据提示
+    16. 数据集统计项
+    17. 数据集统计头部
+    18. 数据集名称
+    19. 数据集大小
+    20. 数据集元信息
+    21. 刷新按钮
+    22. 计算过程日志
+    23. 日志单行
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. 存储使用情况总览
+   对应 HTML：<div id="storageOverview" class="storage-overview">
+   作用：展示总配额、已使用、剩余空间以及进度条。
+   说明：有边框、圆角和三级背景色，内部纵向排列多个配额行。
+   ========================================================================== */
+   .storage-overview {
+    margin-bottom: 16px;                /* 与下方区域的间距 */
+    padding: 12px;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+
+/* ==========================================================================
+   2. 存储配额行
+   对应 HTML：<div class="storage-quota-row">
+   作用：水平排列“总配额”、“已使用”、“剩余可用”的标签与数值。
+   说明：使用 flex 布局使标签在左，数值在右，行间距 6px。
+   ========================================================================== */
+.storage-quota-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+
+/* ==========================================================================
+   3. 存储进度条
+   对应 HTML：<div class="storage-progress">
+   作用：进度条轨道，背景为主背景色。
+   说明：高度 8px，圆角 4px，溢出隐藏。
+   ========================================================================== */
+.storage-progress {
+    height: 8px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+
+/* ==========================================================================
+   4. 进度条填充部分
+   对应 HTML：<div id="storageProgressBar" class="storage-progress-fill">
+   作用：显示已使用空间占配额的百分比。
+   说明：默认使用强调色，宽度由 JS 动态设置。
+   ========================================================================== */
+.storage-progress-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+
+/* ==========================================================================
+   5. 进度条警示状态（黄色）
+   对应场景：使用百分比达到警示线但未超配额。
+   作用：将进度条颜色改为黄色，提醒用户注意空间使用。
+   ========================================================================== */
+.storage-progress-fill.storage-progress-warn {
+    background: #f0ad4e;
+}
+
+
+/* ==========================================================================
+   6. 进度条超限状态（红色）
+   对应场景：使用百分比超过自定义配额。
+   作用：将进度条颜色改为红色，表示已超过限制。
+   ========================================================================== */
+.storage-progress-fill.storage-progress-danger {
+    background: var(--danger-primary);
+}
+
+
+/* ==========================================================================
+   7. 进度条刷新动画
+   对应场景：点击“刷新”按钮后，计算过程中。
+   作用：通过透明度脉冲动画提示正在刷新。
+   ========================================================================== */
+.storage-progress-fill-refreshing {
+    animation: storageProgressPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes storageProgressPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+}
+
+
+/* ==========================================================================
+   8. 自定义配额设置
+   对应 HTML：<div class="storage-quota-settings">
+   作用：包含配额上限输入、警示百分比输入和保存按钮。
+   说明：有边框、圆角和三级背景色。
+   ========================================================================== */
+.storage-quota-settings {
+    padding: 10px;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+
+/* ==========================================================================
+   9. 配额设置行
+   对应 HTML：<div class="quota-setting-row">
+   作用：水平排列标签、输入框和按钮。
+   说明：间距 10px，底部间距 10px。
+   ========================================================================== */
+.quota-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+
+/* ==========================================================================
+   10. 配额设置行标签
+   对应 HTML：<label for="customQuotaInput"> 等
+   作用：显示“配额上限 (MB)”和“警示百分比 (%)”等文字。
+   说明：次要文字色，禁止换行。
+   ========================================================================== */
+.quota-setting-row label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   11. 配额输入框
+   对应 HTML：<input type="number" id="customQuotaInput"> 等
+   作用：输入自定义配额或警示百分比。
+   说明：宽度 80px，数字居中。
+   ========================================================================== */
+.quota-setting-row input[type="number"] {
+    width: 80px;
+    padding: 4px 6px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+
+/* ==========================================================================
+   12. 配额状态消息
+   对应 HTML：<div id="quotaStatusMessage" class="quota-status-message">
+   作用：显示当前使用状态（正常、警示、超限）。
+   说明：字体稍小，由 JS 动态设置颜色和内容。
+   ========================================================================== */
+.quota-status-message {
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+
+/* ==========================================================================
+   13. 数据占用明细
+   对应 HTML：<div id="storageDetails" class="storage-details">
+   作用：列出各数据类型（数据集、备注、设置、图片、其他）的占用大小和比例。
+   说明：纵向排列多个明细项，间距 10px。
+   ========================================================================== */
+.storage-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+/* ==========================================================================
+   14. 明细项
+   对应 HTML：<div class="storage-detail-item">
+   作用：单个数据类型的明细行，包含标签、数值和进度条。
+   说明：使用 grid 布局：标签 120px，数值 80px，进度条占剩余空间。
+   ========================================================================== */
+.storage-detail-item {
+    display: grid;
+    grid-template-columns: 120px 80px 1fr;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+
+/* ==========================================================================
+   15. 明细标签
+   对应 HTML：<span class="detail-label">
+   作用：显示数据类型名称（如“数据集”）。
+   ========================================================================== */
+.detail-label {
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================================
+   16. 明细数值
+   对应 HTML：<span class="detail-value" id="storageDatasets"> 等
+   作用：显示该类型的占用大小（如“120.5 KB”）。
+   说明：右对齐，半粗，主文字色。
+   ========================================================================== */
+.detail-value {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================================
+   17. 明细进度条轨道
+   对应 HTML：<div class="detail-bar">
+   作用：显示该类型占用占总用量的比例。
+   说明：高度 6px，圆角 3px。
+   ========================================================================== */
+.detail-bar {
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+
+/* ==========================================================================
+   18. 明细进度条填充
+   对应 HTML：<div class="detail-bar-fill" id="barDatasets"> 等
+   作用：填充比例，宽度由 JS 动态设置。
+   ========================================================================== */
+.detail-bar-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+
+/* ==========================================================================
+   19. 数据集详细统计列表
+   对应 HTML：<div id="datasetStorageList" class="dataset-storage-list">
+   作用：展示每个数据集的占用大小和图片数量。
+   说明：纵向排列，最大高度 300px，超出滚动。
+   ========================================================================== */
+.dataset-storage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+
+/* ==========================================================================
+   20. 空数据提示
+   对应 HTML：<div class="storage-empty-hint">
+   作用：当没有数据集时显示“暂无数据集”提示。
+   ========================================================================== */
+.storage-empty-hint {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    padding: 10px 0;
+}
+
+
+/* ==========================================================================
+   21. 数据集统计项
+   对应 HTML：<div class="dataset-storage-item">
+   作用：单个数据集的统计信息卡片。
+   说明：有边框、圆角和主背景色。
+   ========================================================================== */
+.dataset-storage-item {
+    padding: 8px 10px;
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    background: var(--bg-primary);
+}
+
+
+/* ==========================================================================
+   22. 数据集统计头部
+   对应 HTML：<div class="dataset-storage-header">
+   作用：水平排列数据集名称和占用大小。
+   ========================================================================== */
+.dataset-storage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================================
+   23. 数据集名称
+   对应 HTML：<span class="dataset-storage-name">
+   作用：显示数据集名称，过长时省略号截断。
+   ========================================================================== */
+.dataset-storage-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   24. 数据集大小
+   对应 HTML：<span class="dataset-storage-size">
+   作用：显示该数据集占用的存储空间。
+   说明：强调色显示。
+   ========================================================================== */
+.dataset-storage-size {
+    color: var(--accent-primary);
+    font-size: 0.8rem;
+}
+
+
+/* ==========================================================================
+   25. 数据集元信息
+   对应 HTML：<div class="dataset-storage-meta">
+   作用：显示图片数量等附加信息。
+   说明：次要文字色，上下间距 4px。
+   ========================================================================== */
+.dataset-storage-meta {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin: 4px 0;
+}
+
+
+/* ==========================================================================
+   26. 刷新按钮（刷新中状态）
+   对应 HTML：<button class="btn btn-sm btn-refreshing" id="btnRefreshStorage">
+   作用：点击“刷新”后按钮变为半透明且禁用，提示正在计算。
+   ========================================================================== */
+.btn-refreshing {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+
+/* ==========================================================================
+   27. 计算过程日志
+   对应 HTML：<div id="storageProcessLog" class="storage-process-log">
+   作用：展示刷新过程中的完整计算步骤。
+   说明：等宽字体，最大高度 200px，超出滚动。
+   ========================================================================== */
+.storage-process-log {
+    margin-top: 10px;
+    padding: 8px 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+
+/* ==========================================================================
+   28. 日志单行
+   对应 HTML：<div class="storage-log-line">
+   作用：日志中的每一行文本。
+   说明：保留换行和空格，长单词可折断。
+   ========================================================================== */
+.storage-log-line {
+    white-space: pre-wrap;
+    word-break: break-all;
+}

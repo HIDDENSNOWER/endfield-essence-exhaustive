@@ -21,7 +21,7 @@
 
     index.html                应用主页面（UI 结构 + 样式/脚本引入 + 防 FOUC 内联脚本）
     一键本地运行.bat           本地 HTTP 服务器启动脚本
-    css/                      样式表（按层叠顺序：base → layout → components → features → settings）
+    css/                      样式表（按层叠顺序：base → layout → components → features → settings/）
     js/
     ├── lib/jszip.min.js      ZIP 导入导出库
     ├── core/                 核心层（无业务，被所有模块依赖）

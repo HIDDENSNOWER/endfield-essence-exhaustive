@@ -1,0 +1,193 @@
+/* ==========================================================================
+   settings-scheme.css — 设置弹窗中的“方案管理”面板样式
+   --------------------------------------------------------------------------
+   依赖：settings-base.css 中的基础变量与布局
+   对应 HTML：index.html 中 id="settingsPanelScheme" 面板
+   包含模块：
+     1. 当前激活方案显示区
+     2. 当前方案标签
+     3. 当前方案名称
+     4. 方案列表容器
+     5. 方案项
+     6. 方案项名称
+     7. 方案项操作按钮组
+     8. 方案项内置徽章
+     9. 方案操作区
+    10. 方案操作行
+    11. 方案名称输入框
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. 当前激活方案显示区
+   对应 HTML：<div class="scheme-current-display">
+   作用：展示当前激活的界面颜色方案和单元格颜色方案名称。
+   说明：有边框、圆角和三级背景色，内部水平排列标签与名称。
+   ========================================================================== */
+   .scheme-current-display {
+    padding: 12px 16px;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+
+/* ==========================================================================
+   2. 当前方案标签
+   对应 HTML：<span class="scheme-current-label">
+   作用：显示“界面方案：”或“单元格颜色方案：”等文字。
+   说明：使用次要文字色，不换行。
+   ========================================================================== */
+.scheme-current-label {
+    color: var(--text-secondary);
+    white-space: nowrap;                /* 禁止换行 */
+}
+
+
+/* ==========================================================================
+   3. 当前方案名称
+   对应 HTML：<span class="scheme-current-name" id="schemeCurrentName">
+   作用：显示当前激活方案的具体名称。
+   说明：使用强调色加粗显示。
+   ========================================================================== */
+.scheme-current-name {
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+
+/* ==========================================================================
+   4. 方案列表容器
+   对应 HTML：<div class="scheme-list" id="schemeList"> 或 id="stateColorSchemeList"
+   作用：纵向排列所有方案项，支持滚动。
+   说明：有边框、圆角和三级背景色，最大高度 220px，超出滚动。
+   ========================================================================== */
+.scheme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+}
+
+
+/* ==========================================================================
+   5. 方案项
+   对应 HTML：<div class="scheme-item" data-scheme-id="...">
+   作用：单个方案条目，水平排列名称与操作按钮。
+   说明：有边框、圆角和主背景色，鼠标悬停时改变背景和边框色，激活时显示强调色边框。
+   ========================================================================== */
+.scheme-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+/* 悬停状态 */
+.scheme-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-emphasis);
+}
+
+/* 激活状态（当前使用的方案） */
+.scheme-item.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+
+/* ==========================================================================
+   6. 方案项名称
+   对应 HTML：<span class="scheme-item-name">
+   作用：显示方案名称，可能包含内置徽章。
+   说明：使用主文字色，中等字重。
+   ========================================================================== */
+.scheme-item-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+
+/* ==========================================================================
+   7. 方案项操作按钮组
+   对应 HTML：<div class="scheme-item-actions">
+   作用：水平排列“应用”、“导出”、“删除”等按钮。
+   ========================================================================== */
+.scheme-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+
+/* ==========================================================================
+   8. 方案项内置徽章
+   对应 HTML：<span class="scheme-item-badge">内置</span>
+   作用：标记系统内置方案（白天默认/黑夜默认）。
+   说明：小号文字，圆角背景，弱化色。
+   ========================================================================== */
+.scheme-item-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+
+/* ==========================================================================
+   9. 方案操作区
+   对应 HTML：<div class="scheme-actions">
+   作用：包含保存为新方案、导入导出等操作行。
+   说明：纵向排列多个操作行，间距 8px。
+   ========================================================================== */
+.scheme-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+/* ==========================================================================
+   10. 方案操作行
+   对应 HTML：<div class="scheme-actions-row">
+   作用：水平排列输入框与按钮，允许换行。
+   ========================================================================== */
+.scheme-actions-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+
+/* ==========================================================================
+   11. 方案名称输入框
+   对应 HTML：<input type="text" id="schemeNewName" class="scheme-name-input">
+   作用：输入新方案名称。
+   说明：弹性宽度，最小 140px，有边框、圆角和主背景色。
+   ========================================================================== */
+.scheme-name-input {
+    flex: 1;
+    min-width: 140px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}

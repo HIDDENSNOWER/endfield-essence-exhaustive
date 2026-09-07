@@ -34,7 +34,13 @@ Ver.0.7.1 ("再访基地"更新)
     │   ├── layout.css             # 页面整体布局（导航、侧边栏、面板、响应式）
     │   ├── components.css         # 通用组件样式（按钮、表单、弹窗、Toast 等）
     │   ├── features.css           # 功能特性样式（备注悬浮框、图片查看器等）
-    │   └── settings.css           # 设置弹窗与颜色编辑面板样式
+    │   └── settings/              # 设置弹窗样式（按功能模块拆分）
+    │       ├── settings-base.css              # 设置弹窗基础结构、导航、内容区、分区标题、底部层级与响应式
+    │       ├── settings-table.css             # 表格设置（列宽/行高）样式
+    │       ├── settings-color-preview.css     # 状态颜色预览与编辑器样式
+    │       ├── settings-interface-colors.css  # 界面颜色面板与完整预览样式
+    │       ├── settings-scheme.css            # 方案管理面板样式
+    │       └── settings-storage.css           # 存储管理面板样式
     ├── js/
     │   ├── lib/
     │   │   └── jszip.min.js       # JSZip（ZIP 导入导出）
