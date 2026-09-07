@@ -142,54 +142,58 @@
          * - 每处理一张图片，调用 onImageProcessed 更新进度
          */
         async resolveDefaultImages(rows, onImageProcessed) {
-            // 先统计总图片数
-            let total = 0;
-            let done = 0;
+            // 收集所有需要加载的图片引用
+            const tasks = [];
             for (const row of rows) {
                 for (const cell of row.data) {
                     const note = cell.note;
                     if (note && note.images && note.images.length > 0) {
-                        total += note.images.length;
-                    }
-                }
-            }
-
-            // 遍历并转换
-            for (const row of rows) {
-                for (const cell of row.data) {
-                    const note = cell.note;
-                    if (note && note.images && note.images.length > 0) {
-                        const newImages = [];
-                        for (const ref of note.images) {
-                            if (typeof ref === 'string' && ref.startsWith('data:')) {
-                                // 已是 Data URL，直接使用
-                                newImages.push(ref);
-                            } else if (typeof ref === 'string') {
-                                // 尝试从 data/images/ 加载
-                                try {
-                                    const imgResp = await fetch('data/images/' + ref);
-                                    if (imgResp.ok) {
-                                        const blob = await imgResp.blob();
-                                        const dataUrl = await App.utils.blobToDataURL(blob);
-                                        newImages.push(dataUrl);
-                                    } else {
-                                        // 加载失败：保留原始文件名引用，不静默丢失图片
-                                        newImages.push(ref);
-                                    }
-                                } catch (e) {
-                                    console.warn('图片加载失败，保留引用:', ref, e);
-                                    newImages.push(ref);
-                                }
-                            }
-                            done++;
-                            if (typeof onImageProcessed === 'function') {
-                                onImageProcessed(done, total);
-                            }
+                        for (let i = 0; i < note.images.length; i++) {
+                            tasks.push({ row, cell, note, index: i, ref: note.images[i] });
                         }
-                        note.images = newImages;
                     }
                 }
             }
+        
+            let done = 0;
+            const total = tasks.length;
+            const CONCURRENCY = 12; // 同时最多 12 个请求，GitHub Pages 支持 HTTP/2 多路复用
+        
+            async function worker(task) {
+                try {
+                    const { note, index, ref } = task;
+                    if (typeof ref === 'string' && ref.startsWith('data:')) {
+                        // 已是 Data URL，保持原样
+                        done++;
+                        onImageProcessed && onImageProcessed(done, total);
+                        return;
+                    }
+                    const resp = await fetch('data/images/' + ref);
+                    if (resp.ok) {
+                        const blob = await resp.blob();
+                        const imageId = await App.imageStore.saveImage(blob);
+                        note.images[index] = imageId;
+                    }
+                    // 失败则保留原引用
+                } catch (e) {
+                    console.warn('图片加载失败，保留引用:', task.ref, e);
+                } finally {
+                    done++;
+                    onImageProcessed && onImageProcessed(done, total);
+                }
+            }
+        
+            // 启动并发 worker
+            const workers = [];
+            for (let i = 0; i < Math.min(CONCURRENCY, total); i++) {
+                workers.push((async () => {
+                    while (tasks.length > 0) {
+                        const task = tasks.shift();
+                        await worker(task);
+                    }
+                })());
+            }
+            await Promise.all(workers);
             return rows;
         },
 
