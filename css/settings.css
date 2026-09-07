@@ -36,7 +36,7 @@
     height: 100%;
 }
 
-/* 顶部导航 */
+/* ---------- 顶部导航 ---------- */
 .settings-nav {
     display: flex;
     gap: 4px;
@@ -71,7 +71,7 @@
     background: var(--bg-tertiary);
 }
 
-/* 内容区域 */
+/* ---------- 内容区域 ---------- */
 .settings-panels {
     flex: 1;
     overflow-y: auto;
@@ -92,7 +92,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 设置分区 */
+/* ---------- 设置分区 ---------- */
 .settings-section {
     margin-bottom: 24px;
 }
@@ -216,6 +216,7 @@
     max-width: var(--col-width);
 }
 
+/* ---------- 图例提示 ---------- */
 .color-legend {
     display: flex;
     gap: 14px;
@@ -246,6 +247,7 @@
 .status-partial-legend { background-color: var(--status-partial-bg); }
 .status-full-legend { background-color: var(--status-full-bg); }
 
+/* ---------- 右侧控制区 ---------- */
 .color-preview-right {
     flex: 0 0 auto;
     min-width: 180px;
@@ -435,7 +437,7 @@
 
 .color-inputs-container input[data-type="hex"] { width: 80px; }
 
-/* 通用操作按钮分组（状态颜色与界面颜色共用） */
+/* ---------- 操作按钮分组（状态颜色与界面颜色共用） ---------- */
 .color-action-buttons,
 .interface-color-actions {
     display: flex;
@@ -569,6 +571,7 @@
     color: var(--text-tertiary);
 }
 
+/* ---------- 右侧完整预览 ---------- */
 .interface-preview-wrapper {
     flex: 1;
     min-width: 280px;
@@ -592,7 +595,7 @@
     min-height: 300px;
 }
 
-/* 预览迷你元素 */
+/* ---------- 预览迷你元素 ---------- */
 .preview-navbar {
     display: flex;
     justify-content: space-between;
@@ -773,6 +776,205 @@
     border-radius: 6px;
     background: var(--bg-primary);
     color: var(--text-primary);
+}
+
+/* ==================== 存储管理 ==================== */
+.storage-overview {
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+.storage-quota-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.storage-progress {
+    height: 8px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.storage-progress-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.storage-progress-fill.storage-progress-warn {
+    background: #f0ad4e;
+}
+
+.storage-progress-fill.storage-progress-danger {
+    background: var(--danger-primary);
+}
+
+.storage-progress-fill-refreshing {
+    animation: storageProgressPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes storageProgressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ---------- 自定义配额 ---------- */
+.storage-quota-settings {
+    padding: 10px;
+    border: 1px solid var(--border-muted);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+}
+
+.quota-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.quota-setting-row label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.quota-setting-row input[type="number"] {
+    width: 80px;
+    padding: 4px 6px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.quota-status-message {
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+/* ---------- 数据明细 ---------- */
+.storage-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.storage-detail-item {
+    display: grid;
+    grid-template-columns: 120px 80px 1fr;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+.detail-label {
+    color: var(--text-secondary);
+}
+
+.detail-value {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.detail-bar {
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.detail-bar-fill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* ---------- 数据集详细统计 ---------- */
+.dataset-storage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.storage-empty-hint {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    padding: 10px 0;
+}
+
+.dataset-storage-item {
+    padding: 8px 10px;
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    background: var(--bg-primary);
+}
+
+.dataset-storage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dataset-storage-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dataset-storage-size {
+    color: var(--accent-primary);
+    font-size: 0.8rem;
+}
+
+.dataset-storage-meta {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin: 4px 0;
+}
+
+/* ---------- 刷新按钮 ---------- */
+.btn-refreshing {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* ---------- 计算日志 ---------- */
+.storage-process-log {
+    margin-top: 10px;
+    padding: 8px 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.storage-log-line {
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 /* ==================== 底部与层级 ==================== */

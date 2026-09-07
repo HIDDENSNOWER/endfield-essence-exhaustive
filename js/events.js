@@ -30,10 +30,8 @@
                 App.colorPreview.bindColorPreviewEvents();
             }
 
-            // 界面颜色
-            if (App.interfaceColors && App.interfaceColors.bindPanelEvents) {
-                // interfaceColors 的面板事件在 renderPanel 时绑定，无需额外操作
-            }
+            // 界面颜色（事件在 renderPanel 时动态绑定）
+            // 无额外绑定
 
             // 方案管理
             if (App.schemeManager && App.schemeManager.bindSchemeEvents) {
@@ -43,6 +41,11 @@
             // 状态颜色方案管理
             if (App.stateColorSchemeManager && App.stateColorSchemeManager.initPanel) {
                 App.stateColorSchemeManager.initPanel();
+            }
+
+            // 存储管理
+            if (App.storageManager && App.storageManager.bindStorageEvents) {
+                App.storageManager.bindStorageEvents();
             }
 
             // 行筛选
@@ -204,6 +207,10 @@
                     if (App.stateColorSchemeManager && App.stateColorSchemeManager.initPanel) {
                         App.stateColorSchemeManager.initPanel();
                     }
+                    // 刷新存储管理面板
+                    if (App.storageManager && App.storageManager.refreshUsage) {
+                        App.storageManager.refreshUsage();
+                    }
                 });
             }
 
@@ -249,6 +256,10 @@
                         if (panelId === 'color' && App.interfaceColors) {
                             const container = document.getElementById('interfaceColorPanel');
                             if (container) App.interfaceColors.renderPanel(container);
+                        }
+                        // 切换到存储管理面板时刷新存储信息
+                        if (panelId === 'storage' && App.storageManager) {
+                            App.storageManager.refreshUsage();
                         }
                     });
                 });

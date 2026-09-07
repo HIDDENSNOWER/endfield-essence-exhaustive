@@ -533,6 +533,7 @@
                         <button class="settings-nav-btn active" data-settings-panel="table">📏 表格设置</button>
                         <button class="settings-nav-btn" data-settings-panel="color">🎨 表格个性化</button>
                         <button class="settings-nav-btn" data-settings-panel="scheme">💾 方案管理</button>
+                        <button class="settings-nav-btn" data-settings-panel="storage">💾 存储管理</button>
                     </nav>
                     <div class="settings-panels">
                         <!-- 表格设置面板 -->
@@ -725,6 +726,91 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- 存储管理面板 -->
+                        <div class="settings-panel-content" id="settingsPanelStorage">
+                            <!-- 存储使用情况总览 -->
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">存储使用情况</h3>
+                                <div id="storageOverview" class="storage-overview">
+                                    <div class="storage-quota-row">
+                                        <span>总配额：</span>
+                                        <strong id="storageQuota">计算中...</strong>
+                                    </div>
+                                    <div class="storage-quota-row">
+                                        <span>已使用：</span>
+                                        <strong id="storageUsage">计算中...</strong>
+                                    </div>
+                                    <div class="storage-quota-row">
+                                        <span>剩余可用：</span>
+                                        <strong id="storageRemaining">计算中...</strong>
+                                    </div>
+                                    <div class="storage-progress">
+                                        <div id="storageProgressBar" class="storage-progress-fill" style="width:0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 自定义配额与警示 -->
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">自定义配额与警示</h3>
+                                <div class="storage-quota-settings">
+                                    <div class="quota-setting-row">
+                                        <label for="customQuotaInput">配额上限 (MB)：</label>
+                                        <input type="number" id="customQuotaInput" min="1" step="1" value="100">
+                                        <button class="btn btn-sm" id="btnSaveQuota">保存配额</button>
+                                    </div>
+                                    <div class="quota-setting-row">
+                                        <label for="warnPercentInput">警示百分比 (%)：</label>
+                                        <input type="number" id="warnPercentInput" min="1" max="100" step="1" value="80">
+                                    </div>
+                                    <div id="quotaStatusMessage" class="quota-status-message"></div>
+                                </div>
+                            </div>
+
+                            <!-- 数据集详细统计 -->
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">数据集详细统计</h3>
+                                <div id="datasetStorageList" class="dataset-storage-list">
+                                    <div class="storage-empty-hint">暂无数据集</div>
+                                </div>
+                            </div>
+
+                            <!-- 数据占用明细 -->
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">数据占用明细</h3>
+                                <div id="storageDetails" class="storage-details">
+                                    <div class="storage-detail-item">
+                                        <span class="detail-label">数据集</span>
+                                        <span class="detail-value" id="storageDatasets">-</span>
+                                        <div class="detail-bar"><div id="barDatasets" class="detail-bar-fill" style="width:0%"></div></div>
+                                    </div>
+                                    <div class="storage-detail-item">
+                                        <span class="detail-label">数据集备注</span>
+                                        <span class="detail-value" id="storageRemarks">-</span>
+                                        <div class="detail-bar"><div id="barRemarks" class="detail-bar-fill" style="width:0%"></div></div>
+                                    </div>
+                                    <div class="storage-detail-item">
+                                        <span class="detail-label">设置与个性化</span>
+                                        <span class="detail-value" id="storageSettings">-</span>
+                                        <div class="detail-bar"><div id="barSettings" class="detail-bar-fill" style="width:0%"></div></div>
+                                    </div>
+                                    <div class="storage-detail-item">
+                                        <span class="detail-label">图片 (IndexedDB)</span>
+                                        <span class="detail-value" id="storageImages">-</span>
+                                        <div class="detail-bar"><div id="barImages" class="detail-bar-fill" style="width:0%"></div></div>
+                                    </div>
+                                    <div class="storage-detail-item">
+                                        <span class="detail-label">其他</span>
+                                        <span class="detail-value" id="storageOther">-</span>
+                                        <div class="detail-bar"><div id="barOther" class="detail-bar-fill" style="width:0%"></div></div>
+                                    </div>
+                                </div>
+                                <!-- 刷新按钮与计算过程日志 -->
+                                <button class="btn btn-sm" id="btnRefreshStorage">刷新</button>
+                                <div id="storageProcessLog" class="storage-process-log" style="display:none;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -823,6 +909,7 @@
     <!-- 服务层 -->
     <script src="js/services/storage.js"></script>
     <script src="js/services/modal.js"></script>
+    <script src="js/services/image-store.js"></script>
 
     <!-- 功能层：数据管理 -->
     <script src="js/features/data/dataset-manager.js"></script>
@@ -849,6 +936,7 @@
     <script src="js/features/preferences/color-preview.js"></script>
     <script src="js/features/preferences/scheme-manager.js"></script>
     <script src="js/features/preferences/state-color-scheme-manager.js"></script>
+    <script src="js/features/preferences/storage-manager.js"></script>
     <script src="js/features/preferences/interface-colors.js"></script>
 
     <!-- 功能层：备注 -->

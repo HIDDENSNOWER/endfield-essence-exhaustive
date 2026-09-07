@@ -304,7 +304,6 @@
 
             // ----- 界面颜色面板 -----
             'interfaceColorPanel',
-
             'stateColorSchemeList', 
             'stateColorSchemeCurrentName', 
             'stateColorSchemeNewName',
@@ -312,6 +311,32 @@
             'btnStateColorSchemeExport', 
             'btnStateColorSchemeImport',
             'stateColorSchemeImportFile',
+
+            // 存储管理
+            'storageOverview', 
+            'storageQuota', 
+            'storageUsage', 
+            'storageRemaining',
+            'storageProgressBar', 
+            'storageDetails', 
+            'storageDatasets', 
+            'storageRemarks',
+            'storageSettings', 
+            'storageImages', 
+            'storageOther',
+            'barDatasets',
+            'barRemarks', 
+            'barSettings', 
+            'barImages', 
+            'barOther',
+            'btnRefreshStorage',
+
+            'customQuotaInput', 
+            'warnPercentInput', 
+            'btnSaveQuota', 
+            'quotaStatusMessage',
+
+            'datasetStorageList',
         ];
 
         // 批量获取所有 ID 对应的元素，并缓存到 dom 对象
