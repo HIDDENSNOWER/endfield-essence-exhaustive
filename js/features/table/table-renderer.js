@@ -225,6 +225,11 @@
             this.renderTablePart(App.dom.tableHead1, App.dom.tableBody1, C.GROUP1, 0, C.COLS1);
             this.renderTablePart(App.dom.tableHead2, App.dom.tableBody2, C.GROUP2, C.COLS1, C.COLS2);
             this.updateHighlightedCell();
+        
+            // 如果有激活的备注搜索，重新应用
+            if (App.noteSearch && App.dom.noteSearchInput && App.dom.noteSearchInput.value.trim()) {
+                App.noteSearch.search();
+            }
         },
 
         /**

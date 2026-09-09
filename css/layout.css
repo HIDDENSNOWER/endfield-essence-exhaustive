@@ -372,3 +372,63 @@ tbody td:first-child:hover {
 .main-layout.right-collapsed #sidebar .sidebar-btn:not(#btnToggleRightPanel) {
     display: none;
 }
+
+/* ---------- 备注检索器 ---------- */
+.note-search-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+.note-search-input {
+    width: 140px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.note-search-count {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    min-width: 30px;
+}
+
+.note-search-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+}
+
+.note-search-btn:hover {
+    color: var(--accent-primary);
+}
+
+/* 匹配高亮 */
+.note-search-highlight {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    position: relative;
+    z-index: 5;
+}
+
+.note-search-current {
+    outline: 3px solid var(--danger-primary);
+    outline-offset: -3px;
+    position: relative;
+    z-index: 6;
+}

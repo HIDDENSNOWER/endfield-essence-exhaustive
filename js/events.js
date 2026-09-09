@@ -95,6 +95,11 @@
 
             // 其他全局事件
             this.bindGlobalEvents();
+
+            // 备注检索
+            if (App.noteSearch && App.noteSearch.bindNoteSearchEvents) {
+                App.noteSearch.bindNoteSearchEvents();
+            }
         },
 
         /**

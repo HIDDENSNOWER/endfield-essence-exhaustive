@@ -288,6 +288,10 @@
                 dom.inputHint.textContent = '准备就绪';
                 dom.recordHint.textContent = '';
             }
+
+            if (dom.btnSyncTFromDefault) {
+                dom.btnSyncTFromDefault.disabled = locked;
+            }
         },
 
         /**
@@ -550,6 +554,57 @@
             // 删除数据集按钮
             if (dom.btnDeleteDataset) dom.btnDeleteDataset.addEventListener('click', () => this.deleteDataset());
             // 删除确认弹窗事件在 cell-record.js 中绑定
+
+            if (dom.btnSyncTFromDefault) {
+                dom.btnSyncTFromDefault.addEventListener('click', () => this.syncTFromDefault());
+            }
+        },
+
+        /**
+         * 同步默认数据集的 t 值（重复数）和单元格备注到当前数据集
+         */
+        syncTFromDefault() {
+            const currentKey = App.storage.loadCurrentDatasetKey();
+            if (App.constants.PROTECTED_DATASETS.includes(currentKey)) {
+                App.modal.showAlert('当前数据集为系统数据集，不可同步。', '操作限制');
+                return;
+            }
+
+            const defaultRows = App.storage.getJSON(App.constants.DEFAULT_STORAGE_KEY, null);
+            if (!defaultRows || !Array.isArray(defaultRows) || defaultRows.length === 0 || !defaultRows[0].data) {
+                App.modal.showAlert('默认数据集数据不可用。', '错误');
+                return;
+            }
+
+            App.modal.showConfirmDialog(
+                '此操作将使用默认数据集的各单元格 t 值（重复数）和单元格备注覆盖当前数据集，并自动调整已获取数 a 不超过 t。是否继续？',
+                () => {
+                    App.state.rows.forEach((row, rowIdx) => {
+                        row.data.forEach((cell, colIdx) => {
+                            const defaultRow = defaultRows[rowIdx];
+                            const defaultCell = defaultRow && defaultRow.data ? defaultRow.data[colIdx] : null;
+                            if (defaultCell) {
+                                const normalized = App.utils.normalizeCell(defaultCell);
+                                // 同步 t 值
+                                cell.t = normalized.t;
+                                // 同步备注（深拷贝，保留图片 ID 引用）
+                                cell.note = {
+                                    text: normalized.note.text,
+                                    images: (normalized.note.images || []).slice()
+                                };
+                                // 已获取数不超过重复数
+                                if (cell.a > cell.t) cell.a = cell.t;
+                            }
+                        });
+                    });
+                    this.saveData();
+                    App.tableRenderer.renderAllTables();
+                    this.resetHistorySafe();
+                    App.modal.showAlert('已同步默认数据的 t 值和备注。', '成功');
+                },
+                () => {},
+                '同步默认数据'
+            );
         }
     };
 

@@ -337,6 +337,13 @@
             'quotaStatusMessage',
 
             'datasetStorageList',
+
+            'noteSearchInput', 
+            'noteSearchCount', 
+            'btnNoteSearchPrev', 
+            'btnNoteSearchNext',
+
+            'btnSyncTFromDefault',
         ];
 
         // 批量获取所有 ID 对应的元素，并缓存到 dom 对象
