@@ -173,7 +173,32 @@
                 App.defaultLoader.startLoadingDefaultDataset();
             }
         }, '默认数据集加载启动');
-    }
+
+        // 版本检测（放在 init 函数末尾，所有初始化完成后）
+        safeCall(() => {
+            fetch('version.json?t=' + Date.now())
+                .then(res => res.json())
+                .then(data => {
+                    const remoteVersion = data.version;
+                    const localVersion = localStorage.getItem('eee_app_version');
+                    if (localVersion !== remoteVersion) {
+                        localStorage.setItem('eee_app_version', remoteVersion);
+                        if (localVersion) {
+                            // 已有旧版本，提示刷新
+                            App.modal.showConfirmDialog(
+                                '检测到新版本，是否立即刷新以获取最新内容？',
+                                () => location.reload(),
+                                () => {},
+                                '更新提示',
+                                '刷新',
+                                '稍后'
+                            );
+                        }
+                    }
+                })
+                .catch(() => { /* 网络错误忽略 */ });
+        }, '版本检测');
+            }
 
     // 启动应用
     init();
