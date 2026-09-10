@@ -57,7 +57,7 @@
      * 扫描当前已保存的数据，构建内容清单 HTML
      * 分类展示：数据集 / 数据集备注 / 设置与偏好 / 临时会话数据，并统计总占用
      */
-    function buildContentReport() {
+    function buildContentReport(imagesSize = 0) {
         const sections = [];
         let totalBytes = 0;
 
@@ -129,6 +129,15 @@
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍临时会话数据</div>` +
                 sessItems.map(s => `<div style="line-height:1.7;">· ${s}</div>`).join(''));
         }
+        
+        // ---- IndexedDB 图片占用（新增） ----
+        if (imagesSize > 0) {
+            sections.push(
+                `<div style="font-weight:600; margin:6px 0 2px;">▍备注图片（IndexedDB）</div>` +
+                `<div style="line-height:1.7;">· <b>eee_image_db</b>：约 ${fmtBytes(imagesSize)}</div>`
+            );
+            totalBytes += imagesSize;
+        }
 
         // ---- 空状态 ----
         if (!sections.length) {
@@ -159,9 +168,26 @@
         /**
          * 入口：扫描并显示当前已保存的数据内容，供用户确认后清除
          */
-        openClearConfirm() {
+        async openClearConfirm() {
+            // 异步获取 IndexedDB 图片占用（用于展示）
+            let imagesSize = 0;
+            try {
+                const estimate = await navigator.storage.estimate();
+                const totalUsage = estimate.usage || 0;
+                let lsTotal = 0;
+                try {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        lsTotal += sizeOf(localStorage.getItem(k));
+                    }
+                } catch (e) { /* 忽略 */ }
+                imagesSize = Math.max(0, totalUsage - lsTotal);
+            } catch (e) {
+                imagesSize = 0;
+            }
+
             App.modal.showConfirmDialog(
-                buildContentReport(),
+                buildContentReport(imagesSize),
                 () => this.doClear(),
                 () => { App.dom.inputHint.textContent = '已取消清除。'; },
                 '清除浏览器缓存'
@@ -169,17 +195,40 @@
         },
 
         /**
-         * 执行清除：localStorage / sessionStorage / Cache API，然后重新加载页面
-         * 清除后页面刷新，main.js 初始化会重新加载默认数据集，应用恢复初始状态
+         * 执行清除：localStorage / sessionStorage / Cache API / IndexedDB 图片库
+         * 清除后刷新页面，应用恢复初始状态
          */
         async doClear() {
+            // 1. 先关闭 IndexedDB 连接（避免删除被阻塞）
+            try {
+                if (App.imageStore && App.imageStore.closeDB) {
+                    await App.imageStore.closeDB();
+                }
+            } catch (e) {
+                console.warn('关闭 IndexedDB 连接失败:', e);
+            }
+
+            // 2. 清空 localStorage / sessionStorage
             try {
                 localStorage.clear();
                 sessionStorage.clear();
             } catch (e) {
                 console.warn('清除本地存储失败:', e);
             }
-            // 等待 Cache API 清除完成后再刷新，避免 Service Worker 缓存残留
+
+            // 3. 删除 IndexedDB 图片库
+            try {
+                await new Promise((resolve) => {
+                    const req = indexedDB.deleteDatabase('eee_image_db');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => resolve();
+                    req.onblocked = () => resolve(); // 若仍有其他标签页连接占用，也放行（下次刷新后会完成）
+                });
+            } catch (e) {
+                console.warn('清除 IndexedDB 失败:', e);
+            }
+
+            // 4. 清空 Cache API
             try {
                 if ('caches' in window) {
                     const keys = await caches.keys();
@@ -188,7 +237,8 @@
             } catch (e) {
                 console.warn('清除 Cache API 失败:', e);
             }
-            // 重新加载页面
+
+            // 5. 重新加载页面
             location.reload();
         },
 

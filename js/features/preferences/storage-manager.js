@@ -218,6 +218,11 @@
         _renderLog() {
             const logContainer = document.getElementById('storageProcessLog');
             if (!logContainer) return;
+            if (this._logLines.length === 0) {
+                logContainer.style.display = 'none';
+                logContainer.innerHTML = '';
+                return;
+            }
             logContainer.style.display = 'block';
             logContainer.innerHTML = this._logLines
                 .map(line => `<div class="storage-log-line">${App.utils.escapeHtml(line)}</div>`)
@@ -232,6 +237,7 @@
             if (this._isRefreshing) return;
             this._isRefreshing = true;
             this._logLines = [];
+            this._renderLog();   // ← 立即清空显示（隐藏容器）
 
             const refreshBtn = document.getElementById('btnRefreshStorage');
             const progressFill = document.getElementById('storageProgressBar');

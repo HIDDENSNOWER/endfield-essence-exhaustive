@@ -104,21 +104,6 @@
             }
             this.openModal(d.modalConfirmDialog);
         },
-        
-        closeConfirmDialog() {
-            this.closeModal(dom().modalConfirmDialog);
-            window.__dialogConfirmCallback = null;
-            window.__dialogCancelCallback = null;
-            const d = dom();
-            if (d.btnConfirmConfirmDialog) {
-                d.btnConfirmConfirmDialog.style.display = '';
-                d.btnConfirmConfirmDialog.textContent = '确认';
-            }
-            if (d.btnCancelConfirmDialog) {
-                d.btnCancelConfirmDialog.style.display = '';
-                d.btnCancelConfirmDialog.textContent = '取消';
-            }
-        },
 
         /**
          * 关闭通用确认弹窗

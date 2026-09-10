@@ -20,6 +20,7 @@
     let currentNoteCell = null;            // 当前正在编辑备注的单元格坐标 {r, c}
     let pendingCellNoteText = '';          // 暂存的备注文本（编辑中尚未保存）
     let pendingNoteImages = [];            // 暂存的备注图片 ID 数组
+    let originalNoteImages = [];           // 加载备注时的原始图片快照（用于差集删除）
     let noteShowTimer = null;              // 悬浮框显示定时器
     let noteHideTimer = null;              // 悬浮框隐藏定时器
     let noteDragState = null;              // 悬浮框拖拽状态
@@ -108,10 +109,21 @@
          * @param {number} colIdx - 全局列索引
          */
         loadNoteIntoPanel(rowIdx, colIdx) {
+            // 清理上一次编辑中新增但未保存的图片（避免成为孤儿）
+            if (originalNoteImages.length > 0 || pendingNoteImages.length > 0) {
+                const originalSet = new Set(originalNoteImages);
+                pendingNoteImages.forEach(ref => {
+                    if (!originalSet.has(ref) && !isBase64Image(ref)) {
+                        App.imageStore.deleteImage(ref).catch(() => {});
+                    }
+                });
+            }
+
             currentNoteCell = { r: rowIdx, c: colIdx };
             const note = this.getCellNote(rowIdx, colIdx);
             pendingCellNoteText = note.text || '';
             pendingNoteImages = (note.images || []).slice();
+            originalNoteImages = (note.images || []).slice();  // ← 快照
             this.updateCellNoteDisplay(pendingCellNoteText);
             this.renderNoteImageList();
         },
@@ -141,11 +153,8 @@
                 removeBtn.textContent = '✕';
                 removeBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    const removedRef = pendingNoteImages.splice(idx, 1)[0];
-                    // 若图片在 IndexedDB 中（ID 而非 base64），删除实际数据
-                    if (!isBase64Image(removedRef)) {
-                        App.imageStore.deleteImage(removedRef).catch(() => {});
-                    }
+                    // 只从数组移除；图片实际删除延迟到保存/清除备注时执行
+                    pendingNoteImages.splice(idx, 1);
                     App.note.renderNoteImageList();
                 });
                 wrapper.appendChild(removeBtn);
@@ -189,6 +198,7 @@
 
         /**
          * 保存备注（从面板）
+         * 保存成功后将原单元格图片集与当前编辑集做差集，删除不再引用的图片
          */
         saveNoteFromPanel() {
             if (!currentNoteCell) {
@@ -200,26 +210,41 @@
             }
             const note = { text: pendingCellNoteText, images: pendingNoteImages.slice() };
             this.setCellNote(currentNoteCell.r, currentNoteCell.c, note);
+
+            // 计算差集：原引用中不再使用的图片 → 从 IndexedDB 删除
+            const currentSet = new Set(pendingNoteImages);
+            originalNoteImages.forEach(ref => {
+                if (!currentSet.has(ref) && !isBase64Image(ref)) {
+                    App.imageStore.deleteImage(ref).catch(() => {});
+                }
+            });
+            originalNoteImages = pendingNoteImages.slice();  // 更新快照
+
             App.dom.inputHint.textContent = '备注已保存';
             this.updateCellNoteDisplay(pendingCellNoteText);
         },
 
         /**
          * 清除当前备注（从面板）
+         * 删除原单元格引用的所有图片，以及编辑过程中新增但未保存的图片
          */
         clearNoteFromPanel() {
             if (!currentNoteCell) {
                 App.modal.showAlert('请先在数据输入面板中选择单元格。', '提示');
                 return;
             }
-            // 删除所有待保存的图片（仅 IndexedDB 图片，base64 无需处理）
-            pendingNoteImages.forEach(imgRef => {
-                if (!isBase64Image(imgRef)) {
-                    App.imageStore.deleteImage(imgRef).catch(() => {});
+
+            // 合并去重后统一删除（原引用 + 编辑期新增未保存）
+            const toDelete = new Set([...originalNoteImages, ...pendingNoteImages]);
+            toDelete.forEach(ref => {
+                if (!isBase64Image(ref)) {
+                    App.imageStore.deleteImage(ref).catch(() => {});
                 }
             });
+
             pendingCellNoteText = '';
             pendingNoteImages = [];
+            originalNoteImages = [];
             this.updateCellNoteDisplay('');
             this.renderNoteImageList();
             this.setCellNote(currentNoteCell.r, currentNoteCell.c, { text: '', images: [] });
@@ -576,9 +601,7 @@
                 });
             }
             if (dom.btnClearNoteImages) dom.btnClearNoteImages.addEventListener('click', () => {
-                pendingNoteImages.forEach(ref => {
-                    if (!isBase64Image(ref)) App.imageStore.deleteImage(ref).catch(() => {});
-                });
+                // 只清空数组；图片实际删除延迟到保存/清除备注时统一处理
                 pendingNoteImages = [];
                 App.note.renderNoteImageList();
             });

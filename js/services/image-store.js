@@ -119,6 +119,22 @@
         async getImageUrl(id) {
             const blob = await this.getImage(id);
             return blob ? URL.createObjectURL(blob) : '';
+        },
+
+        /**
+         * 关闭数据库连接（用于清除缓存场景）
+         * 关闭后下次调用其他方法会自动重新打开
+         * @returns {Promise<void>}
+         */
+        async closeDB() {
+            if (!dbPromise) return;
+            try {
+                const db = await dbPromise;
+                db.close();
+            } catch (e) {
+                // 忽略关闭异常
+            }
+            dbPromise = null;
         }
     };
 })(window.App = window.App || {});

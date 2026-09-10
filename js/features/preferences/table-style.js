@@ -87,15 +87,12 @@
 
         /**
          * 获取默认表格底色
-         * @returns {{odd: string, even: string}} 当前主题下的默认奇偶行背景色
+         * @param {string} [theme] - 'light' 或 'dark'，不传则取当前主题
+         * @returns {{odd: string, even: string}} 对应主题下的默认奇偶行背景色
          */
         getDefaultTableBgColors(theme) {
-            const C = App.constants;
-            return {
-                odd: C.DEFAULT_INTERFACE_COLORS_LIGHT['--group-odd-bg'],
-                even: C.DEFAULT_INTERFACE_COLORS_LIGHT['--group-even-bg']
-            };
-            // 实际需根据 theme 动态返回
+            const t = theme || (App.state.isDarkTheme() ? 'dark' : 'light');
+            return App.storage.getDefaultTableBgColors(t);
         },
 
         /**
