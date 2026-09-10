@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.8.7** ｜ 与代码同步
+> 适用版本：**v0.9.1** ｜ 与代码同步
 
 ---
 
@@ -22,13 +22,16 @@
 | 导入 / 导出 | `features/data/import-export.js` | `lib/jszip.min.js` |
 | 数据集合并逻辑 | `features/data/dataset-merge.js` | — |
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
+| **地区增删改 / 悬停高亮** | **`features/data/region-manager.js`** | **`dom.js` / `features.css`** |
+| **未获取统计 / 进度条 / 筛选** | **`features/table/unacquired.js`** | **`features.css`** |
+| **可获取地点悬浮窗** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
 | 单元格备注 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 建议 | `features/cell/cell-value.js` | `cell-record.js` |
 | 撤回 / 重做 | `features/cell/history.js` | — |
 | 行筛选 | `features/table/row-filter.js` | — |
 | 统计面板 | `features/table/stats.js` | — |
 | 存储管理 | `features/preferences/storage-manager.js` | — |
-| 清除缓存 | `features/data/cache-clear.js` | — |
+| 清除缓存 | `features/data/cache-clear.js` | `services/image-store.js` |
 | 添加新常量 | `core/constants.js` | — |
 | 添加新 DOM 缓存 | `core/dom.js` 的 `ids` 数组 | `index.html` 对应 id |
 | 添加新事件绑定 | `js/events.js` 的 `bindAllEvents()` | 新建模块的 `bindXXXEvents()` |
@@ -54,7 +57,7 @@
 
 **依赖规则**：上层可依赖下层，下层不可依赖上层；同层可互调。
 
-**模块规模**：45 个自写源文件 / 约 14,000 行代码。
+**模块规模**：48 个自写源文件 / 约 15,000 行代码。
 
 ---
 
@@ -64,10 +67,11 @@
 |------|-----|
 | 形态 | 纯前端单页应用（无框架、无构建、无后端） |
 | 模块方案 | IIFE 挂载 `window.App` 命名空间 |
-| 持久化 | localStorage（数据/设置）+ IndexedDB（图片） |
+| 持久化 | localStorage（数据/设置/地区）+ IndexedDB（图片） |
 | 外部依赖 | 仅 `jszip.min.js` |
 | 运行要求 | HTTP 服务器（`file://` 下 fetch 被拦截） |
-| 表格结构 | 12 行 × 14 词条组 × 5 副属性 = 840 格 |
+| 表格结构 | 12 行 × 14 词条组 × 5 主属性 = 840 格 |
+| 刷取组合 | 每地区 10 主属性组合 × 16 属性（8副+8词） = 160 种 |
 
 ---
 
@@ -76,7 +80,7 @@
 ### 核心层 `core/`
 | 挂载点 | 职责 |
 |--------|------|
-| `App.constants` | 存储键、词条组、行名、颜色、尺寸常量 |
+| `App.constants` | 存储键、词条组、行名、主属性、默认地区、颜色、尺寸常量 |
 | `App.state` | 全局状态（含 getter/setter、历史、基准） |
 | `App.dom` | 所有 DOM 元素一次性缓存 |
 | `App.utils` | 单元格标准化、颜色转换、列索引、HTML 转义 |
@@ -85,9 +89,9 @@
 ### 服务层 `services/`
 | 挂载点 | 职责 |
 |--------|------|
-| `App.storage` | localStorage 统一封装（含写入成败返回） |
+| `App.storage` | localStorage 统一封装（含数据集、地区、筛选的读写） |
 | `App.modal` | 弹窗管理与 Toast（幂等、滚动锁引用计数） |
-| `App.imageStore` | IndexedDB 图片增删查、Blob URL |
+| `App.imageStore` | IndexedDB 图片增删查、Blob URL、`closeDB()` |
 
 ### 功能层 `features/`
 | 挂载点 | 子目录 |
@@ -98,11 +102,14 @@
 | `App.datasetMerge` | data |
 | `App.defaultLoader` | data |
 | `App.cacheClear` | data |
+| **`App.regionManager`** | **data（v0.9.1 新增）** |
 | `App.tableRenderer` | table |
 | `App.rowFilter` | table |
 | `App.stats` | table |
 | `App.noteSearch` | table |
 | `App.cellTooltip` | table |
+| **`App.unacquired`** | **table（v0.9.1 新增）** |
+| **`App.cellAcquireTooltip`** | **table（v0.9.1 新增）** |
 | `App.cellValue` | cell |
 | `App.cellRecord` | cell |
 | `App.history` | cell |
@@ -139,6 +146,7 @@
  9. resetTripleInputs()         三联输入框重置
 10. initTableStyle()            表格尺寸 + 底色
 11. initNoteFeature()           备注模块（含自绑事件）
+11.5 cellAcquireTooltip.init()  可获取地点悬浮窗（v0.9.1 新增）
 12. renderAllTables()           渲染主表格
 13. initCellTooltip()           悬停提示栏
 14. updateDatasetRemark()       刷新数据集备注区
@@ -191,9 +199,63 @@
 
 | 模式 | 位置 | 说明 |
 |------|------|------|
-| 集中绑定 | `events.js` `bindAllEvents()` | 主流方式（16 个模块） |
-| 模块自绑 | `note.js` `initNoteFeature()` | 因依赖动态初始化 |
+| 集中绑定 | `events.js` `bindAllEvents()` | 主流方式（18+ 个模块） |
+| 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` | 因依赖动态初始化 |
 | 内联 onclick | `interface-colors.js` | 历史遗留，建议未来整改 |
+
+### 未获取统计（v0.9.1）
+
+**统计单位**：`(地区, 3主属性, 副属性或词条)` —— 每地区 160 种组合。
+
+**缺口贡献**（每格）：
+```js
+if (cell.t > 0) return Math.max(0, cell.t - (cell.a || 0));  // 实装：按缺口数
+if (cell.v !== '') return 0;                                  // 有数值：已获取
+return 1;                                                     // 完全空白：+1
+```
+
+**展示流程**：
+1. 遍历所有地区 × 所有组合，收集未获取 > 0 的条目
+2. 按缺口总数降序，取前 36
+3. 每条渲染：组合行 + 地区行 + 进度条 + 缺口数
+
+**进度条**：`已完成格数 / 24`，分档着色（<30% 红 / 30~70% 橙 / ≥70% 绿）。
+
+**地区筛选**：折叠式复选框，状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
+
+**双色悬停高亮**：
+- 缺口贡献 > 0 → `.unacquired-cell-highlight`（红）
+- 贡献 = 0 → `.acquired-cell-highlight`（绿）
+- 其余数据格 → `table.unacquired-dimming`（变暗蒙版）
+- 滚动到第一个红框
+
+### 地区管理（v0.9.1）
+
+**数据结构**：`{ name, rows: string[], groups: string[] }`
+- `rows`：该地区 8 个可获取副属性
+- `groups`：该地区 8 个可获取词条
+
+**默认数据**：`App.constants.DEFAULT_REGIONS`（12 个地区）。
+
+**持久化**：`smarttable_regions`（用户修改后写入；未修改时读取 `DEFAULT_REGIONS`）。
+
+**悬停高亮**：鼠标悬停地区卡片 → 高亮该地区 8 副属性 × 8 词条 × 5 主属性 = **320 格**，规则与未获取统计一致。
+
+### 可获取地点悬浮窗（v0.9.1）
+
+**触发**：悬停未完全获取的单元格 300ms。
+
+**内容**：
+- 每个可获取此基质的地区
+- 两条刷取路径：选副属性「X」 / 选词条「Y」
+- 每条路径下列出 6 种含当前主属性的 3 主属性组合
+
+**地区来源**：优先读 `smarttable_unacquired_region_filter` 筛选的地区；无结果时回退全部并显示提示。
+
+**与备注悬浮框**：
+- 不互斥（两个可同屏）
+- 位置自动错开：使用 MutationObserver 监听 noteTooltip 的 `style` 变化，若重叠则重新定位
+- `z-index: 99` < noteTooltip `100` < modal `200`
 
 ---
 
@@ -220,6 +282,8 @@
 | `smarttable_active_state_color_scheme` | 激活方案 ID |
 | `smarttable_custom_quota` | 字节数 |
 | `smarttable_quota_warn_percent` | 百分比 |
+| **`smarttable_regions`** | **地区配置数组 `[{name, rows, groups}]`** |
+| **`smarttable_unacquired_region_filter`** | **未获取统计的地区筛选（数组或 null）** |
 | `<数据集名>` | 该数据集的行数据 |
 
 ### sessionStorage 键
@@ -274,8 +338,13 @@ Get-ChildItem js -Recurse -Filter *.js |
 | **`base.css` 与 `constants.js` 颜色双份维护** | 修改任一处必须同步另一处 |
 | **`import-export.js` 中的 `version: '2.0'`** | 这是**导出数据格式版本**，不是应用版本，勿改 |
 | **`note.js` 事件自绑** | 不在 `events.js` 中，需在 `initNoteFeature()` 里找 |
+| **`cell-acquire-tooltip.js` 的 init 在 main.js 中** | 不在 `events.js` 的 `bindAllEvents()` 里 |
 | **`interface-colors.js` 使用内联 onclick** | 与主流事件绑定模式不一致 |
 | **导出 ZIP 图片统一 PNG** | 动画图片（GIF/WebP）会失去动画效果 |
+| **地区配置不随数据集导出** | 换环境需重新配置地区 |
+| **高亮 class 复用** | `unacquired.js` 与 `region-manager.js` 共用同名 class，切换面板时需清除残留 |
+| **两个表格同步变暗** | `_applyDimming` 只要任一处高亮，两个 table 都加 `unacquired-dimming` |
+| **筛选语义** | `null` = 全部选中；空数组 = 未选任何地区 |
 | **`data/default.js` 是空占位** | 当前未使用，可忽略 |
 | **`data.json` 引用图片文件名** | 文件名必须与 `data/images/` 中实际文件完全一致 |
 
@@ -294,6 +363,7 @@ Get-ChildItem js -Recurse -Filter *.js |
 | 输入容错 | `normalizeCell` 夹紧 `a ≤ t`，颜色越界钳制 |
 | 导入安全 | ZIP ≤ 50 MB，图片路径穿越校验，缺失图片计数 |
 | 图片隔离 | 图片存 IndexedDB，与 localStorage 分离 |
+| 缓存清理完整 | `doClear` 关闭 IndexedDB 连接 → 删除数据库 → 清 Cache API |
 
 ---
 
@@ -307,6 +377,9 @@ Get-ChildItem js -Recurse -Filter *.js |
 | 图片迁移到 IndexedDB | localStorage 5~10 MB 限制对 base64 图片极易耗尽 |
 | 弹窗回调存 window | 简化按钮事件绑定；靠 `closeConfirmDialog` 集中清理 |
 | 历史栈上限 20 步 | 平衡内存与可用性；超出的最早记录被移除 |
+| 未获取统计按地区独立 | 更直观；与"前 36 名"排行榜语义一致 |
+| 悬浮窗并列不互斥 | 用户可同时看到备注与获取地点；靠位置避让实现 |
+| 地区数据支持自定义 | 适应游戏版本更新；不硬编码在代码中 |
 
 ---
 

@@ -230,6 +230,10 @@
             if (App.noteSearch && App.dom.noteSearchInput && App.dom.noteSearchInput.value.trim()) {
                 App.noteSearch.search();
             }
+            // 未获取统计面板打开时，数据变更后同步刷新（新增）
+            if (App.state.activePanel === 'unacquired' && App.unacquired) {
+                App.unacquired.renderList();
+            }
         },
 
         /**

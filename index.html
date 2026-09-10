@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.8.7</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.1</title>
 
     <!-- 样式表：按层叠顺序引入 -->
     <link rel="stylesheet" href="css/base.css">
@@ -158,6 +158,14 @@
                 <div class="note-tooltip-body" id="noteTooltipBody"></div>
                 <div class="note-tooltip-resizer" id="noteTooltipResizer"></div>
             </div>
+
+            <div id="acquireTooltip" class="acquire-tooltip" style="display:none;">
+                <div class="acquire-tooltip-header">
+                    <span class="acquire-tooltip-title">📋 可获取地点</span>
+                    <button class="acquire-tooltip-close" id="btnCloseAcquireTooltip" title="关闭">✕</button>
+                </div>
+                <div class="acquire-tooltip-body" id="acquireTooltipBody"></div>
+            </div>
         </div>
 
         <!-- 右侧侧边栏：面板切换 -->
@@ -167,7 +175,7 @@
                     <polyline points="11 17 6 12 11 7" />
                     <polyline points="18 17 13 12 18 7" />
                 </svg>
-                <svg id="icon-panel-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg id="icon-panel-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
                     <polyline points="13 17 18 12 13 7" />
                     <polyline points="6 17 11 12 6 7" />
                 </svg>
@@ -194,6 +202,20 @@
                     <line x1="18" y1="20" x2="18" y2="10" />
                     <line x1="12" y1="20" x2="12" y2="4" />
                     <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+            </button>
+
+            <button class="sidebar-btn" data-panel="unacquired" title="未获取基质统计">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+            </button>
+
+            <button class="sidebar-btn" data-panel="region" title="地区管理">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
                 </svg>
             </button>
         </nav>
@@ -314,6 +336,33 @@
                 <button class="btn btn-block btn-clear" id="btnRecordClear">清除</button>
                 <p class="input-hint" id="recordHint"></p>
             </aside>
+
+            <aside class="unacquired-panel" id="unacquiredPanel">
+                <div class="panel-title">📊 未获取基质统计</div>
+                <details class="region-filter-details" id="regionFilterDetails">
+                    <summary class="region-filter-summary">
+                        <span>🗺️ 筛选地区</span>
+                        <span id="regionFilterCount" class="region-filter-count">全部</span>
+                    </summary>
+                    <div class="region-filter-body">
+                        <div class="region-filter-actions">
+                            <button class="btn btn-sm" id="btnRegionFilterAll">全选</button>
+                            <button class="btn btn-sm" id="btnRegionFilterNone">全不选</button>
+                        </div>
+                        <div id="regionFilterCheckboxes" class="region-filter-checkboxes"></div>
+                    </div>
+                </details>
+                <div id="unacquiredContent" class="unacquired-content"></div>
+            </aside>
+
+            <aside class="region-panel" id="regionPanel">
+                <div class="panel-title">🗺️ 地区管理</div>
+                <div class="region-toolbar">
+                    <button class="btn btn-sm" id="btnAddRegion">+ 新增地区</button>
+                    <button class="btn btn-sm btn-clear" id="btnResetRegions">恢复默认</button>
+                </div>
+                <div id="regionList" class="region-list"></div>
+            </aside>
         </div>
 
         <!-- 空页面容器 -->
@@ -330,8 +379,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.8.7(&quot;再访基地&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.8.7("再访基地"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.1(&quot;再访基地&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.1("再访基地"更新)
         </button>
     </footer>
 
@@ -855,7 +904,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.8.7("再访基地"更新)</div>
+                    <div class="version-ver">ver.0.9.1("再访基地"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -889,6 +938,38 @@
             <div class="modal-footer">
                 <button class="btn" id="btnCancelRowFilter">取消</button>
                 <button class="btn btn-primary" id="btnApplyRowFilter">应用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地区编辑弹窗 -->
+    <div class="modal-overlay" id="modalRegionEdit" style="display:none;">
+        <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+                <span id="regionEditTitle">编辑地区</span>
+                <button class="btn-icon btn-sm" id="btnCloseRegionEdit" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="regionEditName">地区名称</label>
+                    <input type="text" id="regionEditName" maxlength="20" placeholder="输入地区名" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin-top:10px;">
+                    <label>可获取副属性（提升项）</label>
+                    <div id="regionEditRows" class="region-checkbox-list"></div>
+                </div>
+                <div class="form-group" style="margin-top:10px;">
+                    <label>可获取词条</label>
+                    <div id="regionEditGroups" class="region-checkbox-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnCancelRegionEdit">取消</button>
+                <button class="btn btn-primary" id="btnConfirmRegionEdit">保存</button>
             </div>
         </div>
     </div>
@@ -936,14 +1017,17 @@
     <script src="js/features/data/dataset-remark.js"></script>
     <script src="js/features/data/import-export.js"></script>
     <script src="js/features/data/dataset-merge.js"></script>
+    <script src="js/features/data/region-manager.js"></script>
     <script src="js/features/data/default-loader.js"></script>
 
     <!-- 功能层：表格 -->
     <script src="js/features/table/table-renderer.js"></script>
     <script src="js/features/table/row-filter.js"></script>
     <script src="js/features/table/stats.js"></script>
+    <script src="js/features/table/unacquired.js"></script>
     <script src="js/features/table/note-search.js"></script>
     <script src="js/features/table/cell-tooltip.js"></script>
+    <script src="js/features/table/cell-acquire-tooltip.js"></script>
 
     <!-- 功能层：单元格操作 -->
     <script src="js/features/cell/cell-value.js"></script>

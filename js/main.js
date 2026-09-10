@@ -20,9 +20,14 @@
             dom.inputPanel.classList.toggle('active-panel', panelName === 'input');
             dom.statsPanel.classList.toggle('active-panel', panelName === 'stats');
             dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
-            if (panelName === 'stats') {
-                App.stats.renderStats();
+            dom.unacquiredPanel.classList.toggle('active-panel', panelName === 'unacquired'); // ← 新增
+            dom.regionPanel.classList.toggle('active-panel', panelName === 'region');         // ← 新增
+            if (panelName === 'stats') App.stats.renderStats();
+            if (panelName === 'unacquired') {
+                App.unacquired.renderRegionFilter();  // ← 新增
+                App.unacquired.renderList();
             }
+            if (panelName === 'region') App.regionManager.renderList();                        // ← 新增
             App.tableRenderer.updateHighlightedCell();
         },
 
@@ -130,6 +135,9 @@
 
         // 9. 初始化备注功能
         safeCall(() => App.note.initNoteFeature(), '备注功能初始化');
+
+        // 9.5 初始化可获取地点提示悬浮窗（新增）
+        safeCall(() => App.cellAcquireTooltip.init(), '可获取地点提示初始化');
 
         // 10. 渲染表格
         safeCall(() => App.tableRenderer.renderAllTables(), '表格渲染');

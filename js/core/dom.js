@@ -162,6 +162,25 @@
             'panelContainer',                   // 右侧面板容器
             'btnRecordApply',                   // 录入按钮
             'recordHint',                       // 录入提示文字
+            'unacquiredPanel',                  // 未获取统计面板
+            'unacquiredContent',                // 未获取统计内容容器
+            'regionPanel',                      // 地区管理面板
+            'regionList',                       // 地区列表容器
+            'btnAddRegion',                     // 新增地区按钮
+            'btnResetRegions',                  // 恢复默认地区按钮
+            'modalRegionEdit',                  // 地区编辑弹窗
+            'regionEditTitle',                  // 弹窗标题
+            'regionEditName',                   // 地区名输入框
+            'regionEditRows',                   // 副属性复选框容器
+            'regionEditGroups',                 // 词条复选框容器
+            'btnConfirmRegionEdit',             // 保存按钮
+            'btnCancelRegionEdit',              // 取消按钮
+            'btnCloseRegionEdit',               // 关闭按钮
+            'regionFilterDetails',              // 地区筛选折叠容器
+            'regionFilterCount',                // 已选地区计数
+            'regionFilterCheckboxes',           // 地区复选框容器
+            'btnRegionFilterAll',               // 全选按钮
+            'btnRegionFilterNone',              // 全不选按钮
 
             // ---------- 表格尺寸设置 ----------
             'colWidthSlider',                   // 列宽滑块
@@ -217,6 +236,11 @@
             'btnOpenSettings',                  // 设置按钮
             'cellTooltip',                      // 单元格悬停提示栏
             'tableArea',                        // 表格区域容器
+
+            // ---------- 可获取地点提示悬浮窗 ----------   
+            'acquireTooltip',                              
+            'acquireTooltipBody',                          
+            'btnCloseAcquireTooltip',                      
 
             // ---------- 设置弹窗 ----------
             'modalSettingsOverlay',             // 设置弹窗遮罩

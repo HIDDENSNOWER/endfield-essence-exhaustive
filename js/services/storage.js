@@ -336,7 +336,52 @@
          */
         saveCurrentDatasetKey(key) {
             this.set(C.CURRENT_DATASET_KEY, key);
-        }
+        },
+
+        // ==================== 地区数据 ====================
+
+        /**
+         * 读取地区数据（无自定义时返回默认地区副本）
+         */
+        getRegions() {
+            const stored = this.getJSON(C.REGIONS_STORAGE_KEY, null);
+            if (Array.isArray(stored) && stored.length > 0) return stored;
+            return C.DEFAULT_REGIONS.map(r => ({
+                name: r.name,
+                rows: r.rows.slice(),
+                groups: r.groups.slice()
+            }));
+        },
+
+        /**
+         * 保存地区数据
+         */
+        saveRegions(regions) {
+            this.setJSON(C.REGIONS_STORAGE_KEY, regions);
+        },
+
+        /**
+         * 恢复默认地区（删除自定义存储）
+         */
+        resetRegions() {
+            this.remove(C.REGIONS_STORAGE_KEY);
+        },
+
+        /**
+         * 读取未获取统计的地区筛选（null = 全部选中）
+         * @returns {string[]|null}
+         */
+        getUnacquiredRegionFilter() {
+            return this.getJSON(C.UNACQUIRED_REGION_FILTER_KEY, null);
+        },
+
+        /**
+         * 保存未获取统计的地区筛选
+         * @param {string[]|null} regions - 选中的地区名数组，null 表示全部
+         */
+        saveUnacquiredRegionFilter(regions) {
+            this.setJSON(C.UNACQUIRED_REGION_FILTER_KEY, regions);
+        },
     };
 
 })(window.App = window.App || {});

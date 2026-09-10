@@ -100,6 +100,16 @@
             if (App.noteSearch && App.noteSearch.bindNoteSearchEvents) {
                 App.noteSearch.bindNoteSearchEvents();
             }
+
+            // 地区管理
+            if (App.regionManager && App.regionManager.bindRegionManagerEvents) {
+                App.regionManager.bindRegionManagerEvents();
+            }
+
+            // 未获取统计的地区筛选 + 悬停高亮
+            if (App.unacquired && App.unacquired.bindRegionFilterEvents) {
+                App.unacquired.bindRegionFilterEvents();
+            }
         },
 
         /**
