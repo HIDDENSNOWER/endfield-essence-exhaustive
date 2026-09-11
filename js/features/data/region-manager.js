@@ -1,34 +1,112 @@
 /**
- * region-manager.js - 地区管理（列表 / 编辑 / 悬停高亮）
+ * region-manager.js - 地区管理（列表 / 编辑 / 悬停高亮 / 收集进度）
  * 挂载到 App.regionManager
  *
  * v0.9.2 重构：
  *   - 高亮逻辑改为调用 App.cellHighlighter
  *   - getUnacquiredScore 抽取至 App.utils
- *   - 移除本模块内的 _applyDimming / _removeDimming / _highlightedCells
+ *
+ * v0.9.11 新增：
+ *   - 地区卡片显示"基质收集进度条"
+ *   - 进度 = 已完成格数 / 320（8 能力值 × 8 系列技能 × 5 能力值）
+ *   - 分档着色（<30% 红 / 30~70% 橙 / ≥70% 绿）
  */
 (function (App) {
     'use strict';
 
     let editingIndex = -1;
 
+    // ==================== 模块级缓存 ====================
+    /** 单元格缓存：_cellCache[rowIdx][colIdx] = normalizeCell 结果 */
+    let _cellCache = null;
+
+    function buildCellCache() {
+        const rows = App.state.rows;
+        _cellCache = rows.map(row => row.data.map(c => App.utils.normalizeCell(c)));
+    }
+
+    function releaseCellCache() {
+        _cellCache = null;
+    }
+
+    function getCachedCell(rowIdx, colIdx) {
+        const row = _cellCache && _cellCache[rowIdx];
+        return row ? row[colIdx] : null;
+    }
+
     App.regionManager = {
         _hoveredCard: null,
+
+        // ==================== 进度计算 ====================
+
+        /**
+         * 计算某地区的基质收集进度
+         * 遍历 region.rows × region.groups × SUB_ATTRS 得到至多 320 格
+         * @param {Object} region - { name, rows, groups }
+         * @returns {{ completed: number, total: number, percent: number }}
+         */
+        _calcRegionProgress(region) {
+            const C = App.constants;
+            const subAttrs = C.SUB_ATTRS;
+
+            const total = region.rows.length * region.groups.length * subAttrs.length;
+            if (total === 0) return { completed: 0, total: 0, percent: 0 };
+
+            let completed = 0;
+
+            region.rows.forEach(rowName => {
+                const rowIdx = C.ROW_NAMES.indexOf(rowName);
+                if (rowIdx < 0) return;
+                region.groups.forEach(groupName => {
+                    const gi = C.ALL_GROUPS.findIndex(g => g.name === groupName);
+                    if (gi < 0) return;
+                    subAttrs.forEach(mainAttr => {
+                        const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
+                        if (si < 0) return;
+                        const colIndex = App.utils.getColumnIndex(gi, si);
+                        const cell = getCachedCell(rowIdx, colIndex);
+                        if (!cell) return;
+                        if (cell.t > 0 && cell.a === cell.t) completed++;
+                        else if (cell.t === 0 && cell.v !== '') completed++;
+                    });
+                });
+            });
+
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return { completed, total, percent };
+        },
+
+        /** 百分比 → 档位 class */
+        _progressClass(percent) {
+            if (percent >= 70) return 'progress-high';
+            if (percent >= 30) return 'progress-mid';
+            return 'progress-low';
+        },
 
         // ==================== 渲染 ====================
 
         renderList() {
             const container = App.dom.regionList;
             if (!container) return;
+
             const regions = App.storage.getRegions();
             if (regions.length === 0) {
                 container.innerHTML = '<p class="input-hint" style="text-align:center;">暂无地区</p>';
                 return;
             }
-            container.innerHTML = regions.map((region, index) => `
-                <div class="region-card" data-region="${App.utils.escapeHtml(region.name)}" data-index="${index}">
+
+            // 构建单元格缓存（整个 renderList 期间复用）
+            buildCellCache();
+
+            container.innerHTML = regions.map((region, index) => {
+                const progress = this._calcRegionProgress(region);
+                const progressClass = this._progressClass(progress.percent);
+                const safeName = App.utils.escapeHtml(region.name);
+
+                return `
+                <div class="region-card" data-region="${safeName}" data-index="${index}">
                     <div class="region-card-header">
-                        <span class="region-card-name">${App.utils.escapeHtml(region.name)}</span>
+                        <span class="region-card-name">${safeName}</span>
                         <div class="region-card-actions">
                             <button class="btn btn-sm btn-outline-gray" data-action="edit" data-index="${index}">编辑</button>
                             <button class="btn btn-sm btn-danger" data-action="delete" data-index="${index}">删除</button>
@@ -36,21 +114,31 @@
                     </div>
                     <div class="region-card-body">
                         <div class="region-attr-row">
-                            <span class="region-label">属性</span>
+                            <span class="region-label">能力值</span>
                             ${region.rows.map(r => `<span class="region-tag">${App.utils.escapeHtml(r)}</span>`).join('')}
                         </div>
                         <div class="region-attr-row">
                             <span class="region-label">系列技能</span>
                             ${region.groups.map(g => `<span class="region-tag">${App.utils.escapeHtml(g)}</span>`).join('')}
                         </div>
+                        <div class="region-progress-row">
+                            <span class="region-progress-label">收集进度</span>
+                            <div class="region-progress-bar">
+                                <div class="region-progress-fill ${progressClass}" style="width:${progress.percent}%"></div>
+                            </div>
+                            <span class="region-progress-text">${progress.completed}/${progress.total} (${progress.percent}%)</span>
+                        </div>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
+
+            releaseCellCache();
         },
 
         // ==================== 悬停高亮 ====================
 
         /**
-         * 高亮某地区的全部可刷取单元格（8 属性 × 8 系列技能 × 5 能力值 = 320 格）
+         * 高亮某地区的全部可刷取单元格（8 能力值 × 8 系列技能 × 5 能力值 = 320 格）
          */
         _highlightRegion(regionName) {
             const regions = App.storage.getRegions();
@@ -126,7 +214,7 @@
             const groups = Array.from(document.querySelectorAll('#regionEditGroups input:checked')).map(i => i.value);
 
             if (rows.length === 0 || groups.length === 0) {
-                App.modal.showAlert('属性和系列技能至少各选一个', '提示');
+                App.modal.showAlert('能力值和系列技能至少各选一个', '提示');
                 return;
             }
 

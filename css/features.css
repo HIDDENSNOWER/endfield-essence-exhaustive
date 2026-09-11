@@ -1071,3 +1071,58 @@ table.unacquired-dimming thead th {
     font-family: monospace;
     white-space: nowrap;
 }
+
+/* ==================== 地区卡片收集进度条（v0.9.11） ==================== */
+.region-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border-muted);
+}
+
+.region-progress-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.region-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-muted);
+    min-width: 0;
+}
+
+.region-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.region-progress-fill.progress-low {
+    background: var(--danger-primary);
+}
+
+.region-progress-fill.progress-mid {
+    background: var(--progress-mid-color, #f0ad4e);
+}
+
+.region-progress-fill.progress-high {
+    background: var(--success-primary);
+}
+
+.region-progress-text {
+    font-size: 0.68rem;
+    font-family: monospace;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 90px;
+    text-align: right;
+}

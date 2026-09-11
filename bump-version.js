@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 /**
  * bump-version.js - 统一更新项目版本号
- * 用法：node bump-version.js 0.9.2   或   双击 bump-version.bat
+ * 用法：node bump-version.js 0.9.12   或   双击 bump-version.bat
+ *
+ * 更新目标（共 6 个文件）：
+ *   1. version.json       - version + buildTime
+ *   2. package.json       - "version" 字段
+ *   3. js/core/migration.js - CURRENT_VERSION 常量
+ *   4. index.html         - 所有 ver.X.Y.Z
+ *   5. README.md          - "**当前版本**：vX.Y.Z"
+ *   6. ARCHITECTURE.md    - "适用版本：**vX.Y.Z**"
  */
 
 const fs = require('fs');
@@ -48,12 +56,28 @@ function run(newVersion) {
         return JSON.stringify(data, null, 2) + '\n';
     });
 
-    // 2. index.html（所有 ver.X.Y.Z）
+    // 2. package.json — 只改顶层 "version" 字段，不误伤依赖版本
+    updateFile('package.json', (content) => {
+        return content.replace(
+            /("version"\s*:\s*")\d+\.\d+\.\d+[a-z]?(")/,
+            '$1' + newVersion + '$2'
+        );
+    });
+
+    // 3. js/core/migration.js — 只改 CURRENT_VERSION 常量
+    updateFile('js/core/migration.js', (content) => {
+        return content.replace(
+            /(const CURRENT_VERSION\s*=\s*')\d+\.\d+\.\d+[a-z]?(')/,
+            '$1' + newVersion + '$2'
+        );
+    });
+
+    // 4. index.html（所有 ver.X.Y.Z）
     updateFile('index.html', (content) => {
         return content.replace(/ver\.\d+\.\d+\.\d+[a-z]?/g, 'ver.' + newVersion);
     });
 
-    // 3. README.md — 只改"**当前版本**：vX.Y.Z"，不误伤历史标注（如"v0.9.1 新增"）
+    // 5. README.md — 只改"**当前版本**：vX.Y.Z"，不误伤历史标注
     updateFile('README.md', (content) => {
         return content.replace(
             /(\*\*当前版本\*\*：)v\d+\.\d+\.\d+[a-z]?/g,
@@ -61,7 +85,7 @@ function run(newVersion) {
         );
     });
 
-    // 4. ARCHITECTURE.md — 只改"适用版本：**vX.Y.Z**"
+    // 6. ARCHITECTURE.md — 只改"适用版本：**vX.Y.Z**"
     updateFile('ARCHITECTURE.md', (content) => {
         return content.replace(
             /(适用版本：\*\*)v\d+\.\d+\.\d+[a-z]?/g,
@@ -87,7 +111,7 @@ if (argVersion) {
         input: process.stdin,
         output: process.stdout
     });
-    rl.question('请输入新版本号（如 0.9.2）: ', (answer) => {
+    rl.question('请输入新版本号x.x.x: ', (answer) => {
         const v = (answer || '').trim();
         rl.close();
         if (!validateVersion(v)) {
