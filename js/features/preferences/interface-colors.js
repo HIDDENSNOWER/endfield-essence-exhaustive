@@ -92,9 +92,7 @@
                     html += `<div class="interface-color-item" data-var-name="${varName}">
                                 <label class="interface-color-label">${label}</label>
                                 <div class="interface-color-controls">
-                                    <input type="color" class="interface-color-input" data-var-name="${varName}" value="${val}"
-                                        oninput="App.interfaceColors._onColorInput(this)"
-                                        onchange="App.interfaceColors._onColorInput(this)">
+                                    <input type="color" class="interface-color-input" data-var-name="${varName}" value="${val}">
                                     <span class="interface-color-value">${val}</span>
                                 </div>
                             </div>`;
@@ -102,6 +100,11 @@
                 html += `</div></div>`;
             }
             container.innerHTML = html;
+            // 事件绑定（替代内联 oninput / onchange，为未来 CSP 铺路）
+            container.querySelectorAll('.interface-color-input').forEach(input => {
+                input.addEventListener('input', () => this._onColorInput(input));
+                input.addEventListener('change', () => this._onColorInput(input));
+            });
         },
 
         _onColorInput(input) {

@@ -244,11 +244,12 @@
          */
         updateHighlightedCell() {
             const state = App.state;
+            const uiState = App.uiState;
 
             // 移除之前的高亮
-            if (state.highlightedCellElement) {
-                state.highlightedCellElement.classList.remove('cell-highlight-blink');
-                state.highlightedCellElement = null;
+            if (uiState.highlightedCellElement) {
+                uiState.highlightedCellElement.classList.remove('cell-highlight-blink');
+                uiState.highlightedCellElement = null;
             }
 
             // 根据当前面板选择对应的下拉框
@@ -276,7 +277,7 @@
             const cell = document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`);
             if (cell) {
                 cell.classList.add('cell-highlight-blink');
-                state.highlightedCellElement = cell;
+                uiState.highlightedCellElement = cell;
             }
 
             // 加载备注到输入面板

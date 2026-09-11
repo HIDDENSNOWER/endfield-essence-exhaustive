@@ -169,6 +169,9 @@
         // 17. 更新提示
         safeCall(() => { if (App.dom.inputHint) App.dom.inputHint.textContent = '准备就绪'; }, '提示更新');
 
+        // 17.5 构建命名空间分层视图（v0.9.5 新增）
+        safeCall(() => App.namespace.init(), '命名空间分层');
+
         // 18. 首次访问显示关于弹窗，之后加载默认数据集
         safeCall(() => {
             const aboutShown = sessionStorage.getItem('smarttable_about_shown');

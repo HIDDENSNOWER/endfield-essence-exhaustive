@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.4** ｜ 与代码同步
+> 适用版本：**v0.9.5** ｜ 与代码同步
 
 ---
 
@@ -452,3 +452,32 @@ npm test
 
 - v0.9.5：warning ≤ 10
 - v0.9.7：warning = 0
+
+---
+
+## 架构演进（v0.9.5）
+
+### 命名空间分层视图
+
+为 48 个平铺模块提供分层视图（不改变现有挂载点）：
+
+| 层 | 挂载点 | 模块 |
+|----|--------|------|
+| 核心层 | `App.core.*` | constants / state / uiState / dom / utils / dataModel |
+| 服务层 | `App.services.*` | storage / modal / imageStore |
+| 功能层 | `App.features.*` | 26 个业务模块 |
+| 入口层 | `App.entry.*` | events / layout |
+
+- 定义于 `js/core/namespace.js`，由 `main.js` 的 `init()` 末尾调用 `App.namespace.init()`
+- 现有 `App.xxx` 别名保持兼容，调用点无需修改
+- 未来可逐批将模块挂载点迁移到 `App.<layer>.xxx`
+
+### 状态拆分
+
+- `App.state`：业务状态（rows / theme / baseline / history / panel / sort）
+- `App.uiState`：临时 UI 状态（pendingApply / confirmCallback / timer / highlightedCellElement）
+
+### 内联事件清理
+
+`interface-colors.js` 的 `oninput` / `onchange` 已改为 `addEventListener`，
+为未来 CSP 严格化铺路。

@@ -243,7 +243,7 @@
                 </div>`;
 
             // 存储待处理操作信息，供后续按钮使用
-            App.state.pendingApply = {
+            App.uiState.pendingApply = {
                 rowIdx,
                 colIndex,
                 newVal,
@@ -261,7 +261,7 @@
          */
         closeCompareModal() {
             App.modal.closeModal(App.dom.modalCompare);
-            App.state.pendingApply = null; // 清空待处理信息
+            App.uiState.pendingApply = null; // 清空待处理信息
         },
 
         /**
@@ -300,7 +300,7 @@
                 <div style="background:var(--bg-tertiary); padding:8px; border-radius:6px; font-size:0.8rem; color:var(--text-secondary);">${reason}</div>
                 <p style="font-size:0.8rem; color:var(--text-tertiary); margin-top:10px;">是否仍要执行此操作？</p>
             `;
-            App.state.confirmCallback = onConfirm; // 存储回调
+            App.uiState.confirmCallback = onConfirm; // 存储回调
             App.modal.closeModal(App.dom.modalCompare); // 关闭对比弹窗
             App.modal.openModal(App.dom.modalConfirm); // 打开确认弹窗
         },
@@ -310,15 +310,15 @@
          */
         closeConfirmModal() {
             App.modal.closeModal(App.dom.modalConfirm);
-            App.state.confirmCallback = null;
+            App.uiState.confirmCallback = null;
         },
 
         /**
          * 执行二次确认的回调
          */
         executeConfirmedAction() {
-            if (App.state.confirmCallback) {
-                App.state.confirmCallback(); // 调用存储的回调
+            if (App.uiState.confirmCallback) {
+                App.uiState.confirmCallback(); // 调用存储的回调
             }
             this.closeConfirmModal();
         },
@@ -330,8 +330,8 @@
          * 否则直接关闭弹窗并提示已保留。
          */
         executeKeepOld() {
-            if (!App.state.pendingApply) return;
-            const sug = App.state.pendingApply.suggestion;
+            if (!App.uiState.pendingApply) return;
+            const sug = App.uiState.pendingApply.suggestion;
             if (sug && !sug.keepOld) {
                 // 系统建议替换，但用户选择保留，需要二次确认
                 this.showConfirmModal('系统建议“替换为新值”，您选择了保留旧值。', `原因：${sug.reason}`, () => {
@@ -352,33 +352,33 @@
          * 否则直接应用新值。
          */
         executeReplaceNew() {
-            if (!App.state.pendingApply) return;
-            const sug = App.state.pendingApply.suggestion;
+            if (!App.uiState.pendingApply) return;
+            const sug = App.uiState.pendingApply.suggestion;
             if (sug && sug.keepOld) {
                 // 系统建议保留，但用户选择替换，需要二次确认
                 this.showConfirmModal('系统建议“保留旧值”，您选择了替换为新值。', `原因：${sug.reason}`, () => {
-                    if (App.state.pendingApply) {
+                    if (App.uiState.pendingApply) {
                         this.applyNewValue(
-                            App.state.pendingApply.rowIdx,
-                            App.state.pendingApply.colIndex,
-                            App.state.pendingApply.newVal,
-                            App.state.pendingApply.groupName,
-                            App.state.pendingApply.rowName,
-                            App.state.pendingApply.subName
+                            App.uiState.pendingApply.rowIdx,
+                            App.uiState.pendingApply.colIndex,
+                            App.uiState.pendingApply.newVal,
+                            App.uiState.pendingApply.groupName,
+                            App.uiState.pendingApply.rowName,
+                            App.uiState.pendingApply.subName
                         );
                     }
                     this.closeCompareModal();
                 });
             } else {
                 // 用户选择与建议一致，直接应用
-                if (App.state.pendingApply) {
+                if (App.uiState.pendingApply) {
                     this.applyNewValue(
-                        App.state.pendingApply.rowIdx,
-                        App.state.pendingApply.colIndex,
-                        App.state.pendingApply.newVal,
-                        App.state.pendingApply.groupName,
-                        App.state.pendingApply.rowName,
-                        App.state.pendingApply.subName
+                        App.uiState.pendingApply.rowIdx,
+                        App.uiState.pendingApply.colIndex,
+                        App.uiState.pendingApply.newVal,
+                        App.uiState.pendingApply.groupName,
+                        App.uiState.pendingApply.rowName,
+                        App.uiState.pendingApply.subName
                     );
                 }
                 this.closeCompareModal();
