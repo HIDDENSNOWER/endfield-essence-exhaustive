@@ -1,20 +1,22 @@
 {
   "name": "endfield-essence-exhaustive",
   "private": true,
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "EEE · 终末地基质穷举数据记录与统计工具",
   "scripts": {
-      "lint": "eslint js/ bump-version.js",
-      "lint:fix": "eslint js/ bump-version.js --fix",
-      "format": "prettier --write \"js/**/*.js\"",
-      "format:check": "prettier --check \"js/**/*.js\"",
-      "test": "node --test"
+    "lint": "eslint js/ bump-version.js",
+    "lint:fix": "eslint js/ bump-version.js --fix",
+    "format": "prettier --write \"js/**/*.js\"",
+    "format:check": "prettier --check \"js/**/*.js\"",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "devDependencies": {
-      "eslint": "^9.15.0",
-      "prettier": "^3.3.3"
+    "eslint": "^9.15.0",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.3.3"
   },
   "engines": {
-      "node": ">=18.18"
+    "node": ">=18.18"
   }
 }

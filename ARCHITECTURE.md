@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.8** ｜ 与代码同步
+> 适用版本：**v0.9.9** ｜ 与代码同步
 
 ---
 
@@ -594,3 +594,44 @@ npm test
 ### 硬编码颜色变量化（T-23）
 
 新增 CSS 变量：`--progress-mid-color` / `--rank-gold|silver|bronze` / `--dimming-overlay`。
+
+---
+
+## 维护与工程化（v0.9.9）
+
+### CI 基础设施升级
+
+- `actions/checkout@v4` → `@v5`
+- `actions/setup-node@v4` → `@v5`
+- Node.js 20 → 24（消除 GitHub Actions 弃用警告）
+- ESLint 升级到最新 9.x patch
+
+### Lint 清零
+
+31 条 warning 全部处理：
+
+- 3 条 `prefer-const`：`eslint --fix` 自动修复
+- 22 条 `catch (e)` / `catch (err)` → `_e` / `_err`（块内引用时保持原名）
+- 6 条未使用变量：清理或加 `_` 前缀
+
+### DOM 层测试
+
+新增 `test/dom.test.js`（13 用例，jsdom 环境）：
+
+- `App.cellHighlighter` 的索引缓存、高亮、清除、变暗蒙版
+- 测试总数：90 → 103
+
+### 覆盖率报告
+
+`npm run test:coverage` 使用 Node 内置 `--experimental-test-coverage`：
+
+| 文件 | Line % | Branch % | Funcs % |
+|------|--------|----------|---------|
+| `constants.js` | 100.00 | 80.00 | 100.00 |
+| `utils.js` | 80.19 | 80.23 | 67.74 |
+| `cell-highlighter.js` | 92.54 | 72.41 | 100.00 |
+| `dataset-merge.js` | 58.38 | 80.61 | 56.76 |
+| `dataset-manager.js` | 35.84 | 95.24 | 10.00 |
+| **全项目** | **65.47** | **80.75** | **58.88** |
+
+CI 增加覆盖率步骤（`continue-on-error: true`，不阻断）。
