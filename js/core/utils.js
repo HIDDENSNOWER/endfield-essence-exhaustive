@@ -38,17 +38,22 @@
                 const a = Math.min(Math.max(0, Number(cell.a) || 0), t); // 夹紧 0 <= a <= t
                 // note 必须为非数组对象，images 逐项过滤为字符串
                 const noteRaw = cell.note;
-                const note = (!noteRaw || Array.isArray(noteRaw) || typeof noteRaw !== 'object')
-                    ? { text: '', images: [] }
-                    : {
-                        text: typeof noteRaw.text === 'string' ? noteRaw.text : '',
-                        images: Array.isArray(noteRaw.images)
-                            ? noteRaw.images.filter(img => typeof img === 'string')
-                            : []
-                      };
+                const note =
+                    !noteRaw || Array.isArray(noteRaw) || typeof noteRaw !== 'object'
+                        ? { text: '', images: [] }
+                        : {
+                              text: typeof noteRaw.text === 'string' ? noteRaw.text : '',
+                              images: Array.isArray(noteRaw.images)
+                                  ? noteRaw.images.filter((img) => typeof img === 'string')
+                                  : []
+                          };
                 return {
-                    v: typeof cell.v === 'string' ? cell.v
-                        : (cell.v === undefined || cell.v === null ? '' : String(cell.v)),
+                    v:
+                        typeof cell.v === 'string'
+                            ? cell.v
+                            : cell.v === undefined || cell.v === null
+                              ? ''
+                              : String(cell.v),
                     t,
                     a,
                     note
@@ -75,7 +80,7 @@
          * 作用：判断字符串是否恰好为三位数字，如果是则转换为数字数组。
          */
         parseTriple(val) {
-            const s = String(val).trim();  // 去除首尾空格
+            const s = String(val).trim(); // 去除首尾空格
             return /^\d{3}$/.test(s) ? s.split('').map(Number) : null;
         },
 
@@ -148,19 +153,23 @@
          * 滚轮向上选择前一项，向下选择后一项，循环切换。
          */
         enableWheelSelect(el) {
-            el.addEventListener('wheel', function (e) {
-                e.preventDefault();  // 阻止页面滚动
-                const opts = this.options;
-                if (!opts.length) return;
-                // 计算新的索引：滚轮向下（deltaY > 0）加1，否则减1
-                let idx = this.selectedIndex + (e.deltaY > 0 ? 1 : -1);
-                // 循环处理边界
-                if (idx < 0) idx = opts.length - 1;
-                else if (idx >= opts.length) idx = 0;
-                this.selectedIndex = idx;
-                // 手动触发 change 事件，通知其他监听器
-                this.dispatchEvent(new Event('change', { bubbles: true }));
-            }, { passive: false }); // 需要 preventDefault，因此不能使用 passive
+            el.addEventListener(
+                'wheel',
+                function (e) {
+                    e.preventDefault(); // 阻止页面滚动
+                    const opts = this.options;
+                    if (!opts.length) return;
+                    // 计算新的索引：滚轮向下（deltaY > 0）加1，否则减1
+                    let idx = this.selectedIndex + (e.deltaY > 0 ? 1 : -1);
+                    // 循环处理边界
+                    if (idx < 0) idx = opts.length - 1;
+                    else if (idx >= opts.length) idx = 0;
+                    this.selectedIndex = idx;
+                    // 手动触发 change 事件，通知其他监听器
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                },
+                { passive: false }
+            ); // 需要 preventDefault，因此不能使用 passive
         },
 
         /**
@@ -173,20 +182,24 @@
          */
         enableTripleInputScroll(inputEl) {
             // 滚轮增减
-            inputEl.addEventListener('wheel', function (e) {
-                e.preventDefault();
-                let num = parseInt(this.value, 10);
-                // 如果为空或0，根据滚动方向设置默认值
-                if (isNaN(num) || num === 0) {
-                    num = e.deltaY > 0 ? 9 : 1;
-                } else {
-                    // 向下滚动减1，向上滚动加1，循环1~9
-                    num = e.deltaY > 0 ? (num === 1 ? 9 : num - 1) : (num === 9 ? 1 : num + 1);
-                }
-                this.value = num;
-                // 触发 input 事件
-                this.dispatchEvent(new Event('input', { bubbles: true }));
-            }, { passive: false });
+            inputEl.addEventListener(
+                'wheel',
+                function (e) {
+                    e.preventDefault();
+                    let num = parseInt(this.value, 10);
+                    // 如果为空或0，根据滚动方向设置默认值
+                    if (isNaN(num) || num === 0) {
+                        num = e.deltaY > 0 ? 9 : 1;
+                    } else {
+                        // 向下滚动减1，向上滚动加1，循环1~9
+                        num = e.deltaY > 0 ? (num === 1 ? 9 : num - 1) : num === 9 ? 1 : num + 1;
+                    }
+                    this.value = num;
+                    // 触发 input 事件
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                },
+                { passive: false }
+            );
 
             // 过滤输入：只保留数字，且最多1位
             inputEl.addEventListener('input', function () {
@@ -241,7 +254,8 @@
             const dom = App.dom;
             const groups = App.constants.ALL_GROUPS;
             dom.inputSubCol.innerHTML = groups[groupIdx].sub
-                .map((s, i) => `<option value="${i}">${s}</option>`).join('');
+                .map((s, i) => `<option value="${i}">${s}</option>`)
+                .join('');
         },
 
         /**
@@ -254,7 +268,8 @@
             const dom = App.dom;
             const groups = App.constants.ALL_GROUPS;
             dom.recordSubCol.innerHTML = groups[groupIdx].sub
-                .map((s, i) => `<option value="${i}">${s}</option>`).join('');
+                .map((s, i) => `<option value="${i}">${s}</option>`)
+                .join('');
         },
 
         /**
@@ -273,6 +288,40 @@
         },
 
         /**
+         * 围绕坐标生成 8 个候选位（按离锚点由近到远）
+         * v0.9.16：从 note.js / cell-acquire-tooltip.js 抽取，消除重复代码
+         * @param {number} x - 锚点 X（鼠标位置）
+         * @param {number} y - 锚点 Y（鼠标位置）
+         * @param {number} w - 悬浮窗宽度
+         * @param {number} h - 悬浮窗高度
+         * @returns {Array<{left: number, top: number}>} 8 个候选位置
+         */
+        buildAroundCursor(x, y, w, h) {
+            const m = 15;
+            return [
+                { left: x + m, top: y + m }, // 右下
+                { left: x - w - m, top: y + m }, // 左下
+                { left: x + m, top: y - h - m }, // 右上
+                { left: x - w - m, top: y - h - m }, // 左上
+                { left: x - w / 2, top: y + m }, // 下
+                { left: x + m, top: y - h / 2 }, // 右
+                { left: x - w - m, top: y - h / 2 }, // 左
+                { left: x - w / 2, top: y - h - m } // 上
+            ];
+        },
+
+        /**
+         * 判断两个矩形是否重叠
+         * v0.9.16：从 note.js / cell-acquire-tooltip.js 抽取
+         * @param {{left: number, top: number, right: number, bottom: number}} a
+         * @param {{left: number, top: number, right: number, bottom: number}} b
+         * @returns {boolean} 是否重叠
+         */
+        rectsOverlap(a, b) {
+            return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+        },
+
+        /**
          * 生成从 arr 中取 k 个元素的所有组合
          * @param {Array} arr
          * @param {number} k
@@ -283,7 +332,10 @@
         combinations(arr, k) {
             const result = [];
             const combine = (start, current) => {
-                if (current.length === k) { result.push(current.slice()); return; }
+                if (current.length === k) {
+                    result.push(current.slice());
+                    return;
+                }
                 for (let i = start; i < arr.length; i++) {
                     current.push(arr[i]);
                     combine(i + 1, current);
@@ -404,7 +456,11 @@
         hexToRgb(hex) {
             let h = String(hex || '').replace('#', '');
             // 支持 3 位简写（#abc → #aabbcc）
-            if (h.length === 3) h = h.split('').map(c => c + c).join('');
+            if (h.length === 3)
+                h = h
+                    .split('')
+                    .map((c) => c + c)
+                    .join('');
             const v = parseInt(h, 16);
             if (isNaN(v) || h.length !== 6) return { r: 0, g: 0, b: 0 };
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
@@ -420,7 +476,9 @@
         rgbToHex(r, g, b) {
             // 分量钳制到 0-255，防止越界值产生错误颜色
             const clamp = (v) => Math.min(255, Math.max(0, Math.round(Number(v) || 0)));
-            r = clamp(r); g = clamp(g); b = clamp(b);
+            r = clamp(r);
+            g = clamp(g);
+            b = clamp(b);
             return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
         },
 
@@ -432,7 +490,9 @@
          * @returns {{c: number, m: number, y: number, k: number}} CMYK 值（0-100）
          */
         rgbToCmyk(r, g, b) {
-            let c = 1 - r / 255, m = 1 - g / 255, y = 1 - b / 255;
+            let c = 1 - r / 255,
+                m = 1 - g / 255,
+                y = 1 - b / 255;
             let k = Math.min(c, m, y);
             if (k === 1) return { c: 0, m: 0, y: 0, k: 100 };
             c = Math.round(((c - k) / (1 - k)) * 100);
@@ -451,7 +511,10 @@
          * @returns {{r: number, g: number, b: number}}
          */
         cmykToRgb(c, m, y, k) {
-            c /= 100; m /= 100; y /= 100; k /= 100;
+            c /= 100;
+            m /= 100;
+            y /= 100;
+            k /= 100;
             return {
                 r: Math.round(255 * (1 - c) * (1 - k)),
                 g: Math.round(255 * (1 - m) * (1 - k)),
@@ -467,8 +530,11 @@
          * @returns {{h: number, s: number, l: number}} HSL 值（h: 0-360, s/l: 0-100）
          */
         rgbToHsl(r, g, b) {
-            r /= 255; g /= 255; b /= 255;
-            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            const max = Math.max(r, g, b),
+                min = Math.min(r, g, b);
             let h, s;
             const l = (max + min) / 2;
             if (max === min) {
@@ -477,9 +543,15 @@
                 const d = max - min;
                 s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
                 switch (max) {
-                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                    case g: h = ((b - r) / d + 2) / 6; break;
-                    case b: h = ((r - g) / d + 4) / 6; break;
+                    case r:
+                        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+                        break;
+                    case g:
+                        h = ((b - r) / d + 2) / 6;
+                        break;
+                    case b:
+                        h = ((r - g) / d + 4) / 6;
+                        break;
                 }
             }
             return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
@@ -493,17 +565,37 @@
          * @returns {{r: number, g: number, b: number}}
          */
         hslToRgb(h, s, l) {
-            s /= 100; l /= 100;
+            s /= 100;
+            l /= 100;
             const c = (1 - Math.abs(2 * l - 1)) * s;
-            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
             const m = l - c / 2;
             let r, g, b;
-            if (h < 60) { r = c; g = x; b = 0; }
-            else if (h < 120) { r = x; g = c; b = 0; }
-            else if (h < 180) { r = 0; g = c; b = x; }
-            else if (h < 240) { r = 0; g = x; b = c; }
-            else if (h < 300) { r = x; g = 0; b = c; }
-            else { r = c; g = 0; b = x; }
+            if (h < 60) {
+                r = c;
+                g = x;
+                b = 0;
+            } else if (h < 120) {
+                r = x;
+                g = c;
+                b = 0;
+            } else if (h < 180) {
+                r = 0;
+                g = c;
+                b = x;
+            } else if (h < 240) {
+                r = 0;
+                g = x;
+                b = c;
+            } else if (h < 300) {
+                r = x;
+                g = 0;
+                b = c;
+            } else {
+                r = c;
+                g = 0;
+                b = x;
+            }
             return {
                 r: Math.round((r + m) * 255),
                 g: Math.round((g + m) * 255),
@@ -511,5 +603,5 @@
             };
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));
+const __hook_test_a = 1;
