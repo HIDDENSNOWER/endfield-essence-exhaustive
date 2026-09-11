@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.14</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.15</title>
 
     <!-- 内容安全策略（CSP） -->
     <meta http-equiv="Content-Security-Policy"
@@ -418,8 +418,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.14(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.14("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.15(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.15("裂隙填充"更新)
         </button>
     </footer>
 
@@ -653,6 +653,39 @@
                                     </div>
                                 </div>
                                 <p class="input-hint" style="margin-top: 10px;">调整基质统计表格的单元格大小。</p>
+                            </div>
+                            <div class="settings-section">
+                                <h3 class="settings-section-title">单元格键盘导航</h3>
+                                <p class="input-hint" style="margin-bottom: 10px; line-height: 1.5;">
+                                    在数据管理 / 录入面板激活时，可用以下按键在单元格之间移动选择。<br>
+                                    上下键可跨表连续移动（保持相对列位置）；左右键仅在本部分内移动。<br>
+                                    点击输入框后按任意键即可修改；按 Esc 取消修改。
+                                </p>
+                                <div class="setting-row">
+                                    <label class="setting-label">上移</label>
+                                    <div class="setting-controls">
+                                        <input type="text" class="key-capture-input" data-dir="up" readonly placeholder="点击后按键">
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="setting-label">下移</label>
+                                    <div class="setting-controls">
+                                        <input type="text" class="key-capture-input" data-dir="down" readonly placeholder="点击后按键">
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="setting-label">左移</label>
+                                    <div class="setting-controls">
+                                        <input type="text" class="key-capture-input" data-dir="left" readonly placeholder="点击后按键">
+                                    </div>
+                                </div>
+                                <div class="setting-row">
+                                    <label class="setting-label">右移</label>
+                                    <div class="setting-controls">
+                                        <input type="text" class="key-capture-input" data-dir="right" readonly placeholder="点击后按键">
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm" id="btnResetNavKeys">恢复默认按键</button>
                             </div>
                         </div>
 
@@ -932,7 +965,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.14("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.15("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>

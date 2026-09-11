@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.14**
+> 适用版本：**v0.9.15**
 
 ---
 
@@ -11,6 +11,7 @@
 |----------|---------|---------|
 | 表格布局 / 单元格渲染 | `features/table/table-renderer.js` | `layout.css` |
 | 表格列宽 / 行高 / 底色 | `features/preferences/table-style.js` | `settings-table.css` |
+| **单元格键盘导航 / 自定义按键** | **`features/keyboard.js`** | **`index.html` / `settings-table.css`** |
 | 单元格状态颜色 | `features/preferences/color-preview.js` | `settings-color-preview.css` |
 | 界面颜色 / 预览模板 | `features/preferences/interface-colors.js` | `index.html`（`interfacePreviewTemplate`） |
 | 颜色方案保存 / 切换 | `features/preferences/scheme-manager.js` | `settings-scheme.css` |
@@ -20,10 +21,9 @@
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features.css` |
 | 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features.css` / `dom.js` |
-| **可获取地点悬浮窗（主窗）** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
-| **单元格备注悬浮窗（从窗）** | **`features/note/note.js`** | **`features.css`** |
+| 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features.css` |
+| 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features.css` |
 | 高亮控制 | `features/table/cell-highlighter.js` | `features.css` |
-| 键盘快捷键 | `features/keyboard.js` | `services/modal.js` |
 | 单元格备注数据 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 撤回重做 | `features/cell/cell-value.js` / `cell-record.js` / `history.js` | — |
 | 行筛选 / 统计面板 | `features/table/row-filter.js` / `stats.js` | — |
@@ -53,9 +53,9 @@
 ```
 
 - **依赖规则**：上层可依赖下层，下层不可依赖上层；同层可互调
-- **规模**：52 个自写源文件 / 约 15,800 行
+- **规模**：52 个自写源文件 / 约 15,900 行
 - **形态**：纯前端 SPA，无框架 / 无构建 / 无后端
-- **持久化**：localStorage（数据 / 设置 / 地区）+ IndexedDB（图片）
+- **持久化**：localStorage（数据 / 设置 / 地区 / 导航按键）+ IndexedDB（图片）
 - **外部依赖**：仅 `jszip.min.js`
 - **运行要求**：HTTP 服务器（`file://` 下 fetch 被拦截）
 
@@ -143,7 +143,7 @@
 16.   restoreRightPanelState()
 17.   events.bindAllEvents()
 17.5  namespace.init()          构建分层视图
-17.6  keyboard.init()
+17.6  keyboard.init()           键盘快捷键（含导航按键设置绑定）
 18.   layout.switchPanel('input')
 19.   首访弹窗 / 异步加载默认数据
 20.   版本检测（fetch version.json）
@@ -152,8 +152,9 @@
 **时序要点**：
 - `errorHandler` / `migration` 必须最先执行
 - `namespace.init()` 必须在所有模块挂载后
-- `keyboard.init()` 依赖 `history` / `modal` 就绪
+- `keyboard.init()` 依赖 `history` / `modal` / `tableRenderer` 就绪
 - 异步默认数据加载前记录数据集键，返回时校验（竞态防护）
+- `keyboard.init()` 的 `bindNavKeySettings` 依赖 `index.html` 中的 `.key-capture-input` 已渲染
 
 ---
 
@@ -194,9 +195,100 @@
 | 集中绑定 | `events.js` `bindAllEvents()`（主流，18+ 模块） |
 | 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` |
 
-### 悬浮窗主从定位（v0.9.14）⭐
+### 键盘导航（v0.9.15）⭐
 
-**背景**：v0.9.13 及之前，`note` 与 `acquire` 各自以鼠标为锚点独立定位，两者常选到相邻候选位（如 note 左下、acquire 右下），当宽度较大时横向间距不足 30px，必然重叠。
+**架构**：`keyboard.js` 内的 `moveCellSelection(direction)` 是核心。
+
+**入口**：`_onKeydown` 中 `isEditableTarget` 过滤后调用 `_handleCellNav(e)`，命中导航键则调用 `moveCellSelection`。
+
+**判定条件**：
+
+1. 无弹窗打开（`_isAnyModalOpen()`）
+2. 无 `Ctrl` / `Cmd` / `Alt` 修饰键
+3. `App.state.activePanel` 为 `'input'` 或 `'record'`
+4. 按下的键匹配 `getNavKeys()` 返回的四个方向键
+
+**坐标模型**：
+
+- 全局列索引 `colIdx ∈ [0, 69]`
+- 第一部分 `[0, 34]`（对应 `ALL_GROUPS[0..6]`）
+- 第二部分 `[35, 69]`（对应 `ALL_GROUPS[7..13]`）
+- 两部分横向不相邻，但**上下视为连续**
+
+**上下键跨表算法**：
+
+```
+若当前在可见行列表的首位：
+    若 colIdx >= COLS1（第二部分）：
+        newRow = 可见行列表末位
+        newCol = colIdx - COLS1   // 镜像到第一部分
+    否则 return true（已在第一部分顶部）
+
+若当前在可见行列表的末位：
+    若 colIdx < COLS1（第一部分）：
+        newRow = 可见行列表首位
+        newCol = colIdx + COLS1   // 镜像到第二部分
+    否则 return true（已在第二部分底部）
+```
+
+**左右键**：
+
+- 到第一部分 `colIdx = 0` 或 `colIdx = 34` 时**不跨表**，直接 return true
+- 到第二部分 `colIdx = 35` 或 `colIdx = 69` 时同样不跨表
+
+**列索引 ↔ 系列技能/能力值换算**：
+
+```js
+// colIdx → (groupIdx, subIdx)
+let offset = 0;
+for (let gi = 0; gi < ALL_GROUPS.length; gi++) {
+    const len = ALL_GROUPS[gi].sub.length;
+    if (colIdx < offset + len) return { gi, si: colIdx - offset };
+    offset += len;
+}
+
+// (groupIdx, subIdx) → colIdx
+App.utils.getColumnIndex(groupIdx, subIdx)
+```
+
+**UI 更新流程**（在 `moveCellSelection` 末尾）：
+
+1. 回写 `rowSel.value`、`groupSel.value`
+2. 调 `updateSubColOptions(newGroup)` 或 `updateRecordSubColOptions(newGroup)` 刷新能力值下拉框
+3. 回写 `subSel.value`
+4. `App.tableRenderer.updateHighlightedCell()` → 高亮新单元格 + 加载备注
+5. `_scrollCellIntoView(newRow, newCol)` → `scrollIntoView({ block: 'nearest', inline: 'nearest' })`
+
+**行筛选交互**：`_getVisibleRowIndices()` 从 `App.state.selectedRows` 推导可见行索引数组；上下键在**可见行**之间移动，跨表时用可见行列表的**首尾**。
+
+**焦点释放**（`_bindTableBlurHandler`）：
+
+- 在 `tableArea` 上监听 `mousedown`
+- 若 `document.activeElement` 是 `INPUT` / `TEXTAREA` / `SELECT`，则 `blur()`
+- 效果：点击表格任意位置后，方向键能立即触发导航
+
+**自定义按键配置**：
+
+- 存储：`smarttable_cell_nav_keys`（localStorage）
+- 结构：`{ up, down, left, right }`，值为 `KeyboardEvent.key`
+- 默认：`ArrowUp` / `ArrowDown` / `ArrowLeft` / `ArrowRight`
+- 读取：`getNavKeys()`（带异常回退）
+- 保存：`saveNavKeys(keys)`
+- UI 绑定：`bindNavKeySettings()` 遍历 `.key-capture-input[data-dir]`，捕获 keydown 后保存
+- 键名格式化：`_formatKeyName(key)` 将 `ArrowUp` 等映射为 `↑ 上` 等
+
+**已覆盖的按键行为**：
+
+| 焦点元素 | 方向键行为 |
+|---------|-----------|
+| `body` | 导航 |
+| `select` | 导航（覆盖原生下拉行为） |
+| `input` / `textarea` / `contenteditable` | 原生行为 |
+| 弹窗内任意 | 原生行为 |
+
+### 悬浮窗主从定位（v0.9.14）
+
+**背景**：v0.9.13 及之前，`note` 与 `acquire` 各自以鼠标为锚点独立定位，两者常选到相邻候选位，当宽度较大时横向间距不足 30px，必然重叠。
 
 **v0.9.14 重设计**：
 
@@ -220,34 +312,15 @@
 
 **关键不变量**：
 
-1. 主窗**永不理会**从窗（先定位，无从窗可避）
-2. 从窗候选位**全部紧贴主窗边缘**（间距 8px），几何上不可能重叠
+1. 主窗**永不理会**从窗
+2. 从窗候选位**全部紧贴主窗边缘**，几何上不可能重叠
 3. 50ms 延迟差保证主窗先完成定位
-4. 位置读取用 **`style.left/top` + `offsetWidth/Height`**，不用 `getBoundingClientRect()`——避免 CSS 过渡/动画干扰
+4. 位置读取用 **`style.left/top` + `offsetWidth/Height`**，不用 `getBoundingClientRect()`
 
 **已移除的旧机制**：
 
-- `acquire` 的 `MutationObserver`（曾用于监听 note 移动自动重定位）——会与新策略冲突
-- `acquire-tooltip` 的 CSS `transition: left/top 0.15s ease`——会让 300ms 的定位被 350ms 的读取捕获到中间值
-
-**时序**（悬停同时有备注 + 未获取的单元格）：
-
-| 时刻 | 事件 |
-|------|------|
-| t=0 | 鼠标进入单元格 → acquire 起 300ms 计时器；note 起 350ms 计时器 |
-| t=300 | acquire 定位 → 鼠标 8 候选位中首个完全在视口内者 |
-| t=350 | note 定位 → 读 acquire 的 `style.left/top` + `offsetWidth/Height` → 8 个外侧候选位中首个完全在视口内者 |
-| 稳定 | 两窗紧贴，无重叠 |
-
-**边界处理**：
-
-| 情况 | 行为 |
-|------|------|
-| 只有备注（已全部获取） | 只有 note，走鼠标 8 候选位 |
-| 只有未获取（无备注） | 只有 acquire，走鼠标 8 候选位 |
-| 两者都有，主窗外侧空间充足 | note 紧贴 acquire 右侧 |
-| 主窗右侧/下方越界 | note 依次尝试右、右下、下、下右、左、左上、上、上右 |
-| 全部外侧候选越界 | 回退到鼠标 8 候选位，再夹紧到视口内 |
+- `acquire` 的 `MutationObserver`（会与新策略冲突）
+- `acquire-tooltip` 的 CSS `transition: left/top 0.15s ease`
 
 ### 未获取统计（v0.9.13）
 
@@ -268,31 +341,25 @@ return 1;                                                     // 完全空白：
 | 未获取后 36 | `bottom` | 缺口 > 0 的条目，按缺口升序取前 36 |
 | 全收集 | `full` | 缺口 = 0 的条目（全部刷满） |
 
-每条含组合行 + 地区行 + 进度条（`已完成 / 24`）+ 缺口数。
-
 **刷取组合检索**：
 
-- 入口：`initSearch()` 填充地区 / 能力值组合下拉框；`bindSearchEvents()` 注册事件
 - 输入：`searchRegion` + `searchType` + `searchItem` + `searchCombo`
 - 联动：`_updateSearchItems()` 随地区/类型变化刷新目标下拉框
 - 执行：`doSearch()` → `_renderSearchResult()` → `cellHighlighter.highlight()`
-- 清除：`clearSearch()` 解除锁定 + 隐藏结果卡 + 清空高亮
+- 清除：`clearSearch()`
 - 结果卡与列表项**共用悬停 / 双击逻辑**（`_bindListInteractions`）
 
 **双击锁定高亮**：
 
-- 状态：`_lockedLi`（被锁定的 `<li>`）+ `_lockedBtnLi`（取消按钮 `<li>`）
-- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮对应格 → 插入"取消高亮"按钮
-- `_unlockItem(clearHighlight)`：移除按钮 `<li>` → 清空状态 → 可选清空高亮
-- 悬停其他条目时临时高亮；移出时**优先恢复锁定高亮**
+- 状态：`_lockedLi` + `_lockedBtnLi`
+- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮 → 插入"取消高亮"按钮
+- `_unlockItem(clearHighlight)`：移除按钮 → 清空状态 → 可选清空高亮
 
-**地区筛选**：折叠式复选框，状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
-
-**双色悬停高亮**：缺口 > 0 → 红框；贡献 = 0 → 绿框；其余格变暗蒙版。
+**地区筛选**：状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
 
 ### 地区管理
 
-**数据结构**：`{ name, rows: string[], groups: string[] }`（`rows` 8 属性 + `groups` 8 系列技能）。
+**数据结构**：`{ name, rows: string[], groups: string[] }`。
 
 **持久化**：`smarttable_regions`；未修改时读取 `DEFAULT_REGIONS`（12 地区）。
 
@@ -304,11 +371,11 @@ return 1;                                                     // 完全空白：
 
 **触发**：悬停未完全获取的单元格 300ms。
 
-**内容**：每个可获取此基质的地区 + 两条刷取路径（选属性 / 选系列技能）+ 每条路径 6 种能力值组合。
+**内容**：每个可获取此基质的地区 + 两条刷取路径 + 每条路径 6 种能力值组合。
 
 **地区来源**：优先读 `smarttable_unacquired_region_filter`；无结果时回退全部。
 
-**与备注悬浮窗**：同时出现，主从定位（见上文「悬浮窗主从定位」）；`z-index: 99` < noteTooltip `100` < modal `200`。
+**与备注悬浮窗**：同时出现，主从定位；`z-index: 99` < noteTooltip `100` < modal `200`。
 
 ### 统一高亮控制
 
@@ -369,6 +436,7 @@ return 1;                                                     // 完全空白：
 | `smarttable_custom_quota` / `smarttable_quota_warn_percent` | 配额与警示 |
 | `smarttable_regions` | 地区配置 `[{name, rows, groups}]` |
 | `smarttable_unacquired_region_filter` | 未获取统计的地区筛选（数组或 `null`） |
+| **`smarttable_cell_nav_keys`** | **单元格导航按键 `{up, down, left, right}`（v0.9.15）** |
 | `<数据集名>` | 该数据集的行数据 |
 
 ### sessionStorage / IndexedDB
@@ -411,7 +479,14 @@ return 1;                                                     // 完全空白：
 3. 从窗优先依附已有主窗的外侧（围绕 `style.left/top + offsetWidth/Height` 计算）
 4. 所有位置读取用 `style.left/top`，不用 `getBoundingClientRect()`
 5. 通过延迟差保证主窗先定位
-6. **不要**用 `MutationObserver` 追踪其他悬浮窗（会互相追逐）
+6. **不要**用 `MutationObserver` 追踪其他悬浮窗
+
+### 新增键盘快捷键
+
+1. 在 `keyboard.js` 的 `_onKeydown` 中加入匹配逻辑
+2. 若与导航冲突（如纯字母键），在 `_handleCellNav` **之前**拦截
+3. 若需要 Ctrl/Cmd 修饰，放在 `const mod = e.ctrlKey || e.metaKey;` 之后
+4. 若需自定义按键，参考 `bindNavKeySettings` 与 `smarttable_cell_nav_keys` 模式
 
 ### 本地验证
 
@@ -453,10 +528,15 @@ npm run lint
 | **未获取统计三模式** | `_mode` 切换后面板标题变化，但组件 id 不变 |
 | **双击锁定需手动解除** | 切换面板 / 重渲染列表 / 再次检索会自动解除 |
 | **检索结果与排序列表共用悬停逻辑** | 两者都走 `_bindListInteractions`，勿重复绑定 |
-| **悬浮窗禁止 `getBoundingClientRect`** | v0.9.14 起用 `style.left/top + offsetWidth/Height`，避免过渡干扰 |
-| **悬浮窗禁止 CSS transition 位置** | `acquire-tooltip` 已移除 `transition: left/top`，新增其他悬浮窗勿添加 |
-| **悬浮窗禁止 MutationObserver 互追** | 会与主从定位冲突，导致互相追逐 |
-| **悬浮窗触发延迟差** | 主窗 300ms、从窗 350ms，50ms 差保证顺序 |
+| **悬浮窗禁止 `getBoundingClientRect`** | v0.9.14 起用 `style.left/top + offsetWidth/Height` |
+| **悬浮窗禁止 CSS transition 位置** | `acquire-tooltip` 已移除，新增悬浮窗勿添加 |
+| **悬浮窗禁止 MutationObserver 互追** | 会与主从定位冲突 |
+| **悬浮窗触发延迟差** | 主窗 300ms、从窗 350ms |
+| **键盘导航左右不跨表** | `colIdx === COLS1` 或 `COLS1 - 1` 时直接 return true |
+| **键盘导航上下跨表保持列位** | `colIdx ± COLS1` 换算，非重置为 0 |
+| **导航设置输入框需 `readonly`** | 否则移动端弹出软键盘干扰捕获 |
+| **`key-capture-input` 需在 `init()` 前渲染** | `bindNavKeySettings` 依赖 DOM 存在 |
+| **自定义按键不能是修饰键** | `Control` / `Alt` / `Shift` / `Meta` / `CapsLock` 被过滤 |
 
 ---
 
@@ -480,6 +560,8 @@ npm run lint
 | A11y | `role="dialog"` / 焦点陷阱 / 焦点恢复 |
 | 检索容错 | 检索前必填校验，缺项弹 Alert |
 | 悬浮窗布局不重叠 | 主从定位 + 8 外侧候选 + 权威位置读取 |
+| 键盘导航隔离 | 弹窗打开 / 焦点在输入框时自动跳过 |
+| 自定义按键回退 | localStorage 读取失败时用默认方向键 |
 
 ---
 
@@ -501,10 +583,15 @@ npm run lint
 | 三模式共用一个 `_mode` | 状态最小化；切换即重渲染 |
 | 检索卡与列表项共用逻辑 | 抽出 `_bindListInteractions`；避免事件重复绑定 |
 | 双击锁定用 DOM 兄弟节点 | 不引入额外容器；按钮随列表重渲染自动消失 |
-| **悬浮窗主从定位** | 从窗依附主窗外侧，几何上排除重叠 |
-| **位置读取用 style 而非 rect** | 避免 CSS 过渡/动画污染测量值 |
-| **禁止 MutationObserver 互追** | 单向（主→从）定位避免死循环/追逐 |
-| **触发延迟差 50ms** | 保证主窗先定位；从窗读取到稳定的主窗位置 |
+| 悬浮窗主从定位 | 从窗依附主窗外侧，几何上排除重叠 |
+| 位置读取用 style 而非 rect | 避免 CSS 过渡/动画污染测量值 |
+| 禁止 MutationObserver 互追 | 单向（主→从）定位避免死循环/追逐 |
+| 触发延迟差 50ms | 保证主窗先定位 |
+| **键盘导航上下跨表、左右不跨** | 两部分视觉上横向不相邻，但纵向可视为连续 |
+| **跨表保持相对列位（±35）** | 玩家在"残暴×主能力"处按 ↓ 期望落在"效益×主能力" |
+| **点击表格释放输入框焦点** | 避免方向键被"列宽"等输入框捕获 |
+| **自定义按键存 localStorage** | 与项目其他设置保持一致，无需额外机制 |
+| **导航键捕获输入框 readonly** | 防止移动端软键盘弹出干扰 |
 
 ---
 
@@ -547,7 +634,8 @@ npm run lint
 | v0.9.11 | 术语校准 | 能力值 / 属性 / 系列技能 + `bump-version.js` 覆盖 6 文件 |
 | v0.9.12 | 地区进度条 | 地区卡片收集进度条 X/320 + 分档着色 |
 | v0.9.13 | 未获取统计增强 | 刷取组合检索系统 + 三模式切换 + 双击锁定高亮 |
-| **v0.9.14** | **悬浮窗布局修复** | **主从定位 + 从窗依附主窗外侧 + 权威位置读取；两窗同时出现且绝不重叠** |
+| v0.9.14 | 悬浮窗布局修复 | 主从定位 + 从窗依附主窗外侧 + 权威位置读取 |
+| **v0.9.15** | **单元格键盘导航** | **方向键移动 + 跨表连续 + 自定义按键 + 焦点释放** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

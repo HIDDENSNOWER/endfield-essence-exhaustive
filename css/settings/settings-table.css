@@ -100,3 +100,35 @@
     font-size: 0.85rem;                 /* 字号 */
     text-align: right;                  /* 右对齐，与输入框对齐 */
 }
+
+/* ==========================================================================
+   7. 键盘捕获输入框（v0.9.15）
+   对应 HTML：<input type="text" class="key-capture-input" data-dir="...">
+   作用：显示当前导航按键；点击后捕获下一次按键输入。
+   说明：readonly 输入框，仅作显示与捕获用；点击后获得焦点，按键后自动保存并失焦。
+   ========================================================================== */
+   .key-capture-input {
+      width: 120px;
+      padding: 5px 8px;
+      font-size: 0.8rem;
+      font-family: monospace;
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+  }
+  
+  .key-capture-input:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-emphasis);
+  }
+  
+  .key-capture-input:focus {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: -1px;
+      background: var(--bg-hover);
+      border-color: var(--accent-primary);
+  }
