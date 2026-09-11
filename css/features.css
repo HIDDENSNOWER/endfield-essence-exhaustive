@@ -933,7 +933,7 @@ table.unacquired-dimming thead th {
 
 .acquire-tooltip {
     position: fixed;
-    z-index: 99;                /* 低于 noteTooltip(100)，避免层级冲突 */
+    z-index: 99;
     min-width: 320px;
     max-width: 440px;
     max-height: 480px;
@@ -945,8 +945,11 @@ table.unacquired-dimming thead th {
     flex-direction: column;
     overflow: hidden;
     user-select: text;
-    transition: left 0.15s ease, top 0.15s ease;
-
+    /* v0.9.14 移除 transition：
+       原声明 transition: left/top 0.15s ease 会让 acquire 从 -9999px
+       移到目标位置时产生过渡动画，而 note 在动画期间读取 acquire 位置
+       会得到过渡中的中间值（视口外），导致 note 误判为"不重叠"并选中
+       同一候选位，造成视觉重叠。位置本应瞬移，无需动画。 */
 }
 
 .acquire-tooltip-header {

@@ -42,7 +42,6 @@
         _tooltip: null,
         _body: null,
         _bound: false,
-        _noteObserver: null,
         _lastMouse: { x: 0, y: 0 },
 
         init() {
@@ -80,23 +79,6 @@
             if (App.dom.btnCloseAcquireTooltip) {
                 App.dom.btnCloseAcquireTooltip.addEventListener('click', () => this._hideImmediate());
             }
-
-            // 观察备注悬浮框的 style 变化 → 重新定位
-            this._watchNoteTooltip();
-        },
-
-        _watchNoteTooltip() {
-            const noteTooltip = App.dom.noteTooltip;
-            if (!noteTooltip || !window.MutationObserver) return;
-
-            this._noteObserver = new MutationObserver(() => {
-                if (this._tooltip.style.display !== 'flex') return;
-                this._position(this._lastMouse.x, this._lastMouse.y);
-            });
-            this._noteObserver.observe(noteTooltip, {
-                attributes: true,
-                attributeFilter: ['style']
-            });
         },
 
         _onCellHover(td, e) {
@@ -225,6 +207,12 @@
             return html;
         },
 
+        /**
+         * 定位「可获取地点」悬浮窗（主窗）
+         *
+         * v0.9.14：改为围绕鼠标的 8 候选位择优。
+         * 若 note 已显示（兼容乱序），则避让。
+         */
         _position(x, y) {
             const tooltip = this._tooltip;
             tooltip.style.left = '-9999px';
@@ -233,44 +221,75 @@
             const w = rect.width;
             const h = rect.height;
 
-            const noteTooltip = App.dom.noteTooltip;
-            const noteVisible = noteTooltip &&
-                noteTooltip.style.display &&
-                noteTooltip.style.display !== 'none';
+            const candidates = this._buildAroundCursor(x, y, w, h);
+
+            // note 若已显示则避让（兼容极端乱序）
+            // v0.9.14：改用 style.left/top + offsetWidth/Height 读取权威位置。
+            const note = App.dom.noteTooltip;
             let noteRect = null;
-            if (noteVisible) {
-                noteRect = noteTooltip.getBoundingClientRect();
+            if (note && note.style.display === 'flex' &&
+                note.style.left && note.style.left !== '-9999px') {
+                const nLeft = parseFloat(note.style.left);
+                const nTop = parseFloat(note.style.top);
+                const nW = note.offsetWidth;
+                const nH = note.offsetHeight;
+                if (!isNaN(nLeft) && !isNaN(nTop) && nW > 0 && nH > 0) {
+                    noteRect = {
+                        left: nLeft,
+                        top: nTop,
+                        right: nLeft + nW,
+                        bottom: nTop + nH
+                    };
+                }
             }
 
-            const margin = 15;
-            const candidates = [
-                { left: x + margin, top: y + margin },
-                { left: x - w - margin, top: y + margin },
-                { left: x + margin, top: y - h - margin },
-                { left: x - w - margin, top: y - h - margin }
-            ];
-
+            const pad = 10;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
-            const pad = 10;
 
             let chosen = null;
             for (const c of candidates) {
-                const r = { left: c.left, top: c.top, right: c.left + w, bottom: c.top + h };
-                if (r.left < pad || r.top < pad || r.right > vw - pad || r.bottom > vh - pad) continue;
-                if (noteRect && this._rectsOverlap(r, noteRect)) continue;
+                if (c.left < pad || c.top < pad ||
+                    c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                if (noteRect) {
+                    const r = { left: c.left, top: c.top, right: c.left + w, bottom: c.top + h };
+                    if (this._rectsOverlap(r, noteRect)) continue;
+                }
                 chosen = c;
                 break;
             }
+            if (!chosen) chosen = { left: x + 15, top: y + 15 };
 
-            if (!chosen) {
-                chosen = { ...candidates[0] };
-                chosen.left = Math.max(pad, Math.min(vw - w - pad, chosen.left));
-                chosen.top = Math.max(pad, Math.min(vh - h - pad, chosen.top));
-            }
+            chosen.left = Math.max(pad, Math.min(vw - w - pad, chosen.left));
+            chosen.top = Math.max(pad, Math.min(vh - h - pad, chosen.top));
 
             tooltip.style.left = chosen.left + 'px';
             tooltip.style.top = chosen.top + 'px';
+            // v0.9.14：强制同步回流，确保 style.left/top 立即生效，
+            // 便于 note 在 50ms 后能读到准确的权威位置。
+            void tooltip.offsetWidth;
+        },
+
+        /**
+         * 围绕鼠标位置生成 8 个候选位（按离鼠标由近到远）
+         * @param {number} x - 鼠标 X
+         * @param {number} y - 鼠标 Y
+         * @param {number} w - 悬浮窗宽度
+         * @param {number} h - 悬浮窗高度
+         * @returns {Array<{left, top}>}
+         */
+        _buildAroundCursor(x, y, w, h) {
+            const m = 15;
+            return [
+                { left: x + m,      top: y + m },        // 右下
+                { left: x - w - m,  top: y + m },        // 左下
+                { left: x + m,      top: y - h - m },    // 右上
+                { left: x - w - m,  top: y - h - m },    // 左上
+                { left: x - w / 2,  top: y + m },        // 下
+                { left: x + m,      top: y - h / 2 },    // 右
+                { left: x - w - m,  top: y - h / 2 },    // 左
+                { left: x - w / 2,  top: y - h - m }     // 上
+            ];
         },
 
         _rectsOverlap(a, b) {

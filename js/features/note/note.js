@@ -414,21 +414,104 @@
         },
 
         /**
-         * 定位悬浮框
+         * 定位备注悬浮窗（从窗）
+         *
+         * v0.9.14 重设计：
+         * - 若「可获取地点」已显示 → note 的候选位完全建立在 acquire 的实际矩形上，
+         *   8 个紧贴其外侧的位置（间距 8px），几何上不可能重叠
+         * - 若 acquire 未显示（单元格已全部获取等）→ 回退到鼠标 8 候选位
+         * - 所有候选位均需完全在视口内；全部越界时夹紧到视口内
          */
         positionNoteTooltip(x, y) {
             const tooltip = App.dom.noteTooltip;
             const rect = tooltip.getBoundingClientRect();
-            const width = rect.width || 260;
-            const height = rect.height || 120;
-            let left = x + 15;
-            let top = y + 15;
-            if (left + width > window.innerWidth - 10) left = x - width - 15;
-            if (top + height > window.innerHeight - 10) top = y - height - 15;
-            if (left < 10) left = 10;
-            if (top < 10) top = 10;
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
+            const w = rect.width || 260;
+            const h = rect.height || 120;
+
+            const acquire = App.dom.acquireTooltip;
+            let acquireRect = null;
+            if (acquire && acquire.style.display === 'flex' &&
+                acquire.style.left && acquire.style.left !== '-9999px') {
+                const aLeft = parseFloat(acquire.style.left);
+                const aTop = parseFloat(acquire.style.top);
+                const aW = acquire.offsetWidth;
+                const aH = acquire.offsetHeight;
+                if (!isNaN(aLeft) && !isNaN(aTop) && aW > 0 && aH > 0) {
+                    acquireRect = { left: aLeft, top: aTop, right: aLeft + aW, bottom: aTop + aH };
+                }
+            }
+
+            const pad = 10;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const gap = 8;
+
+            let chosen = null;
+
+            if (acquireRect) {
+                // 围绕 acquire 的 8 个紧贴外侧位置
+                const A = acquireRect;
+                const candidates = [
+                    { left: A.right + gap, top: A.top },              // 右
+                    { left: A.right + gap, top: A.bottom - h },       // 右（下对齐）
+                    { left: A.left,        top: A.bottom + gap },     // 下
+                    { left: A.right - w,   top: A.bottom + gap },     // 下（右对齐）
+                    { left: A.left - w - gap, top: A.top },           // 左
+                    { left: A.left - w - gap, top: A.bottom - h },    // 左（下对齐）
+                    { left: A.left,        top: A.top - h - gap },    // 上
+                    { left: A.right - w,   top: A.top - h - gap }     // 上（右对齐）
+                ];
+                for (const c of candidates) {
+                    if (c.left < pad || c.top < pad ||
+                        c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                    chosen = c;
+                    break;
+                }
+            }
+
+            // 回退：acquire 未显示，或所有外侧位置越界
+            if (!chosen) {
+                const aroundCursor = this._buildAroundCursor(x, y, w, h);
+                for (const c of aroundCursor) {
+                    if (c.left < pad || c.top < pad ||
+                        c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                    chosen = c;
+                    break;
+                }
+            }
+
+            if (!chosen) chosen = { left: x + 15, top: y + 15 };
+
+            chosen.left = Math.max(pad, Math.min(vw - w - pad, chosen.left));
+            chosen.top = Math.max(pad, Math.min(vh - h - pad, chosen.top));
+
+            tooltip.style.left = chosen.left + 'px';
+            tooltip.style.top = chosen.top + 'px';
+            void tooltip.offsetWidth;
+        },
+
+        /**
+         * 围绕鼠标位置生成 8 个候选位（与 cell-acquire-tooltip 一致）
+         */
+        _buildAroundCursor(x, y, w, h) {
+            const m = 15;
+            return [
+                { left: x + m,      top: y + m },        // 右下
+                { left: x - w - m,  top: y + m },        // 左下
+                { left: x + m,      top: y - h - m },    // 右上
+                { left: x - w - m,  top: y - h - m },    // 左上
+                { left: x - w / 2,  top: y + m },        // 下
+                { left: x + m,      top: y - h / 2 },    // 右
+                { left: x - w - m,  top: y - h / 2 },    // 左
+                { left: x - w / 2,  top: y - h - m }     // 上
+            ];
+        },
+
+        /**
+         * 判断两个矩形是否重叠
+         */
+        _rectsOverlap(a, b) {
+            return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
         },
 
         /**
@@ -533,7 +616,7 @@
                 clearTimeout(noteHideTimer);
                 noteShowTimer = setTimeout(() => {
                     App.note.showNoteTooltip(rowIdx, colIdx, e.clientX, e.clientY);
-                }, 1500);
+                }, 350);
             });
 
             dom.tableArea.addEventListener('mouseout', function (e) {

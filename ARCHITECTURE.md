@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.13**
+> 适用版本：**v0.9.14**
 
 ---
 
@@ -18,16 +18,17 @@
 | 数据集 CRUD / 备注 | `features/data/dataset-manager.js` / `dataset-remark.js` | `dom.js` |
 | 导入 / 导出 / 合并 | `features/data/import-export.js` / `dataset-merge.js` | `lib/jszip.min.js` |
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
-| **地区增删改 / 悬停高亮** | **`features/data/region-manager.js`** | **`dom.js` / `features.css`** |
-| **未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定** | **`features/table/unacquired.js`** | **`features.css` / `dom.js`** |
-| **可获取地点悬浮窗** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
-| **高亮控制** | **`features/table/cell-highlighter.js`** | **`features.css`** |
-| **键盘快捷键** | **`features/keyboard.js`** | **`services/modal.js`** |
-| 单元格备注 + 图片 | `features/note/note.js` | `services/image-store.js` |
+| 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features.css` |
+| 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features.css` / `dom.js` |
+| **可获取地点悬浮窗（主窗）** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
+| **单元格备注悬浮窗（从窗）** | **`features/note/note.js`** | **`features.css`** |
+| 高亮控制 | `features/table/cell-highlighter.js` | `features.css` |
+| 键盘快捷键 | `features/keyboard.js` | `services/modal.js` |
+| 单元格备注数据 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 撤回重做 | `features/cell/cell-value.js` / `cell-record.js` / `history.js` | — |
 | 行筛选 / 统计面板 | `features/table/row-filter.js` / `stats.js` | — |
 | 存储管理 / 清除缓存 | `features/preferences/storage-manager.js` / `features/data/cache-clear.js` | — |
-| **错误边界 / 数据迁移 / 分层视图** | **`core/error-handler.js` / `migration.js` / `namespace.js`** | **`main.js`** |
+| 错误边界 / 数据迁移 / 分层视图 | `core/error-handler.js` / `migration.js` / `namespace.js` | `main.js` |
 | 新常量 / 新 DOM / 新事件 | `core/constants.js` / `core/dom.js` / `js/events.js` | — |
 
 ---
@@ -193,6 +194,61 @@
 | 集中绑定 | `events.js` `bindAllEvents()`（主流，18+ 模块） |
 | 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` |
 
+### 悬浮窗主从定位（v0.9.14）⭐
+
+**背景**：v0.9.13 及之前，`note` 与 `acquire` 各自以鼠标为锚点独立定位，两者常选到相邻候选位（如 note 左下、acquire 右下），当宽度较大时横向间距不足 30px，必然重叠。
+
+**v0.9.14 重设计**：
+
+| 角色 | 悬浮窗 | 触发延迟 | 定位依据 |
+|------|--------|---------|---------|
+| **主窗** | 可获取地点（acquire） | 300ms | 鼠标 8 候选位 |
+| **从窗** | 单元格备注（note） | 350ms | 主窗实际矩形外侧 8 候选位；主窗未显示时回退鼠标候选位 |
+
+**从窗候选位生成**（围绕主窗矩形 `A = {left, top, right, bottom}`，间距 `gap = 8`）：
+
+```
+右            (A.right + gap, A.top)
+右（下对齐）  (A.right + gap, A.bottom - h)
+下            (A.left,        A.bottom + gap)
+下（右对齐）  (A.right - w,   A.bottom + gap)
+左            (A.left - w - gap, A.top)
+左（下对齐）  (A.left - w - gap, A.bottom - h)
+上            (A.left,        A.top - h - gap)
+上（右对齐）  (A.right - w,   A.top - h - gap)
+```
+
+**关键不变量**：
+
+1. 主窗**永不理会**从窗（先定位，无从窗可避）
+2. 从窗候选位**全部紧贴主窗边缘**（间距 8px），几何上不可能重叠
+3. 50ms 延迟差保证主窗先完成定位
+4. 位置读取用 **`style.left/top` + `offsetWidth/Height`**，不用 `getBoundingClientRect()`——避免 CSS 过渡/动画干扰
+
+**已移除的旧机制**：
+
+- `acquire` 的 `MutationObserver`（曾用于监听 note 移动自动重定位）——会与新策略冲突
+- `acquire-tooltip` 的 CSS `transition: left/top 0.15s ease`——会让 300ms 的定位被 350ms 的读取捕获到中间值
+
+**时序**（悬停同时有备注 + 未获取的单元格）：
+
+| 时刻 | 事件 |
+|------|------|
+| t=0 | 鼠标进入单元格 → acquire 起 300ms 计时器；note 起 350ms 计时器 |
+| t=300 | acquire 定位 → 鼠标 8 候选位中首个完全在视口内者 |
+| t=350 | note 定位 → 读 acquire 的 `style.left/top` + `offsetWidth/Height` → 8 个外侧候选位中首个完全在视口内者 |
+| 稳定 | 两窗紧贴，无重叠 |
+
+**边界处理**：
+
+| 情况 | 行为 |
+|------|------|
+| 只有备注（已全部获取） | 只有 note，走鼠标 8 候选位 |
+| 只有未获取（无备注） | 只有 acquire，走鼠标 8 候选位 |
+| 两者都有，主窗外侧空间充足 | note 紧贴 acquire 右侧 |
+| 主窗右侧/下方越界 | note 依次尝试右、右下、下、下右、左、左上、上、上右 |
+| 全部外侧候选越界 | 回退到鼠标 8 候选位，再夹紧到视口内 |
+
 ### 未获取统计（v0.9.13）
 
 **统计单位**：`(地区, 3 能力值, 属性或系列技能)` —— 每地区 160 种组合。
@@ -204,7 +260,7 @@ if (cell.v !== '') return 0;                                  // 有数值：已
 return 1;                                                     // 完全空白：+1
 ```
 
-**展示（v0.9.13 三模式）**：
+**展示（三模式）**：
 
 | 模式 | `_mode` 值 | 内容 |
 |------|-----------|------|
@@ -214,26 +270,25 @@ return 1;                                                     // 完全空白：
 
 每条含组合行 + 地区行 + 进度条（`已完成 / 24`）+ 缺口数。
 
-**刷取组合检索（v0.9.13）**：
+**刷取组合检索**：
 
 - 入口：`initSearch()` 填充地区 / 能力值组合下拉框；`bindSearchEvents()` 注册事件
-- 输入：`searchRegion`（地区）+ `searchType`（属性 / 系列技能）+ `searchItem`（目标）+ `searchCombo`（3 能力值组合）
-- 联动：`_updateSearchItems()` 随地区/类型变化刷新目标下拉框；`_updateSearchCombos()` 初始化 10 种组合
-- 执行：`doSearch()` 计算缺口与进度 → `_renderSearchResult()` 输出单条结果卡片 → `cellHighlighter.highlight()` 高亮表格
+- 输入：`searchRegion` + `searchType` + `searchItem` + `searchCombo`
+- 联动：`_updateSearchItems()` 随地区/类型变化刷新目标下拉框
+- 执行：`doSearch()` → `_renderSearchResult()` → `cellHighlighter.highlight()`
 - 清除：`clearSearch()` 解除锁定 + 隐藏结果卡 + 清空高亮
-- 结果卡与列表项**共用悬停 / 双击逻辑**（`_bindListInteractions` 同时注册到 `unacquiredContent` 与 `searchResult`）
+- 结果卡与列表项**共用悬停 / 双击逻辑**（`_bindListInteractions`）
 
-**双击锁定高亮（v0.9.13）**：
+**双击锁定高亮**：
 
-- 状态：`_lockedLi`（被锁定的 `<li>`）+ `_lockedBtnLi`（插入的取消按钮 `<li>`）
-- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮对应格 → 在条目后插入"取消高亮"按钮
+- 状态：`_lockedLi`（被锁定的 `<li>`）+ `_lockedBtnLi`（取消按钮 `<li>`）
+- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮对应格 → 插入"取消高亮"按钮
 - `_unlockItem(clearHighlight)`：移除按钮 `<li>` → 清空状态 → 可选清空高亮
-- 悬停其他条目时临时高亮；移出时**优先恢复锁定高亮**，未锁定则清空
-- 切换面板 / `renderList()` / `doSearch()` 前均自动 `_unlockItem(false)` 解除
+- 悬停其他条目时临时高亮；移出时**优先恢复锁定高亮**
 
 **地区筛选**：折叠式复选框，状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
 
-**双色悬停高亮**：缺口 > 0 → 红框；贡献 = 0 → 绿框；其余格变暗蒙版；滚动到第一个红框。
+**双色悬停高亮**：缺口 > 0 → 红框；贡献 = 0 → 绿框；其余格变暗蒙版。
 
 ### 地区管理
 
@@ -243,7 +298,7 @@ return 1;                                                     // 完全空白：
 
 **悬停高亮**：悬停地区卡片 → 高亮 8 属性 × 8 系列技能 × 5 能力值 = **320 格**。
 
-**收集进度条（v0.9.11）**：卡片底部显示 `已完成 / 320`（X%），分档着色（<30% 红 / 30~70% 橙 / ≥70% 绿）。
+**收集进度条**：卡片底部显示 `已完成 / 320`（X%），分档着色（<30% 红 / 30~70% 橙 / ≥70% 绿）。
 
 ### 可获取地点悬浮窗
 
@@ -253,7 +308,7 @@ return 1;                                                     // 完全空白：
 
 **地区来源**：优先读 `smarttable_unacquired_region_filter`；无结果时回退全部。
 
-**与备注悬浮框**：不互斥；MutationObserver 监听位置自动错开；`z-index: 99` < noteTooltip `100` < modal `200`。
+**与备注悬浮窗**：同时出现，主从定位（见上文「悬浮窗主从定位」）；`z-index: 99` < noteTooltip `100` < modal `200`。
 
 ### 统一高亮控制
 
@@ -347,6 +402,17 @@ return 1;                                                     // 完全空白：
 2. 新增 `_mXXX()` 方法
 3. 在 `migrate()` 中加 `if (this._lt(startVer, '0.9.X')) this._safeRun('_mXXX', () => this._mXXX());`
 
+### 新增悬浮窗
+
+若新增第三个悬浮窗，遵循**主从定位**原则：
+
+1. 声明角色（主窗 / 从窗）
+2. 主窗用鼠标 8 候选位
+3. 从窗优先依附已有主窗的外侧（围绕 `style.left/top + offsetWidth/Height` 计算）
+4. 所有位置读取用 `style.left/top`，不用 `getBoundingClientRect()`
+5. 通过延迟差保证主窗先定位
+6. **不要**用 `MutationObserver` 追踪其他悬浮窗（会互相追逐）
+
 ### 本地验证
 
 ```bash
@@ -387,6 +453,10 @@ npm run lint
 | **未获取统计三模式** | `_mode` 切换后面板标题变化，但组件 id 不变 |
 | **双击锁定需手动解除** | 切换面板 / 重渲染列表 / 再次检索会自动解除 |
 | **检索结果与排序列表共用悬停逻辑** | 两者都走 `_bindListInteractions`，勿重复绑定 |
+| **悬浮窗禁止 `getBoundingClientRect`** | v0.9.14 起用 `style.left/top + offsetWidth/Height`，避免过渡干扰 |
+| **悬浮窗禁止 CSS transition 位置** | `acquire-tooltip` 已移除 `transition: left/top`，新增其他悬浮窗勿添加 |
+| **悬浮窗禁止 MutationObserver 互追** | 会与主从定位冲突，导致互相追逐 |
+| **悬浮窗触发延迟差** | 主窗 300ms、从窗 350ms，50ms 差保证顺序 |
 
 ---
 
@@ -409,6 +479,7 @@ npm run lint
 | 数据迁移 | 按版本顺序执行，单步失败不阻断 |
 | A11y | `role="dialog"` / 焦点陷阱 / 焦点恢复 |
 | 检索容错 | 检索前必填校验，缺项弹 Alert |
+| 悬浮窗布局不重叠 | 主从定位 + 8 外侧候选 + 权威位置读取 |
 
 ---
 
@@ -430,6 +501,10 @@ npm run lint
 | 三模式共用一个 `_mode` | 状态最小化；切换即重渲染 |
 | 检索卡与列表项共用逻辑 | 抽出 `_bindListInteractions`；避免事件重复绑定 |
 | 双击锁定用 DOM 兄弟节点 | 不引入额外容器；按钮随列表重渲染自动消失 |
+| **悬浮窗主从定位** | 从窗依附主窗外侧，几何上排除重叠 |
+| **位置读取用 style 而非 rect** | 避免 CSS 过渡/动画污染测量值 |
+| **禁止 MutationObserver 互追** | 单向（主→从）定位避免死循环/追逐 |
+| **触发延迟差 50ms** | 保证主窗先定位；从窗读取到稳定的主窗位置 |
 
 ---
 
@@ -471,7 +546,8 @@ npm run lint
 | v0.9.10 | 首屏优化 | 加载遮罩 + 脚本 defer |
 | v0.9.11 | 术语校准 | 能力值 / 属性 / 系列技能 + `bump-version.js` 覆盖 6 文件 |
 | v0.9.12 | 地区进度条 | 地区卡片收集进度条 X/320 + 分档着色 |
-| **v0.9.13** | **未获取统计增强** | **刷取组合检索系统 + 三模式切换 + 双击锁定高亮** |
+| v0.9.13 | 未获取统计增强 | 刷取组合检索系统 + 三模式切换 + 双击锁定高亮 |
+| **v0.9.14** | **悬浮窗布局修复** | **主从定位 + 从窗依附主窗外侧 + 权威位置读取；两窗同时出现且绝不重叠** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）
