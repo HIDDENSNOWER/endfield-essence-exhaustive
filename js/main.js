@@ -154,6 +154,15 @@
         // 10. 渲染表格
         safeCall(() => App.tableRenderer.renderAllTables(), '表格渲染');
 
+        // 10.5 表格首次渲染完成 → 移除首屏加载遮罩（v0.9.10）
+        safeCall(() => {
+            const overlay = document.getElementById('appLoading');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 350);
+            }
+        }, '移除加载遮罩');
+
         // 11. 初始化单元格提示栏
         safeCall(() => App.cellTooltip.initCellTooltip(), '单元格提示栏初始化');
 
