@@ -54,7 +54,9 @@
     function saveNavKeys(keys) {
         try {
             localStorage.setItem(NAV_KEYS_KEY, JSON.stringify(keys));
-        } catch (_e) { /* 静默 */ }
+        } catch (_e) {
+            /* 静默 */
+        }
     }
 
     /** 判断焦点元素是否为可编辑控件（input / textarea / contenteditable） */
@@ -321,9 +323,11 @@
          * 把单元格滚动到视图内
          */
         _scrollCellIntoView(rowIdx, colIdx) {
-            const td = document.querySelector(
-                `td[data-rowindex="${rowIdx}"][data-colindex="${colIdx}"]`
-            );
+            // v0.9.16 T-07：复用 cellHighlighter 索引缓存（同 updateHighlightedCell）
+            const td =
+                App.cellHighlighter && App.cellHighlighter._getCell
+                    ? App.cellHighlighter._getCell(rowIdx, colIdx)
+                    : document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIdx}"]`);
             if (td) {
                 td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
             }
@@ -336,24 +340,27 @@
             if (this._navSettingsBound) return;
 
             const inputs = ['up', 'down', 'left', 'right']
-                .map(dir => document.querySelector(`.key-capture-input[data-dir="${dir}"]`))
+                .map((dir) => document.querySelector(`.key-capture-input[data-dir="${dir}"]`))
                 .filter(Boolean);
             if (inputs.length === 0) return;
             this._navSettingsBound = true;
 
             const refresh = () => {
                 const keys = getNavKeys();
-                inputs.forEach(inp => {
+                inputs.forEach((inp) => {
                     inp.value = this._formatKeyName(keys[inp.dataset.dir]);
                 });
             };
             refresh();
 
-            inputs.forEach(inp => {
+            inputs.forEach((inp) => {
                 inp.addEventListener('keydown', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (e.key === 'Escape') { inp.blur(); return; }
+                    if (e.key === 'Escape') {
+                        inp.blur();
+                        return;
+                    }
                     if (['Control', 'Alt', 'Shift', 'Meta', 'CapsLock'].includes(e.key)) return;
                     const dir = inp.dataset.dir;
                     const keys = getNavKeys();
@@ -385,14 +392,14 @@
         _formatKeyName(key) {
             if (!key) return '';
             const map = {
-                'ArrowUp': '↑ 上',
-                'ArrowDown': '↓ 下',
-                'ArrowLeft': '← 左',
-                'ArrowRight': '→ 右',
+                ArrowUp: '↑ 上',
+                ArrowDown: '↓ 下',
+                ArrowLeft: '← 左',
+                ArrowRight: '→ 右',
                 ' ': 'Space',
-                'Enter': 'Enter',
-                'Tab': 'Tab',
-                'Escape': 'Esc'
+                Enter: 'Enter',
+                Tab: 'Tab',
+                Escape: 'Esc'
             };
             return map[key] || key;
         },
@@ -411,5 +418,4 @@
         saveNavKeys,
         DEFAULT_NAV_KEYS
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

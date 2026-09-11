@@ -22,6 +22,12 @@
          * 幂等：重复调用安全（Object.assign 会覆盖同值引用）
          */
         init() {
+            // v0.9.16 T-08：幂等保护
+            // 若已初始化过，直接返回，避免重复 Object.assign 覆盖
+            // （重复 assign 会向已冻结对象写属性而抛错）
+            if (this._initialized) return;
+            this._initialized = true;
+
             App.core = App.core || {};
             App.services = App.services || {};
             App.features = App.features || {};
@@ -88,7 +94,16 @@
                 events: App.events,
                 layout: App.layout
             });
+
+            // ==================== 冻结核心 / 服务层（v0.9.16 T-08） ====================
+            // 只冻结 core 与 services：这两层是最稳定的基础能力，
+            // 不应在运行时被误改。features / entry 保持可写（模块可能动态挂载）。
+            //
+            // 注意：Object.freeze 是「浅冻结」，只锁定顶层属性的引用；
+            // 层内对象（如 App.core.constants）的内部字段仍可修改——
+            // 这正是我们想要的：防止误替换整个模块，不阻止正常数据操作。
+            Object.freeze(App.core);
+            Object.freeze(App.services);
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

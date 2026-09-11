@@ -17,21 +17,21 @@
     'use strict';
 
     // ==================== 模块内部状态 ====================
-    let currentNoteCell = null;            // 当前正在编辑备注的单元格坐标 {r, c}
-    let pendingCellNoteText = '';          // 暂存的备注文本（编辑中尚未保存）
-    let pendingNoteImages = [];            // 暂存的备注图片 ID 数组
-    let originalNoteImages = [];           // 加载备注时的原始图片快照（用于差集删除）
-    let noteShowTimer = null;              // 悬浮框显示定时器
-    let noteHideTimer = null;              // 悬浮框隐藏定时器
-    let noteDragState = null;              // 悬浮框拖拽状态
-    let noteResizeState = null;            // 悬浮框调整大小状态
-    let noteTooltipHover = false;          // 鼠标是否悬停在悬浮框上
-    let imageViewerHover = false;          // 鼠标是否悬停在图片查看器上
-    let imageViewerModal = null;           // 图片查看器容器元素
-    let imageViewerImage = null;           // 图片查看器中的 img 元素
-    let btnCloseImageViewer = null;        // 图片查看器关闭按钮
+    let currentNoteCell = null; // 当前正在编辑备注的单元格坐标 {r, c}
+    let pendingCellNoteText = ''; // 暂存的备注文本（编辑中尚未保存）
+    let pendingNoteImages = []; // 暂存的备注图片 ID 数组
+    let originalNoteImages = []; // 加载备注时的原始图片快照（用于差集删除）
+    let noteShowTimer = null; // 悬浮框显示定时器
+    let noteHideTimer = null; // 悬浮框隐藏定时器
+    let noteDragState = null; // 悬浮框拖拽状态
+    let noteResizeState = null; // 悬浮框调整大小状态
+    let noteTooltipHover = false; // 鼠标是否悬停在悬浮框上
+    let imageViewerHover = false; // 鼠标是否悬停在图片查看器上
+    let imageViewerModal = null; // 图片查看器容器元素
+    let imageViewerImage = null; // 图片查看器中的 img 元素
+    let btnCloseImageViewer = null; // 图片查看器关闭按钮
     let currentImageNaturalSize = { width: 0, height: 0 }; // 当前查看图片的自然尺寸
-    let currentImageScale = 1;             // 当前查看图片的缩放比例
+    let currentImageScale = 1; // 当前查看图片的缩放比例
 
     /**
      * 判断图片引用是否为 base64 数据（旧格式兼容）
@@ -112,7 +112,7 @@
             // 清理上一次编辑中新增但未保存的图片（避免成为孤儿）
             if (originalNoteImages.length > 0 || pendingNoteImages.length > 0) {
                 const originalSet = new Set(originalNoteImages);
-                pendingNoteImages.forEach(ref => {
+                pendingNoteImages.forEach((ref) => {
                     if (!originalSet.has(ref) && !isBase64Image(ref)) {
                         App.imageStore.deleteImage(ref).catch(() => {});
                     }
@@ -123,7 +123,7 @@
             const note = this.getCellNote(rowIdx, colIdx);
             pendingCellNoteText = note.text || '';
             pendingNoteImages = (note.images || []).slice();
-            originalNoteImages = (note.images || []).slice();  // ← 快照
+            originalNoteImages = (note.images || []).slice(); // ← 快照
             this.updateCellNoteDisplay(pendingCellNoteText);
             this.renderNoteImageList();
         },
@@ -144,8 +144,12 @@
                 img.alt = '备注图片';
                 // 异步加载图片 URL（ID → Blob URL，base64 → 原值）
                 resolveImageUrl(imgRef)
-                    .then(url => { img.src = url; })
-                    .catch(() => { img.alt = '加载失败'; });
+                    .then((url) => {
+                        img.src = url;
+                    })
+                    .catch(() => {
+                        img.alt = '加载失败';
+                    });
                 wrapper.appendChild(img);
 
                 const removeBtn = document.createElement('button');
@@ -161,8 +165,7 @@
 
                 // 点击缩略图打开大图
                 wrapper.addEventListener('click', function () {
-                    resolveImageUrl(imgRef)
-                        .then(url => App.note.showImageViewer(url));
+                    resolveImageUrl(imgRef).then((url) => App.note.showImageViewer(url));
                 });
 
                 dom.noteImageList.appendChild(wrapper);
@@ -213,12 +216,12 @@
 
             // 计算差集：原引用中不再使用的图片 → 从 IndexedDB 删除
             const currentSet = new Set(pendingNoteImages);
-            originalNoteImages.forEach(ref => {
+            originalNoteImages.forEach((ref) => {
                 if (!currentSet.has(ref) && !isBase64Image(ref)) {
                     App.imageStore.deleteImage(ref).catch(() => {});
                 }
             });
-            originalNoteImages = pendingNoteImages.slice();  // 更新快照
+            originalNoteImages = pendingNoteImages.slice(); // 更新快照
 
             App.dom.inputHint.textContent = '备注已保存';
             this.updateCellNoteDisplay(pendingCellNoteText);
@@ -236,7 +239,7 @@
 
             // 合并去重后统一删除（原引用 + 编辑期新增未保存）
             const toDelete = new Set([...originalNoteImages, ...pendingNoteImages]);
-            toDelete.forEach(ref => {
+            toDelete.forEach((ref) => {
                 if (!isBase64Image(ref)) {
                     App.imageStore.deleteImage(ref).catch(() => {});
                 }
@@ -263,14 +266,17 @@
             const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
             const MAX_IMAGE_COUNT = 10;
 
-            Array.from(files).forEach(file => {
+            Array.from(files).forEach((file) => {
                 if (!file.type.startsWith('image/')) return;
                 if (file.size > MAX_IMAGE_SIZE) {
                     App.modal.showAlert(`图片过大（超过 1MB），已跳过：${file.name}\n请压缩后再上传。`, '图片上传限制');
                     return;
                 }
                 if (pendingNoteImages.length >= MAX_IMAGE_COUNT) {
-                    App.modal.showAlert(`单个单元格最多上传 ${MAX_IMAGE_COUNT} 张图片，已忽略后续文件。`, '图片上传限制');
+                    App.modal.showAlert(
+                        `单个单元格最多上传 ${MAX_IMAGE_COUNT} 张图片，已忽略后续文件。`,
+                        '图片上传限制'
+                    );
                     return;
                 }
 
@@ -334,9 +340,11 @@
             imageViewerImage.style.width = displayWidth + 'px';
             imageViewerImage.style.height = displayHeight + 'px';
 
-            const paddingX = 5, paddingY = 5, borderWidth = 1;
-            imageViewerModal.style.width = (displayWidth + (paddingX + borderWidth) * 2) + 'px';
-            imageViewerModal.style.height = (displayHeight + (paddingY + borderWidth) * 2) + 'px';
+            const paddingX = 5,
+                paddingY = 5,
+                borderWidth = 1;
+            imageViewerModal.style.width = displayWidth + (paddingX + borderWidth) * 2 + 'px';
+            imageViewerModal.style.height = displayHeight + (paddingY + borderWidth) * 2 + 'px';
         },
 
         /**
@@ -350,9 +358,7 @@
             const margin = 20;
             const leftSpace = tooltipRect.left - margin;
             const rightSpace = window.innerWidth - tooltipRect.right - margin;
-            let left = rightSpace >= leftSpace
-                ? tooltipRect.right + margin
-                : tooltipRect.left - viewerWidth - margin;
+            let left = rightSpace >= leftSpace ? tooltipRect.right + margin : tooltipRect.left - viewerWidth - margin;
             let top = tooltipRect.top;
             if (top + viewerHeight > window.innerHeight - margin) top = window.innerHeight - viewerHeight - margin;
             if (top < margin) top = margin;
@@ -390,7 +396,7 @@
             }
             if (note.images && note.images.length > 0) {
                 html += '<div class="note-image-gallery">';
-                note.images.forEach(imgRef => {
+                note.images.forEach((imgRef) => {
                     const safeId = App.utils.escapeHtml(imgRef);
                     html += `<img src="" data-image-id="${safeId}" alt="备注图片" class="note-tooltip-image">`;
                 });
@@ -400,11 +406,15 @@
 
             // 异步加载悬浮框中的图片
             const imgs = App.dom.noteTooltipBody.querySelectorAll('.note-tooltip-image[data-image-id]');
-            imgs.forEach(img => {
+            imgs.forEach((img) => {
                 const ref = img.dataset.imageId;
                 resolveImageUrl(ref)
-                    .then(url => { img.src = url; })
-                    .catch(() => { img.alt = '图片加载失败'; });
+                    .then((url) => {
+                        img.src = url;
+                    })
+                    .catch(() => {
+                        img.alt = '图片加载失败';
+                    });
             });
 
             const layout = App.storage.loadNoteTooltipLayout();
@@ -430,8 +440,7 @@
 
             const acquire = App.dom.acquireTooltip;
             let acquireRect = null;
-            if (acquire && acquire.style.display === 'flex' &&
-                acquire.style.left && acquire.style.left !== '-9999px') {
+            if (acquire && acquire.style.display === 'flex' && acquire.style.left && acquire.style.left !== '-9999px') {
                 const aLeft = parseFloat(acquire.style.left);
                 const aTop = parseFloat(acquire.style.top);
                 const aW = acquire.offsetWidth;
@@ -452,18 +461,17 @@
                 // 围绕 acquire 的 8 个紧贴外侧位置
                 const A = acquireRect;
                 const candidates = [
-                    { left: A.right + gap, top: A.top },              // 右
-                    { left: A.right + gap, top: A.bottom - h },       // 右（下对齐）
-                    { left: A.left,        top: A.bottom + gap },     // 下
-                    { left: A.right - w,   top: A.bottom + gap },     // 下（右对齐）
-                    { left: A.left - w - gap, top: A.top },           // 左
-                    { left: A.left - w - gap, top: A.bottom - h },    // 左（下对齐）
-                    { left: A.left,        top: A.top - h - gap },    // 上
-                    { left: A.right - w,   top: A.top - h - gap }     // 上（右对齐）
+                    { left: A.right + gap, top: A.top }, // 右
+                    { left: A.right + gap, top: A.bottom - h }, // 右（下对齐）
+                    { left: A.left, top: A.bottom + gap }, // 下
+                    { left: A.right - w, top: A.bottom + gap }, // 下（右对齐）
+                    { left: A.left - w - gap, top: A.top }, // 左
+                    { left: A.left - w - gap, top: A.bottom - h }, // 左（下对齐）
+                    { left: A.left, top: A.top - h - gap }, // 上
+                    { left: A.right - w, top: A.top - h - gap } // 上（右对齐）
                 ];
                 for (const c of candidates) {
-                    if (c.left < pad || c.top < pad ||
-                        c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                    if (c.left < pad || c.top < pad || c.left + w > vw - pad || c.top + h > vh - pad) continue;
                     chosen = c;
                     break;
                 }
@@ -471,10 +479,9 @@
 
             // 回退：acquire 未显示，或所有外侧位置越界
             if (!chosen) {
-                const aroundCursor = this._buildAroundCursor(x, y, w, h);
+                const aroundCursor = App.utils.buildAroundCursor(x, y, w, h);
                 for (const c of aroundCursor) {
-                    if (c.left < pad || c.top < pad ||
-                        c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                    if (c.left < pad || c.top < pad || c.left + w > vw - pad || c.top + h > vh - pad) continue;
                     chosen = c;
                     break;
                 }
@@ -491,37 +498,19 @@
         },
 
         /**
-         * 围绕鼠标位置生成 8 个候选位（与 cell-acquire-tooltip 一致）
-         */
-        _buildAroundCursor(x, y, w, h) {
-            const m = 15;
-            return [
-                { left: x + m,      top: y + m },        // 右下
-                { left: x - w - m,  top: y + m },        // 左下
-                { left: x + m,      top: y - h - m },    // 右上
-                { left: x - w - m,  top: y - h - m },    // 左上
-                { left: x - w / 2,  top: y + m },        // 下
-                { left: x + m,      top: y - h / 2 },    // 右
-                { left: x - w - m,  top: y - h / 2 },    // 左
-                { left: x - w / 2,  top: y - h - m }     // 上
-            ];
-        },
-
-        /**
-         * 判断两个矩形是否重叠
-         */
-        _rectsOverlap(a, b) {
-            return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-        },
-
-        /**
          * 隐藏备注悬浮框
          * @param {boolean} immediate - 是否立即隐藏
          */
         hideNoteTooltip(immediate) {
             if (immediate) {
-                if (noteShowTimer) { clearTimeout(noteShowTimer); noteShowTimer = null; }
-                if (noteHideTimer) { clearTimeout(noteHideTimer); noteHideTimer = null; }
+                if (noteShowTimer) {
+                    clearTimeout(noteShowTimer);
+                    noteShowTimer = null;
+                }
+                if (noteHideTimer) {
+                    clearTimeout(noteHideTimer);
+                    noteHideTimer = null;
+                }
                 App.dom.noteTooltip.style.display = 'none';
                 this.hideImageViewer();
                 return;
@@ -560,8 +549,14 @@
                     dom.noteTooltip.style.top = top + 'px';
                 }
                 if (noteResizeState) {
-                    const newW = Math.max(200, Math.min(360, noteResizeState.startW + (e.clientX - noteResizeState.startX)));
-                    const newH = Math.max(100, Math.min(360, noteResizeState.startH + (e.clientY - noteResizeState.startY)));
+                    const newW = Math.max(
+                        200,
+                        Math.min(360, noteResizeState.startW + (e.clientX - noteResizeState.startX))
+                    );
+                    const newH = Math.max(
+                        100,
+                        Math.min(360, noteResizeState.startH + (e.clientY - noteResizeState.startY))
+                    );
                     dom.noteTooltip.style.width = newW + 'px';
                     dom.noteTooltip.style.height = newH + 'px';
                 }
@@ -666,13 +661,17 @@
             if (btnCloseImageViewer) btnCloseImageViewer.addEventListener('click', () => this.hideImageViewer());
 
             if (imageViewerModal) {
-                imageViewerModal.addEventListener('wheel', function (e) {
-                    e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                    currentImageScale = Math.max(0.1, Math.min(5, currentImageScale + delta));
-                    App.note.applyImageScale();
-                    App.note.positionImageViewer();
-                }, { passive: false });
+                imageViewerModal.addEventListener(
+                    'wheel',
+                    function (e) {
+                        e.preventDefault();
+                        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                        currentImageScale = Math.max(0.1, Math.min(5, currentImageScale + delta));
+                        App.note.applyImageScale();
+                        App.note.positionImageViewer();
+                    },
+                    { passive: false }
+                );
             }
 
             const dom = App.dom;
@@ -683,11 +682,12 @@
                     e.target.value = '';
                 });
             }
-            if (dom.btnClearNoteImages) dom.btnClearNoteImages.addEventListener('click', () => {
-                // 只清空数组；图片实际删除延迟到保存/清除备注时统一处理
-                pendingNoteImages = [];
-                App.note.renderNoteImageList();
-            });
+            if (dom.btnClearNoteImages)
+                dom.btnClearNoteImages.addEventListener('click', () => {
+                    // 只清空数组；图片实际删除延迟到保存/清除备注时统一处理
+                    pendingNoteImages = [];
+                    App.note.renderNoteImageList();
+                });
             if (dom.btnSaveNote) dom.btnSaveNote.addEventListener('click', () => this.saveNoteFromPanel());
             if (dom.btnClearNote) dom.btnClearNote.addEventListener('click', () => this.clearNoteFromPanel());
 
@@ -724,5 +724,4 @@
             }
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

@@ -28,7 +28,7 @@
          */
         getFilteredRows() {
             const selected = new Set(App.state.selectedRows);
-            return App.state.rows.filter(row => selected.has(row.name));
+            return App.state.rows.filter((row) => selected.has(row.name));
         },
 
         /**
@@ -89,7 +89,7 @@
 
             groups.forEach((group, groupIdx) => {
                 // 计算全局组索引（用于奇偶着色）
-                const globalIdx = (groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx);
+                const globalIdx = groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx;
                 const th = document.createElement('th');
                 th.textContent = group.name;
                 th.colSpan = group.sub.length;
@@ -103,7 +103,7 @@
             // 表头第二行：能力值名称
             const row2 = document.createElement('tr');
             groups.forEach((group, groupIdx) => {
-                const globalIdx = (groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx);
+                const globalIdx = groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx;
                 group.sub.forEach((subName, subIdx) => {
                     const th = document.createElement('th');
                     th.textContent = subName;
@@ -137,7 +137,7 @@
             }
 
             // 遍历每一行
-            filteredRows.forEach(row => {
+            filteredRows.forEach((row) => {
                 // 获取该行在原始数据中的索引（用于 data-rowindex 属性）
                 const originalIndex = App.state.rows.indexOf(row);
                 const tr = document.createElement('tr');
@@ -149,16 +149,18 @@
 
                 // 遍历每个系列技能的每个能力值
                 groups.forEach((group, groupIdx) => {
-                    const globalIdx = (groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx);
+                    const globalIdx =
+                        groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx;
                     group.sub.forEach((subName, subIdx) => {
                         const td = document.createElement('td');
 
                         // 计算全局列索引
-                        const colIndex = groups.slice(0, groupIdx).reduce((s, g) => s + g.sub.length, 0) + subIdx + colOffset;
+                        const colIndex =
+                            groups.slice(0, groupIdx).reduce((s, g) => s + g.sub.length, 0) + subIdx + colOffset;
                         const cell = App.utils.normalizeCell(row.data[colIndex]);
-                        const val = cell.v;        // 数值
+                        const val = cell.v; // 数值
                         const total = cell.t || 0; // 重复数
-                        const acq = cell.a || 0;   // 获取数
+                        const acq = cell.a || 0; // 获取数
 
                         // 设置 data 属性，供高亮和备注使用
                         td.dataset.rowindex = originalIndex;
@@ -169,11 +171,11 @@
                         if (total === 0) {
                             statusClass = '';
                         } else if (acq === 0) {
-                            statusClass = 'status-none';       // 未获取
+                            statusClass = 'status-none'; // 未获取
                         } else if (acq < total) {
-                            statusClass = 'status-partial';    // 部分获取
+                            statusClass = 'status-partial'; // 部分获取
                         } else {
-                            statusClass = 'status-full';       // 全部获取
+                            statusClass = 'status-full'; // 全部获取
                         }
                         td.className = '';
                         if (statusClass) td.classList.add(statusClass);
@@ -197,7 +199,7 @@
                         // 添加奇偶行列背景类
                         td.classList.add(globalIdx % 2 === 0 ? 'group-even' : 'group-odd');
                         // 直接设置内联背景色，确保立即可见
-                        td.style.backgroundColor = (globalIdx % 2 === 0) ? bgColors.even : bgColors.odd;
+                        td.style.backgroundColor = globalIdx % 2 === 0 ? bgColors.even : bgColors.odd;
 
                         // 组之间添加加粗右边框
                         if (subIdx === group.sub.length - 1 && groupIdx < groups.length - 1) {
@@ -245,7 +247,7 @@
                 App.unacquired.renderList();
             }
         },
-        
+
         /**
          * 更新当前选中单元格高亮，并加载备注到输入面板
          *
@@ -283,8 +285,13 @@
             if (isNaN(rowIdx) || isNaN(groupIdx) || isNaN(subIdx)) return;
 
             // 计算全局列索引，查找对应单元格
+            // v0.9.16 T-07：优先复用 cellHighlighter 的索引缓存（Map<"r_c", td>），
+            // 避免键盘导航每次按键都触发 querySelector。
             const colIndex = App.utils.getColumnIndex(groupIdx, subIdx);
-            const cell = document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`);
+            const cell =
+                App.cellHighlighter && App.cellHighlighter._getCell
+                    ? App.cellHighlighter._getCell(rowIdx, colIndex)
+                    : document.querySelector(`td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`);
             if (cell) {
                 cell.classList.add('cell-highlight-blink');
                 uiState.highlightedCellElement = cell;
@@ -296,5 +303,4 @@
             }
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

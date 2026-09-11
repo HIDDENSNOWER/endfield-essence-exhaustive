@@ -18,7 +18,10 @@
     function combinations(arr, k) {
         const result = [];
         const combine = (start, current) => {
-            if (current.length === k) { result.push(current.slice()); return; }
+            if (current.length === k) {
+                result.push(current.slice());
+                return;
+            }
             for (let i = start; i < arr.length; i++) {
                 current.push(arr[i]);
                 combine(i + 1, current);
@@ -115,9 +118,7 @@
             const filterSet = filterActive ? new Set(savedFilter) : null;
 
             // 1) 先在筛选地区中查找
-            const filteredRegions = filterActive
-                ? allRegions.filter(r => filterSet.has(r.name))
-                : allRegions;
+            const filteredRegions = filterActive ? allRegions.filter((r) => filterSet.has(r.name)) : allRegions;
             let results = this._findRegionsAndCombos(names, filteredRegions);
             let fallback = false;
 
@@ -148,15 +149,13 @@
             const groupName = names.groupName;
             const mainAttr = names.subName;
 
-            const others = C.SUB_ATTRS.filter(a => a !== mainAttr);
-            const mainCombos = combinations(others, 2).map(c => {
-                return [mainAttr, ...c]
-                    .sort((a, b) => C.SUB_ATTRS.indexOf(a) - C.SUB_ATTRS.indexOf(b))
-                    .join('-');
+            const others = C.SUB_ATTRS.filter((a) => a !== mainAttr);
+            const mainCombos = combinations(others, 2).map((c) => {
+                return [mainAttr, ...c].sort((a, b) => C.SUB_ATTRS.indexOf(a) - C.SUB_ATTRS.indexOf(b)).join('-');
             });
 
             const results = [];
-            regions.forEach(region => {
+            regions.forEach((region) => {
                 const hasRow = region.rows.includes(rowName);
                 const hasGroup = region.groups.includes(groupName);
                 if (hasRow && hasGroup) {
@@ -185,10 +184,10 @@
             </div>`;
             html += '<div class="acquire-list">';
 
-            results.forEach(item => {
-                const comboTags = item.mainCombos.map(c =>
-                    `<span class="acquire-combo-tag">${App.utils.escapeHtml(c)}</span>`
-                ).join('');
+            results.forEach((item) => {
+                const comboTags = item.mainCombos
+                    .map((c) => `<span class="acquire-combo-tag">${App.utils.escapeHtml(c)}</span>`)
+                    .join('');
 
                 html += `<div class="acquire-region-block">
                     <div class="acquire-region-name">📍 ${App.utils.escapeHtml(item.region)}</div>
@@ -221,14 +220,13 @@
             const w = rect.width;
             const h = rect.height;
 
-            const candidates = this._buildAroundCursor(x, y, w, h);
+            const candidates = App.utils.buildAroundCursor(x, y, w, h);
 
             // note 若已显示则避让（兼容极端乱序）
             // v0.9.14：改用 style.left/top + offsetWidth/Height 读取权威位置。
             const note = App.dom.noteTooltip;
             let noteRect = null;
-            if (note && note.style.display === 'flex' &&
-                note.style.left && note.style.left !== '-9999px') {
+            if (note && note.style.display === 'flex' && note.style.left && note.style.left !== '-9999px') {
                 const nLeft = parseFloat(note.style.left);
                 const nTop = parseFloat(note.style.top);
                 const nW = note.offsetWidth;
@@ -249,11 +247,10 @@
 
             let chosen = null;
             for (const c of candidates) {
-                if (c.left < pad || c.top < pad ||
-                    c.left + w > vw - pad || c.top + h > vh - pad) continue;
+                if (c.left < pad || c.top < pad || c.left + w > vw - pad || c.top + h > vh - pad) continue;
                 if (noteRect) {
                     const r = { left: c.left, top: c.top, right: c.left + w, bottom: c.top + h };
-                    if (this._rectsOverlap(r, noteRect)) continue;
+                    if (App.utils.rectsOverlap(r, noteRect)) continue;
                 }
                 chosen = c;
                 break;
@@ -270,32 +267,6 @@
             void tooltip.offsetWidth;
         },
 
-        /**
-         * 围绕鼠标位置生成 8 个候选位（按离鼠标由近到远）
-         * @param {number} x - 鼠标 X
-         * @param {number} y - 鼠标 Y
-         * @param {number} w - 悬浮窗宽度
-         * @param {number} h - 悬浮窗高度
-         * @returns {Array<{left, top}>}
-         */
-        _buildAroundCursor(x, y, w, h) {
-            const m = 15;
-            return [
-                { left: x + m,      top: y + m },        // 右下
-                { left: x - w - m,  top: y + m },        // 左下
-                { left: x + m,      top: y - h - m },    // 右上
-                { left: x - w - m,  top: y - h - m },    // 左上
-                { left: x - w / 2,  top: y + m },        // 下
-                { left: x + m,      top: y - h / 2 },    // 右
-                { left: x - w - m,  top: y - h / 2 },    // 左
-                { left: x - w / 2,  top: y - h - m }     // 上
-            ];
-        },
-
-        _rectsOverlap(a, b) {
-            return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-        },
-
         _scheduleHide(delay) {
             clearTimeout(_showTimer);
             clearTimeout(_hideTimer);
@@ -310,5 +281,4 @@
             if (this._tooltip) this._tooltip.style.display = 'none';
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));
