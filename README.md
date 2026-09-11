@@ -85,7 +85,7 @@ npx http-server -p 8000
 - 支持拖拽 / 缩放 / 三种布局（文本上 / 图片上 / 横向）
 - **与可获取地点悬浮窗同时出现**（v0.9.14）：紧贴主窗外侧布局
 
-### 单元格键盘导航（v0.9.15 新增）
+### 单元格键盘导航
 - **方向键移动**：数据管理 / 录入面板激活时，用 ↑↓←→ 在单元格间移动选择
 - **跨表连续**：↑↓ 可跨"第一部分 ↔ 第二部分"移动，**保持相对列位置**
 - **左右不跨表**：←→ 仅在本部分内移动
@@ -102,6 +102,7 @@ npx http-server -p 8000
 ### 性能与交互
 - **高亮索引缓存**：320 格高亮从 320 次 DOM 查询降为 O(1)
 - **统计计算缓存**：未获取统计耗时降低约 60%
+- **单元格查询复用**：键盘导航每次按键复用 Map 索引，避免 `querySelector`
 - **键盘快捷键**：`Ctrl+Z` 撤回 / `Ctrl+Shift+Z` 或 `Ctrl+Y` 重做 / `Esc` 逐层关闭弹窗
 - **首屏优化**：加载遮罩（替代白屏）+ 脚本 `defer` 并行下载
 
@@ -110,6 +111,7 @@ npx http-server -p 8000
 - **CSP 严格化**：`script-src 'self'`
 - **弹窗 A11y**：`role="dialog"` / Tab 焦点陷阱 / 关闭后焦点恢复
 - **数据迁移**：跨版本升级自动处理存储差异
+- **命名空间冻结**：`App.core` / `App.services` 运行时不可替换（v0.9.16）
 
 ### 数据安全
 - **导入导出**：ZIP（含图片）或 JSON；重名冲突可选覆盖 / 合并 / 另存
@@ -119,9 +121,11 @@ npx http-server -p 8000
 
 ### 工程化
 - ESLint 9 + Prettier：**0 error / 0 warning**
-- **103 个单元测试**（Node 内置 `node --test` + jsdom）
-- 覆盖率报告：`npm run test:coverage`
-- **CI/CD**：GitHub Actions（push/PR 自动跑语法 + lint + test）
+- **144 个单元测试**（Node 内置 `node --test` + jsdom）
+- 覆盖率：line 68% / branch 82%
+- **CI/CD**：GitHub Actions 双 Node 矩阵（22 / 24）+ npm audit 门禁
+- **提交前自动 lint**：husky + lint-staged（只处理暂存文件，< 1 秒）
+- **版本号一键同步**：`bump-version.js` 覆盖 7 文件（含 lock）
 - MIT License
 
 ---
@@ -158,7 +162,7 @@ npx http-server -p 8000
 | `Ctrl/Cmd + Y` | 重做 |
 | `Escape` | 关闭最上层弹窗 |
 
-**方向键导航规则（v0.9.15）**：
+**方向键导航规则**：
 
 - 仅在「数据管理」或「录入面板」激活时生效
 - ↑↓ **跨表连续**：第一部分末行 ↓ → 第二部分首行（相对列位置不变）
@@ -176,9 +180,10 @@ npx http-server -p 8000
 endfield-essence-exhaustive/
 ├── index.html                      主页面
 ├── 一键本地运行.bat                 本地服务器
-├── bump-version.js / .bat          版本号一键更新（覆盖 6 文件）
+├── bump-version.js / .bat          版本号一键更新（覆盖 7 文件，含 lock）
 ├── package.json / eslint.config.js ESLint 9 flat config
 ├── .prettierrc / .editorconfig / .gitignore / jsconfig.json
+├── .husky/pre-commit               提交前 hook（v0.9.16）
 ├── version.json                    运行时版本检测
 ├── LICENSE                         MIT
 ├── .github/workflows/ci.yml        GitHub Actions
@@ -199,7 +204,7 @@ endfield-essence-exhaustive/
 ├── data/
 │   ├── data.json
 │   └── images/
-├── test/                           单元测试（103 用例）
+├── test/                           单元测试（144 用例）
 ├── ARCHITECTURE.md
 └── README.md
 ```
@@ -210,29 +215,40 @@ endfield-essence-exhaustive/
 
 ### 环境要求
 
-- Node.js ≥ 18.18（用于 lint、test）
+- Node.js ≥ 22.22.2（jsdom 30 要求；CI 矩阵为 22 / 24）
 - 任一静态服务器
 
 ### 常用命令
 
 ```bash
-npm install            # 安装 3 个 devDep（eslint / prettier / jsdom）
-
-npm test               # 103 单元测试
+npm ci                 # 严格安装（依据 lock 文件）
+npm test               # 144 单元测试
 npm run test:coverage  # 覆盖率报告
 npm run lint           # ESLint（0 error 门禁）
 npm run lint:fix       # 自动修复
+npm run format         # Prettier 格式化
 
-node bump-version.js 0.9.16   # 版本号更新（覆盖 6 文件）
+node bump-version.js 0.9.17   # 版本号更新（覆盖 7 文件，含 lock）
 ```
+
+### 提交前自动化
+
+`husky` + `lint-staged` 会在 `git commit` 前自动：
+
+- 对暂存的 `js/**/*.js`：`eslint --fix` + `prettier --write`
+- 对暂存的 `*.{json,md}`：`prettier --write`
+
+跳过（应急）：`git commit --no-verify`
 
 ### 质量基线
 
 | 项 | 值 |
 |----|-----|
 | ESLint | 0 error / 0 warning |
-| 单元测试 | 103 pass / 0 fail |
-| 覆盖率 | line 65% / branch 81% |
+| 单元测试 | 144 pass / 0 fail |
+| 覆盖率 | line 68% / branch 82% / funcs 61% |
+| CI | GitHub Actions 双 Node（22 / 24） |
+| 依赖漏洞 | 0 high（`npm audit --audit-level=high`） |
 
 ---
 
@@ -283,25 +299,11 @@ node bump-version.js 0.9.16   # 版本号更新（覆盖 6 文件）
 - **未获取后 36**：缺口最少（接近刷满）的组合
 - **全收集**：缺口 = 0 的组合
 
-### 检索面板怎么用？
-
-- **地区**：下拉选择目标地区
-- **类型**：属性 / 系列技能
-- **目标**：具体属性名或系列技能名
-- **能力值**：3 能力值组合
-
-点「检索」显示结果卡片，含进度条与未获取数。悬停/双击卡片可高亮表格对应格。
-
-### 双击锁定是什么？
-
-双击未获取统计的任一条目 → 表格对应单元格持续高亮（不会因移出而消失）。条目下方会出现「取消高亮」按钮。切换面板 / 重新渲染列表 / 再次检索时自动解除。
-
 ### 两个悬浮窗会互相遮挡吗？
 
 **不会**（v0.9.14 起）。悬停同时有备注且未完全获取的单元格时：
 - **可获取地点悬浮窗**（主窗）先定位在鼠标附近
 - **单元格备注悬浮窗**（从窗）紧贴主窗外侧布局，间距 8px
-- 两窗同时出现，几何上不重叠
 
 ### 方向键怎么用？
 
@@ -310,15 +312,16 @@ node bump-version.js 0.9.16   # 版本号更新（覆盖 6 文件）
 - **↑ / ↓**：在当前可见行之间移动；到达表格底部/顶部时**跨表**到另一个表格的对应列位置
 - **← / →**：在当前部分的 70 列内移动；不跨表
 
-> 想改键？打开「设置 → 表格设置 → 单元格键盘导航」，点击输入框后按任意键即可。按 `Esc` 取消。
+> 想改键？打开「设置 → 表格设置 → 单元格键盘导航」，点击输入框后按任意键即可。
 
-### 方向键为什么不动？
+### 提交时被 husky 阻止？
 
-可能原因：
+说明暂存区有 lint 错误：
 
-- 焦点在某个输入框（如"列宽"）内 → 点击表格任意位置释放焦点
-- 打开了某个弹窗 → 关闭弹窗
-- 当前面板不是「数据管理」或「录入面板」
+- **可自动修复的**（如 `let` → `const`）：husky 会自动 `eslint --fix` 后继续
+- **不可自动修复的**（如 `var` 声明）：会**阻止提交**，需要手动修正
+
+应急跳过：`git commit --no-verify`
 
 ### 升级后旧数据会丢失吗？
 
@@ -330,7 +333,7 @@ node bump-version.js 0.9.16   # 版本号更新（覆盖 6 文件）
 
 ### 首屏白屏很久？
 
-v0.9.10 起已有加载遮罩 + 脚本 `defer`。若仍慢，通常是 GitHub Pages 网络延迟。
+已有加载遮罩 + 脚本 `defer`。若仍慢，通常是 GitHub Pages 网络延迟。
 
 ---
 
@@ -338,11 +341,12 @@ v0.9.10 起已有加载遮罩 + 脚本 `defer`。若仍慢，通常是 GitHub Pa
 
 - IIFE + 全局 `App` 命名空间；无构建工具
 - 分层：核心 → 服务 → 功能 → 入口；`App.core.*` / `services.*` / `features.*` / `entry.*`
+- **命名空间冻结**：`App.core` / `App.services` 运行时只读，防止误替换模块引用
 - XSS 防护：`innerHTML` 前统一 `escapeHtml`
 - CSP 严格化：`script-src 'self'`
 - 图片隔离：IndexedDB 与 localStorage 分离
 - 全局错误边界 + 数据迁移 + 弹窗 A11y
-- 竞态防护 + 高亮索引缓存 + 统计计算缓存
+- 竞态防护 + 高亮索引缓存 + 统计计算缓存 + **单元格查询复用**
 - 悬浮窗主从定位（v0.9.14）：从窗围绕主窗实际矩形布局
 - 键盘导航（v0.9.15）：跨表连续 + 自定义按键 + 焦点释放
 
@@ -368,7 +372,8 @@ v0.9.10 起已有加载遮罩 + 脚本 `defer`。若仍慢，通常是 GitHub Pa
 | v0.9.12 | 地区收集进度条 |
 | v0.9.13 | 未获取统计增强（检索 / 模式 / 双击锁定） |
 | v0.9.14 | 悬浮窗布局修复（主从定位，同时出现且不重叠） |
-| **v0.9.15** | **单元格键盘导航（方向键 / 自定义按键 / 跨表连续）** |
+| v0.9.15 | 单元格键盘导航（方向键 / 自定义按键 / 跨表连续） |
+| **v0.9.16** | **工程化收尾（CI 完整化 / 测试补全 / 索引缓存 / 命名空间冻结 / husky）** |
 
 ---
 
