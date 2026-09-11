@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 /**
  * bump-version.js - 统一更新项目版本号
- * 用法：node bump-version.js 0.9.12   或   双击 bump-version.bat
+ * 用法：node bump-version.js 0.9.16   或   双击 bump-version.bat
  *
- * 更新目标（共 6 个文件）：
- *   1. version.json       - version + buildTime
- *   2. package.json       - "version" 字段
- *   3. js/core/migration.js - CURRENT_VERSION 常量
- *   4. index.html         - 所有 ver.X.Y.Z
- *   5. README.md          - "**当前版本**：vX.Y.Z"
- *   6. ARCHITECTURE.md    - "适用版本：**vX.Y.Z**"
+ * 更新目标（共 7 个文件）：
+ *   1. version.json          - version + buildTime
+ *   2. package.json          - "version" 字段
+ *   3. js/core/migration.js  - CURRENT_VERSION 常量
+ *   4. index.html            - 所有 ver.X.Y.Z
+ *   5. README.md             - "**当前版本**：vX.Y.Z"
+ *   6. ARCHITECTURE.md       - "适用版本：**vX.Y.Z**"
+ *   7. package-lock.json     - 通过 npm install --package-lock-only 自动同步
+ *                              （不再手动改 lock，避免被下次 npm install 覆盖）
  */
 
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { execSync } = require('child_process');
 
 const ROOT = __dirname;
 
@@ -92,6 +95,27 @@ function run(newVersion) {
             '$1v' + newVersion
         );
     });
+
+    // 7. package-lock.json — 通过 npm 命令同步（不安装 node_modules）
+    //
+    // 设计理由：
+    //   - package-lock.json 是 npm 生成物，不应手动编辑；下次 npm install 会覆盖
+    //   - --package-lock-only 只刷 lock，不装 node_modules，通常 5~20 秒
+    //   - 失败时降级为警告，不阻塞其他文件更新
+    //   - Windows 下 npm 是 .cmd 包装器，需 shell 执行；用 shell: true 兼容
+    try {
+        console.log('  - 正在同步 package-lock.json ...');
+        execSync('npm install --package-lock-only --silent', {
+            cwd: ROOT,
+            stdio: 'inherit',
+            shell: true
+        });
+        console.log('  OK 已同步：package-lock.json');
+        changedCount++;
+    } catch (err) {
+        console.warn('  ! 同步 package-lock.json 失败：' + (err.message || err));
+        console.warn('    可手动执行：npm install --package-lock-only');
+    }
 
     console.log('');
     console.log('共更新 ' + changedCount + ' 个文件，版本号 → ' + newVersion);

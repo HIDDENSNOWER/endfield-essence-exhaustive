@@ -43,25 +43,19 @@
          * 打开弹窗
          * @param {HTMLElement} el - 弹窗遮罩元素
          *
-         * v0.9.7：
-         * - 添加 role="dialog" / aria-modal="true"
-         * - 保存当前焦点
-         * - 聚焦弹窗内第一个可聚焦元素
-         * - 启用焦点陷阱（Tab 循环）
+         * v0.9.16 修复：
+         *   - 重复打开同一弹窗时不再重复 modalOpenCount++（否则导致 body.overflow 永久锁定）
+         *   - 重复打开时仅刷新 DOM 属性（display / A11y），不重复入栈、不重复绑定焦点陷阱
          */
         openModal(el) {
-            // 若已在栈中，先移除再压入（避免重复）
-            const existingIdx = modalStack.indexOf(el);
-            if (existingIdx >= 0) {
-                modalStack.splice(existingIdx, 1);
-                focusStack.splice(existingIdx, 1);
-            }
-
-            // A11y 属性
+            // A11y 属性与显示状态每次刷新（幂等）
             el.setAttribute('role', 'dialog');
             el.setAttribute('aria-modal', 'true');
-
             el.style.display = 'flex';
+
+            // 已在栈中 → 说明是重复打开，直接返回，不重复计数
+            if (modalStack.indexOf(el) >= 0) return;
+
             modalOpenCount++;
             document.body.style.overflow = 'hidden';
             modalStack.push(el);
@@ -145,6 +139,23 @@
             if (!el) return false;
             this.closeModal(el);
             return true;
+        },
+
+        /**
+         * 仅用于测试：重置内部闭包状态
+         *
+         * 说明：modalOpenCount / modalStack / focusStack 是模块级闭包变量，
+         *       跨测试用例不会自动重置，会导致后续测试状态污染。
+         *       本方法仅供 test/modal.test.js 的 beforeEach 调用，
+         *       生产代码不应调用。
+         *
+         * @internal
+         */
+        _resetState() {
+            modalOpenCount = 0;
+            modalStack.length = 0;
+            focusStack.length = 0;
+            document.body.style.overflow = '';
         },
 
         /**
