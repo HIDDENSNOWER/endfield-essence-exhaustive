@@ -90,7 +90,6 @@
                 const rowsCopy = JSON.parse(JSON.stringify(App.state.rows));
                 const zip = new JSZip();
                 const imagesFolder = zip.folder('images');
-                const imageMap = {};
                 let imageCounter = 0;
 
                 // 遍历所有单元格，提取图片
@@ -103,7 +102,6 @@
                             const newImageRefs = [];
                             for (const imgRef of note.images) {
                                 let blob = null;
-                                let fileExt = 'png'; // 统一使用 PNG
 
                                 if (typeof imgRef === 'string' && imgRef.startsWith('data:')) {
                                     // 旧数据 base64，转 Blob
@@ -339,7 +337,7 @@
                     } else {
                         App.modal.showAlert('文件格式不正确。', '导入失败');
                     }
-                } catch (err) {
+                } catch (_err) {
                     App.modal.showAlert('解析文件失败，请检查文件内容。', '导入失败');
                 }
             };

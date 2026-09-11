@@ -23,7 +23,7 @@
     function sizeOf(str) {
         try {
             return new Blob([str]).size;
-        } catch (e) {
+        } catch (_e) {
             return String(str || '').length * 2;
         }
     }
@@ -36,7 +36,7 @@
 
     /** 安全解析 JSON，失败返回默认值 */
     function safeParse(raw, fallback) {
-        try { return JSON.parse(raw); } catch (e) { return fallback; }
+        try { return JSON.parse(raw); } catch (_e) { return fallback; }
     }
 
     /**
@@ -53,7 +53,7 @@
             for (let i = 0; i < localStorage.length; i++) {
                 lKeys.push(localStorage.key(i));
             }
-        } catch (e) { /* 忽略读取失败 */ }
+        } catch (_e) { /* 忽略读取失败 */ }
         lKeys.forEach(k => { totalBytes += sizeOf(localStorage.getItem(k)); });
 
         // ---- 数据集 ----
@@ -65,7 +65,7 @@
                 try {
                     const parsed = JSON.parse(raw);
                     if (Array.isArray(parsed)) info = parsed.length + ' 行 × ' + (parsed[0] && parsed[0].data ? parsed[0].data.length : 0) + ' 列';
-                } catch (e) { info = summarize(raw, 40); }
+                } catch (_e) { info = summarize(raw, 40); }
                 return `<div style="line-height:1.7;">· <b>${App.utils.escapeHtml(name)}</b>：${info}（${App.utils.formatBytes(sizeOf(raw))}）</div>`;
             }).join('');
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍数据集（${datasetList.length} 个）</div>${lines}`);
@@ -110,7 +110,7 @@
                 sessItems.push(App.utils.escapeHtml(k) + '：' + App.utils.escapeHtml(summarize(sessionStorage.getItem(k), 40)));
                 totalBytes += sizeOf(sessionStorage.getItem(k));
             }
-        } catch (e) { /* 忽略 */ }
+        } catch (_e) { /* 忽略 */ }
         if (sessItems.length) {
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍临时会话数据</div>` +
                 sessItems.map(s => `<div style="line-height:1.7;">· ${s}</div>`).join(''));
@@ -166,9 +166,9 @@
                         const k = localStorage.key(i);
                         lsTotal += sizeOf(localStorage.getItem(k));
                     }
-                } catch (e) { /* 忽略 */ }
+                } catch (_e) { /* 忽略 */ }
                 imagesSize = Math.max(0, totalUsage - lsTotal);
-            } catch (e) {
+            } catch (_e) {
                 imagesSize = 0;
             }
 

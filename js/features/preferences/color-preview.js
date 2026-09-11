@@ -54,7 +54,7 @@
                 counts[type] = inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
             }
 
-            let sum = Object.values(counts).reduce((a, b) => a + b, 0);
+            const sum = Object.values(counts).reduce((a, b) => a + b, 0);
             if (sum > TOTAL_CELLS) {
                 for (const type of STATUS_TYPES) {
                     counts[type] = Math.floor(counts[type] * TOTAL_CELLS / sum);
@@ -315,7 +315,7 @@
                 document.getElementById('currentColorBox').style.backgroundColor = hex;
                 document.getElementById('currentColorHex').textContent = hex;
                 this.updatePreviewCellColors(currentEditState, hex);
-            } catch (e) {}
+            } catch (_e) {}
         },
 
         updatePreviewCellColors(status, hex) {
@@ -544,7 +544,7 @@
                             } else {
                                 App.modal.showAlert('非法格式：文件既不是单元格状态颜色方案，也不是界面颜色。', '导入失败');
                             }
-                        } catch (err) {
+                        } catch (_err) {
                             App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
                         }
                     };

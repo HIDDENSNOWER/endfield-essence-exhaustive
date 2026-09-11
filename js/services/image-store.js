@@ -131,7 +131,7 @@
             try {
                 const db = await dbPromise;
                 db.close();
-            } catch (e) {
+            } catch (_e) {
                 // 忽略关闭异常
             }
             dbPromise = null;

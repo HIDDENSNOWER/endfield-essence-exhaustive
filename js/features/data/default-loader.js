@@ -115,13 +115,10 @@
                     }
                 }
             }
-            let processedImages = 0;
 
             onProgress(15, `正在转换图片 (0/${totalImages}) ...`);
 
-            // 转换图片，并更新进度（图片数为 0 时避免 0/0 = NaN）
-            rows = await this.resolveDefaultImages(rows, (imgDone, imgTotal) => {
-                processedImages = imgDone;
+            rows = await this.resolveDefaultImages(rows, (imgDone, _imgTotal) => {
                 const percent = totalImages > 0 ? 15 + Math.floor((imgDone / totalImages) * 80) : 15;
                 onProgress(percent, `正在转换图片 (${imgDone}/${totalImages}) ...`);
             });

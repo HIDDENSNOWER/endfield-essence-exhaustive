@@ -211,7 +211,7 @@
                         '导入',
                         '取消'
                     );
-                } catch (err) {
+                } catch (_err) {
                     App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
                 }
             };
@@ -431,7 +431,7 @@
                             } else {
                                 App.modal.showAlert('非法格式：文件既不是界面颜色，也不是单元格颜色方案。', '导入失败');
                             }
-                        } catch (err) {
+                        } catch (_err) {
                             App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
                         }
                     };

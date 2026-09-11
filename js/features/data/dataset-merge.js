@@ -286,11 +286,7 @@
         const result = JSON.parse(JSON.stringify(plan.resultBase));
         plan.conflicts.forEach(conf => {
             const eff = (overrides && overrides[conf.key]) || strategy;
-            if (eff === 'keep') return; // 保留 resultBase 中的目标快照值
-            const source = App.utils.normalizeCell(
-                sourceItems[conf.sourceIdx].rows[conf.rowIdx] &&
-                sourceItems[conf.sourceIdx].rows[conf.rowIdx].data[conf.colIdx]
-            );
+            if (eff === 'keep') return;
             result[conf.rowIdx].data[conf.colIdx] = conflictResult(conf, eff);
         });
         return result;

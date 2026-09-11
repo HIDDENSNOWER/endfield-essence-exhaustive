@@ -16,5 +16,5 @@
         if (t === 'dark' || t === 'light') {
             document.documentElement.setAttribute('data-theme', t);
         }
-    } catch (e) { /* localStorage 不可用则忽略 */ }
+    } catch (_e) { /* localStorage 不可用则忽略 */ }
 })();

@@ -236,7 +236,7 @@
                     this.setActiveSchemeId(id);
                     this.applyScheme(schemes[id]);
                     App.modal.showAlert('状态颜色方案已导入并应用', '成功');
-                } catch (err) {
+                } catch (_err) {
                     App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
                 }
             };
@@ -409,7 +409,7 @@
                         '导入',
                         '取消'
                     );
-                } catch (err) {
+                } catch (_err) {
                     App.modal.showAlert('非法格式：文件无法解析。', '导入失败');
                 }
             };

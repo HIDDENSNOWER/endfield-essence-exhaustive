@@ -123,7 +123,6 @@
             if (rowIdx < 0 || rowIdx >= rowNames.length || colIndex < 0) {
                 return { rowName: '?', groupName: '?', subName: '?' };
             }
-            let groupIdx = 0;
             let remaining = colIndex;
             // 找到所属的词条组
             for (let i = 0; i < groups.length; i++) {

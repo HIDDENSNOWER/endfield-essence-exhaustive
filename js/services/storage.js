@@ -39,7 +39,7 @@
             try {
                 const val = localStorage.getItem(key);
                 return val !== null ? val : fallback;
-            } catch (e) {
+            } catch (_e) {
                 return fallback;
             }
         },
@@ -88,7 +88,7 @@
             try {
                 const raw = localStorage.getItem(key);
                 return raw ? JSON.parse(raw) : fallback;
-            } catch (e) {
+            } catch (_e) {
                 return fallback;
             }
         },

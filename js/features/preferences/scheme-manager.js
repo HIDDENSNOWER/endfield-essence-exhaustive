@@ -299,7 +299,7 @@
                     this.setActiveSchemeId(id);
                     this.renderSchemeList();
                     App.modal.showAlert(`方案 "${scheme.name}" 已导入。`, '导入成功');
-                } catch (err) {
+                } catch (_err) {
                     App.modal.showAlert('解析方案文件失败。', '导入失败');
                 }
             };

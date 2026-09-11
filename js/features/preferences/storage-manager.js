@@ -24,7 +24,7 @@
             const value = localStorage.getItem(key);
             if (value === null) return 0;
             return value.length * 2;
-        } catch (e) {
+        } catch (_e) {
             return 0;
         }
     }
@@ -93,7 +93,7 @@
             const allKeys = getAllLocalStorageKeys();
             allKeys.forEach(key => { localStorageTotal += getLocalStorageSize(key); });
             return Math.max(0, totalUsage - localStorageTotal);
-        } catch (e) {
+        } catch (_e) {
             return 0;
         }
     }
@@ -149,7 +149,7 @@
                             }
                         });
                     }
-                } catch (e) {
+                } catch (_e) {
                     // 解析失败时忽略图片统计
                 }
             }
