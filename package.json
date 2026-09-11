@@ -12,7 +12,7 @@
     "test:coverage": "node --test --experimental-test-coverage"
   },
   "devDependencies": {
-    "eslint": "^9.15.0",
+    "eslint": "^9.40.0",
     "jsdom": "^30.0.1",
     "prettier": "^3.3.3"
   },

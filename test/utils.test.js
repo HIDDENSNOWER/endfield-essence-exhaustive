@@ -122,7 +122,7 @@ test('getCellNames：合法', () => {
 
 test('getCellNames：最后一行最后一列', () => {
     const n = utils.getCellNames(11, 69);
-    assert.strictEqual(n.rowName, '终结技效率提升');
+    assert.strictEqual(n.rowName, '终结技充能效率提升');
     assert.strictEqual(n.groupName, '效益');
     assert.strictEqual(n.subName, '主能力');
 });
