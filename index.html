@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.6</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.7</title>
 
     <!-- 样式表：按层叠顺序引入 -->
     <link rel="stylesheet" href="css/base.css">
@@ -19,17 +19,13 @@
     <link rel="stylesheet" href="css/settings/settings-scheme.css">
     <link rel="stylesheet" href="css/settings/settings-storage.css">
 
-    <!-- 防主题闪烁（FOUC） -->
-    <script>
-        (function () {
-            try {
-                var t = localStorage.getItem('smarttable_theme');
-                if (t === 'dark' || t === 'light') {
-                    document.documentElement.setAttribute('data-theme', t);
-                }
-            } catch (e) { }
-        })();
-    </script>
+    <!-- 内容安全策略（CSP） -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+
+    <!-- 防主题闪烁（FOUC）——外移为独立文件以配合 CSP -->
+    <script src="js/fouc-prevent.js"></script>
+</head>
 </head>
 
 <body>
@@ -379,8 +375,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.6(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.6("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.7(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.7("裂隙填充"更新)
         </button>
     </footer>
 
@@ -893,7 +889,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.6("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.7("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -989,7 +985,9 @@
     <script src="js/lib/jszip.min.js"></script>
 
     <!-- 核心层 -->
+    <script src="js/core/error-handler.js"></script>
     <script src="js/core/constants.js"></script>
+    <script src="js/core/migration.js"></script>
     <script src="js/core/state.js"></script>
     <script src="js/core/namespace.js"></script>
     <script src="js/core/dom.js"></script>
@@ -1043,6 +1041,110 @@
     <!-- 入口 -->
     <script src="js/events.js"></script>
     <script src="js/main.js"></script>
+
+    <!-- 界面颜色预览模板（v0.9.7 从 interface-colors.js 外置） -->
+    <template id="interfacePreviewTemplate">
+        <div style="background: var(--bg-secondary); border:1px solid var(--border-default); border-radius:6px; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background-color: var(--bg-primary); border-bottom:1px solid var(--border-default);">
+                <span style="font-size:10px; font-weight:600; color: var(--text-primary);">EEE 工具</span>
+                <div style="display:flex; gap:4px;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid var(--border-default); border-radius:4px; color:var(--text-secondary);">☀</span>
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid var(--border-default); border-radius:4px; color:var(--text-secondary);">⚙</span>
+                </div>
+            </div>
+            <div style="display:flex; min-height:140px; background-color: var(--bg-secondary);">
+                <div style="width:22px; display:flex; flex-direction:column; align-items:center; padding:6px 0; gap:5px; background-color: var(--bg-primary); border-right:1px solid var(--border-default);">
+                    <div style="width:14px; height:14px; border-radius:3px; background-color: var(--bg-hover); border:1px solid var(--border-default);"></div>
+                    <div style="width:14px; height:14px; border-radius:3px; border:1px solid var(--border-muted);"></div>
+                    <div style="width:14px; height:14px; border-radius:3px; border:1px solid var(--border-muted);"></div>
+                </div>
+                <div style="flex:1; padding:6px; min-width:0; display:flex; flex-direction:column; gap:5px;">
+                    <div style="font-size:7px; padding:2px 5px; border-radius:2px; background-color: var(--bg-primary); border:1px solid var(--border-default); color:var(--text-primary);">悬停单元格查看详情</div>
+                    <div style="border:1px solid var(--border-default); border-radius:3px; overflow:hidden;">
+                        <table style="width:100%; border-collapse:collapse; font-size:7px; white-space:nowrap; table-layout:fixed;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" style="width:50px; background-color: var(--bg-tertiary); color:var(--text-secondary); border:1px solid var(--border-muted); padding:2px 4px;">提升项</th>
+                                    <th colspan="5" style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted); border-right:2px solid var(--border-emphasis);">强攻</th>
+                                    <th colspan="5" style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">压制</th>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">敏捷</th>
+                                    <th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">力量</th>
+                                    <th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">意志</th>
+                                    <th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">智识</th>
+                                    <th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted); border-right:2px solid var(--border-emphasis);">主能力</th>
+                                    <th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">敏捷</th>
+                                    <th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">力量</th>
+                                    <th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">意志</th>
+                                    <th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">智识</th>
+                                    <th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">主能力</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="background-color: var(--bg-tertiary); color:var(--text-cell); border:1px solid var(--border-muted); padding:2px 4px;">攻击提升</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">123</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted); border-right:2px solid var(--border-emphasis);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">456</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color: var(--bg-tertiary); color:var(--text-cell); border:1px solid var(--border-muted); padding:2px 4px;">生命提升</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">123</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted); border-right:2px solid var(--border-emphasis);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">456</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-even-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                    <td style="background-color: var(--group-odd-bg); color:var(--text-cell); border:1px solid var(--border-muted);">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="width:65px; background-color: var(--input-bg); border-left:1px solid var(--border-default); padding:6px; display:flex; flex-direction:column; gap:5px;">
+                    <div style="color:var(--text-primary); font-weight:600; font-size:8px;">📝 面板</div>
+                    <div style="border:1px solid var(--border-default); background-color: var(--input-bg); color:var(--text-primary); font-size:7px; padding:3px; border-radius:2px;">输入内容</div>
+                    <div style="display:flex; gap:3px; flex-wrap:wrap;">
+                        <span style="background-color: var(--accent-primary); color:#fff; font-size:7px; padding:2px 4px; border-radius:2px;">应用</span>
+                        <span style="border:1px solid var(--danger-primary); color:var(--danger-primary); font-size:7px; padding:2px 4px; border-radius:2px;">删除</span>
+                        <span style="background-color: var(--success-primary); color:#fff; font-size:7px; padding:2px 4px; border-radius:2px;">确定</span>
+                    </div>
+                    <div style="background-color: var(--danger-bg); color:var(--danger-primary); font-size:6px; padding:2px; border-radius:2px;">危险提示</div>
+                </div>
+            </div>
+            <div style="padding:6px; background-color: var(--bg-secondary); border-top:1px dashed var(--border-muted);">
+                <div style="font-size:7px; color:var(--text-secondary); margin-bottom:4px;">弹窗示例</div>
+                <div style="background-color: var(--bg-primary); border:1px solid var(--border-default); border-radius:4px; max-width:160px;">
+                    <div style="border-bottom:1px solid var(--border-muted); color:var(--text-primary); font-size:8px; padding:3px 5px;">提示</div>
+                    <div style="padding:5px;">
+                        <p style="color:var(--text-primary); font-size:7px;">主要文本</p>
+                        <p style="color:var(--text-secondary); font-size:7px;">次要文本</p>
+                        <p style="color:var(--text-tertiary); font-size:7px;">弱化文本</p>
+                        <input style="width:100%; font-size:7px; padding:2px; border:1px solid var(--border-default); background-color: var(--modal-input-bg); color:var(--text-primary);" placeholder="弹窗输入框">
+                    </div>
+                    <div style="border-top:1px solid var(--border-muted); display:flex; justify-content:flex-end; gap:3px; padding:3px;">
+                        <span style="border:1px solid var(--border-default); color:var(--text-secondary); font-size:6px;">取消</span>
+                        <span style="background-color: var(--accent-primary); color:#fff; font-size:6px;">确定</span>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:6px; background-color: var(--bg-secondary); border-top:1px dashed var(--border-muted); display:flex; align-items:center; gap:6px;">
+                <span style="font-size:7px; color:var(--text-secondary);">滚动条：</span>
+                <div style="width:60px; height:5px; background-color: var(--scrollbar-thumb); border-radius:2px;"></div>
+            </div>
+        </div>
+    </template>
 </body>
 
 </html>

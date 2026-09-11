@@ -17,6 +17,7 @@
  * - showConfirmDialog 使用 window.__dialogConfirmCallback / __dialogCancelCallback
  *   存储回调函数，由 bindModalEvents 中的按钮事件触发
  * - v0.9.6：新增 modalStack 栈，支持 Esc 逐层关闭
+ * - v0.9.7：新增 A11y 支持（role="dialog" / aria-modal / 焦点陷阱 / 焦点恢复）
  */
 (function (App) {
     'use strict';
@@ -31,38 +32,108 @@
     let modalEventsBound = false;
     // v0.9.6：弹窗栈，用于 Esc 键关闭最上层弹窗
     const modalStack = [];
+    // v0.9.7：焦点恢复栈（与 modalStack 一一对应）
+    const focusStack = [];
+
+    /** 可聚焦元素选择器 */
+    const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
     App.modal = {
         /**
          * 打开弹窗
          * @param {HTMLElement} el - 弹窗遮罩元素
          *
-         * 设置弹窗 display:flex 使其可见，
-         * 并锁定 body 滚动，防止背景页面滚动。
+         * v0.9.7：
+         * - 添加 role="dialog" / aria-modal="true"
+         * - 保存当前焦点
+         * - 聚焦弹窗内第一个可聚焦元素
+         * - 启用焦点陷阱（Tab 循环）
          */
         openModal(el) {
             // 若已在栈中，先移除再压入（避免重复）
             const existingIdx = modalStack.indexOf(el);
-            if (existingIdx >= 0) modalStack.splice(existingIdx, 1);
+            if (existingIdx >= 0) {
+                modalStack.splice(existingIdx, 1);
+                focusStack.splice(existingIdx, 1);
+            }
+
+            // A11y 属性
+            el.setAttribute('role', 'dialog');
+            el.setAttribute('aria-modal', 'true');
 
             el.style.display = 'flex';
-            modalOpenCount++; // 引用计数：支持嵌套弹窗
-            document.body.style.overflow = 'hidden'; // 锁定背景滚动
+            modalOpenCount++;
+            document.body.style.overflow = 'hidden';
             modalStack.push(el);
+
+            // 保存当前焦点
+            focusStack.push(document.activeElement);
+
+            // 焦点陷阱（幂等：只在首次打开时绑定）
+            if (!el._trapHandler) {
+                el._trapHandler = (e) => this._trapTab(e, el);
+                el.addEventListener('keydown', el._trapHandler);
+            }
+
+            // 聚焦第一个可聚焦元素（延迟到 display 生效后）
+            const focusables = el.querySelectorAll(FOCUSABLE_SELECTOR);
+            if (focusables.length > 0) {
+                setTimeout(() => focusables[0].focus(), 10);
+            }
         },
 
         /**
          * 关闭弹窗
          * @param {HTMLElement} el - 弹窗遮罩元素
-         *
-         * 隐藏弹窗；仅当所有弹窗都关闭时才恢复背景滚动（引用计数）。
          */
         closeModal(el) {
             el.style.display = 'none';
             modalOpenCount = Math.max(0, modalOpenCount - 1);
-            if (modalOpenCount === 0) document.body.style.overflow = ''; // 全部关闭才恢复滚动
+            if (modalOpenCount === 0) document.body.style.overflow = '';
+
             const idx = modalStack.indexOf(el);
             if (idx >= 0) modalStack.splice(idx, 1);
+
+            // 移除焦点陷阱监听
+            if (el._trapHandler) {
+                el.removeEventListener('keydown', el._trapHandler);
+                delete el._trapHandler;
+            }
+
+            // 恢复焦点
+            const prevFocus = focusStack.pop();
+            if (prevFocus && typeof prevFocus.focus === 'function' && document.contains(prevFocus)) {
+                setTimeout(() => prevFocus.focus(), 0);
+            }
+        },
+
+        /**
+         * Tab 焦点陷阱
+         * @param {KeyboardEvent} e
+         * @param {HTMLElement} modalEl
+         */
+        _trapTab(e, modalEl) {
+            if (e.key !== 'Tab') return;
+            const focusables = modalEl.querySelectorAll(FOCUSABLE_SELECTOR);
+            if (focusables.length === 0) return;
+
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+
+            if (e.shiftKey) {
+                // Shift+Tab：首元素 → 循环到末元素
+                if (active === first || !modalEl.contains(active)) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                // Tab：末元素 → 循环到首元素
+                if (active === last || !modalEl.contains(active)) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
         },
 
         /**
@@ -78,11 +149,6 @@
 
         /**
          * 显示通用提示弹窗
-         * @param {string} msg - 提示文本（支持 HTML）
-         * @param {string} title - 弹窗标题，默认"提示"
-         *
-         * 设置标题和内容后打开 modalAlert 弹窗。
-         * 内容使用固定样式（0.9rem、主要文字颜色、1.5倍行高）。
          */
         showAlert(msg, title = '提示') {
             const d = dom();
@@ -91,22 +157,12 @@
             this.openModal(d.modalAlert);
         },
 
-        /**
-         * 关闭通用提示弹窗
-         */
         closeAlert() {
             this.closeModal(dom().modalAlert);
         },
 
         /**
          * 显示通用确认弹窗
-         * @param {string} msg - 提示消息
-         * @param {Function} onConfirm - 点击"确认"后的回调函数
-         * @param {Function} onCancel - 点击"取消"或关闭后的回调函数
-         * @param {string} title - 弹窗标题，默认"确认"
-         *
-         * 设置标题和内容后打开 modalConfirmDialog 弹窗，
-         * 并将回调函数存储到 window 对象上，供 bindModalEvents 中的按钮事件调用。
          */
         showConfirmDialog(msg, onConfirm, onCancel, title = '确认', confirmText = '确认', cancelText = '取消') {
             const d = dom();
@@ -127,12 +183,6 @@
             this.openModal(d.modalConfirmDialog);
         },
 
-        /**
-         * 关闭通用确认弹窗
-         *
-         * 关闭时清理全局回调并恢复底部按钮显示，
-         * 防止残留回调在后续弹窗中被误触发（安全修复）。
-         */
         closeConfirmDialog() {
             this.closeModal(dom().modalConfirmDialog);
             window.__dialogConfirmCallback = null;
@@ -150,10 +200,6 @@
 
         /**
          * 显示非法输入提示弹窗
-         * @param {string} reason - 非法输入的原因说明
-         *
-         * 设置原因文本后打开 modalIllegalInput 弹窗，
-         * 使用 1.6 倍行高以提升可读性。
          */
         showIllegalModal(reason) {
             const d = dom();
@@ -161,18 +207,12 @@
             this.openModal(d.modalIllegalInput);
         },
 
-        /**
-         * 关闭非法输入提示弹窗
-         */
         closeIllegalModal() {
             this.closeModal(dom().modalIllegalInput);
         },
 
         /**
          * 显示全部获取提示弹窗
-         * @param {string} msg - 提示内容
-         *
-         * 当用户尝试录入已全部获取的实装基质时弹出此提示。
          */
         showFullAcquireModal(msg) {
             const d = dom();
@@ -180,31 +220,25 @@
             this.openModal(d.modalFullAcquire);
         },
 
-        /**
-         * 关闭全部获取提示弹窗
-         */
         closeFullAcquireModal() {
             this.closeModal(dom().modalFullAcquire);
         },
 
         /**
          * 显示短暂提示（Toast，非模态，自动消失）
-         * @param {string} message - 提示内容
-         * @param {string} type - 类型：'success' | 'error' | 'info'，默认 'info'
          *
-         * 创建临时 div 元素，添加相应类型样式类，
-         * 3 秒后自动淡出并移除。不阻塞用户操作。
+         * v0.9.7：添加 role="status" aria-live="polite" 供屏幕阅读器播报
          */
         showTemporaryHint(message, type = 'info') {
             const hint = document.createElement('div');
             hint.className = `temp-hint temp-hint-${type}`;
             hint.textContent = message;
+            hint.setAttribute('role', 'status');
+            hint.setAttribute('aria-live', 'polite');
             document.body.appendChild(hint);
 
-            // 下一帧添加 show 类，触发淡入过渡
             setTimeout(() => hint.classList.add('show'), 10);
 
-            // 3 秒后开始淡出，300ms 后移除元素
             setTimeout(() => {
                 hint.classList.remove('show');
                 setTimeout(() => hint.remove(), 300);
@@ -213,18 +247,8 @@
 
         /**
          * 绑定通用弹窗的事件
-         * 由 events.js 统一调用
-         *
-         * 绑定以下弹窗的按钮和遮罩点击事件：
-         * - 通用提示弹窗（modalAlert）
-         * - 通用确认弹窗（modalConfirmDialog）
-         * - 非法输入弹窗（modalIllegalInput）
-         * - 全部获取提示弹窗（modalFullAcquire）
-         *
-         * 遮罩点击（e.target === 弹窗遮罩）时关闭弹窗。
          */
         bindModalEvents() {
-            // 幂等保护：重复调用不会重复绑定事件（修复回调执行两次的问题）
             if (modalEventsBound) return;
             modalEventsBound = true;
             const d = dom();
@@ -241,7 +265,7 @@
             // ==================== 通用确认弹窗 ====================
             if (d.btnConfirmConfirmDialog) {
                 d.btnConfirmConfirmDialog.addEventListener('click', () => {
-                    const cb = window.__dialogConfirmCallback; // 先取引用，关闭时会清理
+                    const cb = window.__dialogConfirmCallback;
                     this.closeConfirmDialog();
                     if (typeof cb === 'function') cb();
                 });

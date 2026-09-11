@@ -143,80 +143,15 @@
                 container.style.setProperty(varName, allColors[varName]);
             }
 
-            container.innerHTML = `
-                <div style="background: var(--bg-secondary); border:1px solid var(--border-default); border-radius:6px; overflow:hidden;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background-color: var(--bg-primary); border-bottom:1px solid var(--border-default);">
-                        <span style="font-size:10px; font-weight:600; color: var(--text-primary);">EEE 工具</span>
-                        <div style="display:flex; gap:4px;">
-                            <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid var(--border-default); border-radius:4px; color:var(--text-secondary);">☀</span>
-                            <span style="display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid var(--border-default); border-radius:4px; color:var(--text-secondary);">⚙</span>
-                        </div>
-                    </div>
-                    <div style="display:flex; min-height:140px; background-color: var(--bg-secondary);">
-                        <div style="width:22px; display:flex; flex-direction:column; align-items:center; padding:6px 0; gap:5px; background-color: var(--bg-primary); border-right:1px solid var(--border-default);">
-                            <div style="width:14px; height:14px; border-radius:3px; background-color: var(--bg-hover); border:1px solid var(--border-default);"></div>
-                            <div style="width:14px; height:14px; border-radius:3px; border:1px solid var(--border-muted);"></div>
-                            <div style="width:14px; height:14px; border-radius:3px; border:1px solid var(--border-muted);"></div>
-                        </div>
-                        <div style="flex:1; padding:6px; min-width:0; display:flex; flex-direction:column; gap:5px;">
-                            <div style="font-size:7px; padding:2px 5px; border-radius:2px; background-color: var(--bg-primary); border:1px solid var(--border-default); color:var(--text-primary);">悬停单元格查看详情</div>
-                            <div style="border:1px solid var(--border-default); border-radius:3px; overflow:hidden;">
-                                <table style="width:100%; border-collapse:collapse; font-size:7px; white-space:nowrap; table-layout:fixed;">
-                                    <thead>
-                                        <tr>
-                                            <th rowspan="2" style="width:50px; background-color: var(--bg-tertiary); color:var(--text-secondary); border:1px solid var(--border-muted); padding:2px 4px;">提升项</th>
-                                            <th colspan="5" style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted); border-right:2px solid var(--border-emphasis);">强攻</th>
-                                            <th colspan="5" style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">压制</th>
-                                        </tr>
-                                        <tr>
-                                            ${['敏捷','力量','意志','智识','主能力'].map((s,i)=>`<th style="background-color: var(--group-header-even-bg); color:var(--text-secondary); border:1px solid var(--border-muted); ${i===4?'border-right:2px solid var(--border-emphasis)':''}">${s}</th>`).join('')}
-                                            ${['敏捷','力量','意志','智识','主能力'].map(s=>`<th style="background-color: var(--group-header-odd-bg); color:var(--text-secondary); border:1px solid var(--border-muted);">${s}</th>`).join('')}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${['攻击提升','生命提升'].map(row=>`
-                                        <tr>
-                                            <td style="background-color: var(--bg-tertiary); color:var(--text-cell); border:1px solid var(--border-muted); padding:2px 4px;">${row}</td>
-                                            ${Array.from({length:5}).map((_,i)=>`<td style="background-color: ${i%2===0?'var(--group-even-bg)':'var(--group-odd-bg)'}; color:var(--text-cell); border:1px solid var(--border-muted); ${i===4?'border-right:2px solid var(--border-emphasis)':''}">${i===0?'123':'—'}</td>`).join('')}
-                                            ${Array.from({length:5}).map((_,i)=>`<td style="background-color: ${i%2===0?'var(--group-odd-bg)':'var(--group-even-bg)'}; color:var(--text-cell); border:1px solid var(--border-muted);">${i===0?'456':'—'}</td>`).join('')}
-                                        </tr>`).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div style="width:65px; background-color: var(--input-bg); border-left:1px solid var(--border-default); padding:6px; display:flex; flex-direction:column; gap:5px;">
-                            <div style="color:var(--text-primary); font-weight:600; font-size:8px;">📝 面板</div>
-                            <div style="border:1px solid var(--border-default); background-color: var(--input-bg); color:var(--text-primary); font-size:7px; padding:3px; border-radius:2px;">输入内容</div>
-                            <div style="display:flex; gap:3px; flex-wrap:wrap;">
-                                <span style="background-color: var(--accent-primary); color:#fff; font-size:7px; padding:2px 4px; border-radius:2px;">应用</span>
-                                <span style="border:1px solid var(--danger-primary); color:var(--danger-primary); font-size:7px; padding:2px 4px; border-radius:2px;">删除</span>
-                                <span style="background-color: var(--success-primary); color:#fff; font-size:7px; padding:2px 4px; border-radius:2px;">确定</span>
-                            </div>
-                            <div style="background-color: var(--danger-bg); color:var(--danger-primary); font-size:6px; padding:2px; border-radius:2px;">危险提示</div>
-                        </div>
-                    </div>
-                    <div style="padding:6px; background-color: var(--bg-secondary); border-top:1px dashed var(--border-muted);">
-                        <div style="font-size:7px; color:var(--text-secondary); margin-bottom:4px;">弹窗示例</div>
-                        <div style="background-color: var(--bg-primary); border:1px solid var(--border-default); border-radius:4px; max-width:160px;">
-                            <div style="border-bottom:1px solid var(--border-muted); color:var(--text-primary); font-size:8px; padding:3px 5px;">提示</div>
-                            <div style="padding:5px;">
-                                <p style="color:var(--text-primary); font-size:7px;">主要文本</p>
-                                <p style="color:var(--text-secondary); font-size:7px;">次要文本</p>
-                                <p style="color:var(--text-tertiary); font-size:7px;">弱化文本</p>
-                                <input style="width:100%; font-size:7px; padding:2px; border:1px solid var(--border-default); background-color: var(--modal-input-bg); color:var(--text-primary);" placeholder="弹窗输入框">
-                            </div>
-                            <div style="border-top:1px solid var(--border-muted); display:flex; justify-content:flex-end; gap:3px; padding:3px;">
-                                <span style="border:1px solid var(--border-default); color:var(--text-secondary); font-size:6px;">取消</span>
-                                <span style="background-color: var(--accent-primary); color:#fff; font-size:6px;">确定</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="padding:6px; background-color: var(--bg-secondary); border-top:1px dashed var(--border-muted); display:flex; align-items:center; gap:6px;">
-                        <span style="font-size:7px; color:var(--text-secondary);">滚动条：</span>
-                        <div style="width:60px; height:5px; background-color: var(--scrollbar-thumb); border-radius:2px;"></div>
-                    </div>
-                </div>
-            `;
+            // v0.9.7：模板从 <template id="interfacePreviewTemplate"> 读取，
+            // 避免 130 行 HTML 字符串内嵌于 JS
+            const template = document.getElementById('interfacePreviewTemplate');
+            if (!template) {
+                console.warn('[interfaceColors] 未找到 interfacePreviewTemplate');
+                return;
+            }
+            container.innerHTML = '';
+            container.appendChild(template.content.cloneNode(true));
         },
 
         showImportCompare(file) {

@@ -5,7 +5,7 @@
 > 为《明日方舟：终末地》设计的**纯前端单页工具**，用于记录、管理、统计"基质"数据。
 > 零构建、零依赖、零后端 —— 一个文件夹拷贝走即可用。
 
-**当前版本**：v0.9.6
+**当前版本**：v0.9.7
 
 ---
 
@@ -73,6 +73,19 @@ npx http-server -p 8000
 - **界面颜色**：所有 CSS 颜色变量均可调，含完整主界面预览
 - **方案管理**：界面方案与单元格方案独立保存、导入导出
 
+### ⚡ 性能与交互（v0.9.6 新增）
+- **高亮索引缓存**：320 格高亮从 320 次 DOM 查询降为 O(1) 查表
+- **统计计算缓存**：未获取统计的计算耗时降低约 60%
+- **键盘快捷键**：
+  - `Ctrl+Z` 撤回 / `Ctrl+Shift+Z` 或 `Ctrl+Y` 重做
+  - `Esc` 关闭最上层弹窗（逐层关闭）
+
+### 🛡 健壮性与可访问性（v0.9.7 新增）
+- **全局错误边界**：运行时异常不白屏，Toast 提示并记录
+- **CSP 严格化**：`script-src 'self'`，内联脚本外移
+- **弹窗 A11y**：`role="dialog"` / `aria-modal` / Tab 焦点陷阱 / 关闭后焦点恢复
+- **数据迁移框架**：跨版本升级自动处理存储差异
+
 ### 💾 数据安全
 - **导入导出**：ZIP（含图片）或 JSON，重名冲突时可选覆盖/合并/另存
 - **默认数据集保护**：只增不减，刷新不覆盖用户修改
@@ -105,12 +118,34 @@ npx http-server -p 8000
 
 ---
 
+## 键盘快捷键
+
+| 快捷键 | 行为 |
+|--------|------|
+| `Ctrl/Cmd + Z` | 撤回 |
+| `Ctrl/Cmd + Shift + Z` | 重做 |
+| `Ctrl/Cmd + Y` | 重做（Windows 习惯） |
+| `Escape` | 关闭最上层弹窗 |
+
+> **规则**：焦点在 `input` / `textarea` / `select` / `contenteditable` 内时，除 `Escape` 外不触发。
+
+---
+
 ## 目录结构
 
 ```
 endfield-essence-exhaustive/
-├── index.html                  主页面（UI 结构 + 脚本/样式引入）
+├── index.html                  主页面（UI 结构 + 脚本/样式引入 + 界面预览模板）
 ├── 一键本地运行.bat             本地服务器启动脚本
+├── bump-version.js             版本号一键更新脚本
+├── bump-version.bat            版本号一键更新（Windows）
+├── package.json                开发依赖（仅 eslint / prettier）
+├── eslint.config.js            ESLint 9 flat config
+├── .prettierrc                 Prettier 配置
+├── .editorconfig               跨编辑器缩进统一
+├── .gitignore                  Git 忽略清单
+├── jsconfig.json               编辑器类型提示
+├── version.json                运行时版本检测
 ├── css/                        样式表
 │   ├── base.css                基础变量与主题
 │   ├── layout.css              页面布局
@@ -119,22 +154,89 @@ endfield-essence-exhaustive/
 │   └── settings/               设置弹窗样式（按面板拆分）
 ├── js/
 │   ├── lib/jszip.min.js        ZIP 库（唯一外部依赖）
-│   ├── core/                   核心层：常量、状态、DOM、工具、数据模型
-│   ├── services/               服务层：存储、弹窗、IndexedDB
+│   ├── fouc-prevent.js         防主题闪烁（v0.9.7 外移）
+│   ├── core/                   核心层
+│   │   ├── constants.js        常量
+│   │   ├── state.js            业务状态 + UI 状态
+│   │   ├── migration.js        数据迁移框架（v0.9.7）
+│   │   ├── error-handler.js    全局错误边界（v0.9.7）
+│   │   ├── namespace.js        命名空间分层视图（v0.9.5）
+│   │   ├── dom.js              DOM 缓存
+│   │   ├── utils.js            通用工具函数
+│   │   └── data-model.js       数据模型工厂
+│   ├── services/               服务层
+│   │   ├── storage.js          localStorage 封装
+│   │   ├── modal.js            弹窗管理（含 A11y）
+│   │   └── image-store.js      IndexedDB 图片存储
 │   ├── features/               功能层
 │   │   ├── data/               数据集、导入导出、合并、地区管理
-│   │   ├── table/              表格渲染、行筛选、统计、未获取统计、可获取提示
+│   │   ├── table/              表格渲染、行筛选、统计、未获取统计、可获取提示、高亮
 │   │   ├── cell/               单元格录入、数值对比、历史
 │   │   ├── preferences/        主题、颜色、方案、存储管理
-│   │   └── note/               备注、图片、悬浮框
+│   │   ├── note/               备注、图片、悬浮框
+│   │   └── keyboard.js         键盘快捷键（v0.9.6）
 │   ├── events.js               事件绑定入口
 │   └── main.js                 初始化与布局
 ├── data/
 │   ├── data.json               默认数据集（12 行 × 70 列）
 │   └── images/                 默认数据集备注图片
+├── test/                       单元测试（v0.9.4）
+│   ├── _setup.js               Node 环境桩
+│   ├── constants.test.js       常量一致性
+│   ├── utils.test.js           工具函数
+│   ├── dataset-merge.test.js   合并引擎
+│   └── dataset-manager.test.js 数据保护
 ├── ARCHITECTURE.md             开发者文档
-└── README.md
+├── README.md
+└── LICENSE
 ```
+
+---
+
+## 开发
+
+### 环境要求
+
+- Node.js ≥ 18.18（用于 lint、test）
+- 任一静态服务器（Python / Node 均可）
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+仅安装 2 个 devDependency（ESLint + Prettier），**无运行时依赖**。
+
+### 常用命令
+
+```bash
+# 语法检查（推送前必做）
+Get-ChildItem js -Recurse -Filter *.js |
+  Where-Object { $_.Name -ne 'jszip.min.js' } |
+  ForEach-Object { node --check $_.FullName }
+
+# 单元测试（90 用例）
+npm test
+
+# ESLint（0 error 门禁）
+npm run lint
+
+# 自动修复可安全修复的 lint 问题
+npm run lint:fix
+
+# 版本号更新（同步 4 个文件）
+node bump-version.js 0.9.8
+```
+
+### 质量基线
+
+| 项 | 值 |
+|----|-----|
+| ESLint error | 0 |
+| ESLint warning | 30（计划后续清理） |
+| 单元测试 | 90 pass / 0 fail |
+| 覆盖率 | 纯函数 70%+ |
 
 ---
 
@@ -193,30 +295,60 @@ endfield-essence-exhaustive/
 - 检查表格中是否有对应单元格（可能被行筛选隐藏）
 - 检查是否在未获取统计面板有激活的鼠标悬停状态（可能互相清除）
 
+### ❓ 键盘快捷键 Ctrl+Z 没反应？
+
+- 检查焦点是否在输入框内（此时走浏览器原生撤销）
+- 检查是否有可撤回的操作（撤回按钮未灰即表示有）
+- 检查是否与其他浏览器扩展冲突
+
+### ❓ 升级到新版本后旧数据会丢失吗？
+
+不会。`migration.js` 会在启动时按版本顺序执行迁移，保证旧数据可用。可在 DevTools 中执行 `localStorage.getItem('smarttable_version')` 查看当前记录的版本。
+
+### ❓ 页面出现 "Executing inline script violates..." 报错？
+
+这是浏览器缓存导致的 CSP 校验失败。请：
+1. 硬刷新（`Ctrl+Shift+R`）
+2. 或 DevTools → Network → 勾选 "Disable cache" 后刷新
+3. 或清除浏览器缓存（`Ctrl+Shift+Delete`）
+
 ---
-
-### ⚡ v0.9.6 性能与交互
-
-- **高亮索引缓存**：320 格高亮从 320 次 DOM 查询降为 O(1) 查表
-- **统计计算缓存**：未获取统计的计算耗时降低约 60%
-- **键盘快捷键**：`Ctrl+Z` 撤回 / `Ctrl+Shift+Z` 重做 / `Esc` 关闭弹窗
 
 ## 技术特性
 
 - **模块化**：IIFE + 全局 `App` 命名空间，无构建工具
-- **分层清晰**：核心层 → 服务层 → 功能层 → 入口层
+- **分层清晰**：核心层 → 服务层 → 功能层 → 入口层，`App.core.*` / `App.services.*` / `App.features.*` / `App.entry.*` 分层视图
 - **XSS 防护**：所有用户输入在拼入 `innerHTML` 前统一转义
+- **CSP 严格化**：`script-src 'self'`，禁止内联脚本
 - **存储隔离**：图片存 IndexedDB，与 localStorage 分离，降低配额压力
 - **容错设计**：`normalizeCell` 自动夹紧 `a ≤ t`，颜色越界钳制，回调关闭即清理
+- **全局错误边界**：`window.onerror` + `unhandledrejection` 捕获，异常不白屏
+- **数据迁移**：跨版本自动处理存储差异，幂等
+- **可访问性**：弹窗 `role="dialog"`、焦点陷阱、焦点恢复、Toast `aria-live`
 - **竞态防护**：异步加载默认数据前记录数据集键，防止切换后写入错误位置
+- **性能优化**：高亮索引缓存（Map 查表）、统计计算缓存
 
 开发细节见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ---
 
+## 版本演进
+
+| 版本 | 主题 | 主要交付 |
+|------|------|---------|
+| v0.9.1 | 功能扩展 | 未获取统计 + 地区管理 + 可获取提示 |
+| v0.9.2 | 技术债清理 | 消除重复代码 + 统一高亮控制 + 版本号修正 |
+| v0.9.3 | 质量基建 | ESLint 9 + Prettier + jsconfig |
+| v0.9.4 | 测试基建 | 90 个单元测试（Node 内置 test runner） |
+| v0.9.5 | 架构收敛 | 命名空间分层 + 状态拆分 + 内联事件清理 |
+| v0.9.6 | 性能与交互 | 索引缓存 + 计算缓存 + 键盘快捷键 |
+| v0.9.7 | 健壮性与 A11y | 错误边界 + CSP + 弹窗 A11y + 数据迁移 + 模板外置 |
+
+---
+
 ## 版本与反馈
 
-- **当前版本**：v0.9.6
+- **当前版本**：v0.9.7
 - **反馈邮箱**：binjianxuewu@outlook.com
 - **适用游戏版本**：明日方舟：终末地（数据表持续更新中）
 

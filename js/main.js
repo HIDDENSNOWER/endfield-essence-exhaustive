@@ -90,6 +90,12 @@
     }
 
     async function init() {
+        // 0. 注册全局错误边界（最先执行）
+        safeCall(() => App.errorHandler.init(), '错误边界初始化');
+
+        // 0.5 数据迁移（在读取任何用户数据之前）
+        safeCall(() => App.migration.migrate(), '数据迁移');
+
         // 1. 初始化 DOM 缓存
         safeCall(() => App.initDomCache(), 'DOM缓存初始化');
 

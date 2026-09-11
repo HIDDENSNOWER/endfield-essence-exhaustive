@@ -29,7 +29,9 @@
 
             // ==================== 核心层 ====================
             Object.assign(App.core, {
+                errorHandler: App.errorHandler,
                 constants: App.constants,
+                migration: App.migration,
                 state: App.state,
                 uiState: App.uiState,
                 dom: App.dom,

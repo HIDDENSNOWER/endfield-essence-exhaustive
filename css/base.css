@@ -62,6 +62,17 @@
     /* 单元格文本颜色与字号 */
     --text-cell: #1f2328;           /* 单元格文字颜色 */
     --cell-font-size: 12px;         /* 单元格文字大小 */
+
+    /* 进度条中档颜色 */
+    --progress-mid-color: #f0ad4e;
+
+    /* 排行榜奖牌色（前 3 名） */
+    --rank-gold: #d4af37;
+    --rank-silver: #a8a8a8;
+    --rank-bronze: #b87333;
+
+    /* 变暗蒙版 */
+    --dimming-overlay: rgba(0, 0, 0, 0.6);
 }
 
 /* 暗色主题变量 */
@@ -118,6 +129,17 @@
 
     /* 弹窗输入框背景 */
     --modal-input-bg: #0a0e14;      /* 暗色下弹窗输入框背景 */
+
+    /* 进度条中档颜色（暗色） */
+    --progress-mid-color: #f0ad4e;
+
+    /* 排行榜奖牌色（暗色，与亮色同值） */
+    --rank-gold: #d4af37;
+    --rank-silver: #a8a8a8;
+    --rank-bronze: #b87333;
+
+    /* 变暗蒙版（暗色更浓） */
+    --dimming-overlay: rgba(0, 0, 0, 0.72);
 }
 
 /* ==================== 全局重置与基础 ==================== */

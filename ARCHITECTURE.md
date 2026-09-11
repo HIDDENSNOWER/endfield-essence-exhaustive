@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.6** ｜ 与代码同步
+> 适用版本：**v0.9.7** ｜ 与代码同步
 
 ---
 
@@ -88,6 +88,7 @@
 | `App.dom` | 所有 DOM 元素一次性缓存 |
 | `App.utils` | 单元格标准化、颜色转换、列索引、HTML 转义 |
 | `App.dataModel` | 空单元格 / 空行 / 初始行 / 示例数据工厂 |
+| `App.migration` | 数据迁移框架（v0.9.7 新增） |
 | `App.namespace` | 分层视图入口（v0.9.5 新增） |
 
 ### 服务层 `services/`
@@ -141,6 +142,8 @@
 `main.js` 的 `init()` 按序执行，每步由 `safeCall` 包裹（单步失败不阻断启动）：
 
 ```
+ 0.   errorHandler.init()       注册全局错误边界（v0.9.7 新增）
+ 0.5  migration.migrate()       数据迁移（v0.9.7 新增）
  1. initDomCache()              缓存所有 DOM
  2. state.rows = 空数据          初始化 12×70
  3. theme.loadTheme()           读主题偏好 / 跟随系统
@@ -306,6 +309,7 @@ return 1;                                                     // 完全空白：
 | **`smarttable_regions`** | **地区配置数组 `[{name, rows, groups}]`** |
 | **`smarttable_unacquired_region_filter`** | **未获取统计的地区筛选（数组或 null）** |
 | `<数据集名>` | 该数据集的行数据 |
+| **`smarttable_version`** | **应用运行版本（供数据迁移比对）** |
 
 ### sessionStorage 键
 
@@ -543,3 +547,50 @@ npm test
 **规则**：焦点在 `input` / `textarea` / `select` / `contenteditable` 内时，除 `Escape` 外不触发。
 
 `App.modal` 新增 `modalStack` 与 `closeTopModal()` 支撑 `Escape` 逐层关闭。
+
+---
+
+## 健壮性与 A11y（v0.9.7）
+
+### 全局错误边界（T-19）
+
+`App.errorHandler` 捕获同步与异步错误：
+
+- `init()` 在 `main.js` 的 `init()` 第 0 步调用（最早）
+- 监听 `window.onerror` 与 `unhandledrejection`
+- 记录最近 50 条（time / message / stack）
+- Toast 提示，避免白屏无感知
+
+### CSP + FOUC 外移（T-18）
+
+- `index.html` 添加 `Content-Security-Policy` meta
+- 内联 FOUC script 外移为 `js/fouc-prevent.js`
+- `script-src 'self'`；`style-src 'self' 'unsafe-inline'`；`img-src 'self' data: blob:`
+
+### 弹窗 A11y（T-17）
+
+`App.modal.openModal` 增强：
+
+- `role="dialog"` / `aria-modal="true"`
+- 保存焦点 + 聚焦第一个可聚焦元素
+- Tab 焦点陷阱（`_trapTab`）
+- 关闭时恢复焦点
+- `showTemporaryHint` 添加 `role="status"` / `aria-live="polite"`
+
+### 数据迁移框架（T-21）
+
+`App.migration`：
+
+- 存储键 `smarttable_version`
+- `CURRENT_VERSION` 常量
+- `_lt(a, b)` 版本比较；`_safeRun` 容错
+- `main.js` 的 `init()` 第 0.5 步调用
+
+### 模板外置（T-22）
+
+`interface-colors.js` 的 130 行 HTML 预览模板外置为
+`index.html` 的 `<template id="interfacePreviewTemplate">`。
+
+### 硬编码颜色变量化（T-23）
+
+新增 CSS 变量：`--progress-mid-color` / `--rank-gold|silver|bronze` / `--dimming-overlay`。

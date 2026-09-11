@@ -670,9 +670,9 @@
     margin-top: 1px;
 }
 
-.unacquired-top-item:nth-child(1) .unacquired-rank { background: #d4af37; color: #fff; }
-.unacquired-top-item:nth-child(2) .unacquired-rank { background: #a8a8a8; color: #fff; }
-.unacquired-top-item:nth-child(3) .unacquired-rank { background: #b87333; color: #fff; }
+.unacquired-top-item:nth-child(1) .unacquired-rank { background: var(--rank-gold); color: #fff; }
+.unacquired-top-item:nth-child(2) .unacquired-rank { background: var(--rank-silver); color: #fff; }
+.unacquired-top-item:nth-child(3) .unacquired-rank { background: var(--rank-bronze); color: #fff; }
 
 /* 中间信息区：两行结构 */
 .unacquired-top-content {
@@ -733,7 +733,7 @@
     background: var(--danger-primary);
 }
 .unacquired-progress-fill.progress-mid {
-    background: #f0ad4e;
+    background: var(--progress-mid-color);
 }
 .unacquired-progress-fill.progress-high {
     background: var(--success-primary);
@@ -911,7 +911,7 @@ table.unacquired-dimming tbody td:not(:first-child):not(.unacquired-cell-highlig
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--dimming-overlay);
     pointer-events: none;
     z-index: 1;
     transition: opacity 0.15s;
@@ -919,7 +919,7 @@ table.unacquired-dimming tbody td:not(:first-child):not(.unacquired-cell-highlig
 
 /* 第一列（sticky 行名）：用背景图叠加遮罩，避免破坏 sticky 定位 */
 table.unacquired-dimming tbody td:first-child:not(.unacquired-cell-highlight):not(.acquired-cell-highlight) {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
+    background-image: linear-gradient(var(--dimming-overlay), var(--dimming-overlay));
     transition: background-image 0.15s;
 }
 

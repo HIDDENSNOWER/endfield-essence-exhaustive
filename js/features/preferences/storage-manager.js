@@ -336,7 +336,7 @@
                             quotaStatusMsg.innerHTML = '<span style="color:var(--danger-primary);">⚠️ 已超过自定义配额！</span>';
                             if (progressBar) progressBar.classList.add('storage-progress-danger');
                         } else if (percent >= warnPercent) {
-                            quotaStatusMsg.innerHTML = `<span style="color:#f0ad4e;">⚠️ 已使用 ${percent.toFixed(1)}%，接近或达到警示线 ${warnPercent}%</span>`;
+                            quotaStatusMsg.innerHTML = `<span style="color:var(--progress-mid-color);">⚠️ 已使用 ${percent.toFixed(1)}%，接近或达到警示线 ${warnPercent}%</span>`;
                             if (progressBar) progressBar.classList.add('storage-progress-warn');
                         } else {
                             quotaStatusMsg.innerHTML = `<span style="color:var(--success-primary);">✅ 使用正常 (${percent.toFixed(1)}%)</span>`;
