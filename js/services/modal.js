@@ -10,11 +10,13 @@
  * - showFullAcquireModal / closeFullAcquireModal：全部获取提示弹窗
  * - showTemporaryHint：Toast 轻提示（非模态，自动消失）
  * - bindModalEvents：绑定所有通用弹窗的关闭按钮、确定按钮和遮罩点击事件
+ * - closeTopModal：关闭最上层弹窗（v0.9.6，供 Esc 快捷键调用）
  *
  * 设计说明：
  * - 所有弹窗的 DOM 元素在 core/dom.js 中缓存，通过 App.dom 访问
  * - showConfirmDialog 使用 window.__dialogConfirmCallback / __dialogCancelCallback
  *   存储回调函数，由 bindModalEvents 中的按钮事件触发
+ * - v0.9.6：新增 modalStack 栈，支持 Esc 逐层关闭
  */
 (function (App) {
     'use strict';
@@ -27,6 +29,8 @@
     // 模块级状态：打开的弹窗计数（滚动锁引用计数）与事件绑定标志（幂等）
     let modalOpenCount = 0;
     let modalEventsBound = false;
+    // v0.9.6：弹窗栈，用于 Esc 键关闭最上层弹窗
+    const modalStack = [];
 
     App.modal = {
         /**
@@ -37,9 +41,14 @@
          * 并锁定 body 滚动，防止背景页面滚动。
          */
         openModal(el) {
+            // 若已在栈中，先移除再压入（避免重复）
+            const existingIdx = modalStack.indexOf(el);
+            if (existingIdx >= 0) modalStack.splice(existingIdx, 1);
+
             el.style.display = 'flex';
             modalOpenCount++; // 引用计数：支持嵌套弹窗
             document.body.style.overflow = 'hidden'; // 锁定背景滚动
+            modalStack.push(el);
         },
 
         /**
@@ -52,6 +61,19 @@
             el.style.display = 'none';
             modalOpenCount = Math.max(0, modalOpenCount - 1);
             if (modalOpenCount === 0) document.body.style.overflow = ''; // 全部关闭才恢复滚动
+            const idx = modalStack.indexOf(el);
+            if (idx >= 0) modalStack.splice(idx, 1);
+        },
+
+        /**
+         * 关闭最上层弹窗（v0.9.6 新增，供 Esc 快捷键调用）
+         * @returns {boolean} 是否成功关闭
+         */
+        closeTopModal() {
+            const el = modalStack[modalStack.length - 1];
+            if (!el) return false;
+            this.closeModal(el);
+            return true;
         },
 
         /**

@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.5** ｜ 与代码同步
+> 适用版本：**v0.9.6** ｜ 与代码同步
 
 ---
 
@@ -26,6 +26,7 @@
 | **未获取统计 / 进度条 / 筛选** | **`features/table/unacquired.js`** | **`features.css`** |
 | **可获取地点悬浮窗** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
 | **高亮控制（未获取/地区）** | **`features/table/cell-highlighter.js`** | **`features.css`** |
+| **键盘快捷键** | **`features/keyboard.js`** | **`services/modal.js`（closeTopModal）** |
 | 单元格备注 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 建议 | `features/cell/cell-value.js` | `cell-record.js` |
 | 撤回 / 重做 | `features/cell/history.js` | — |
@@ -82,16 +83,18 @@
 | 挂载点 | 职责 |
 |--------|------|
 | `App.constants` | 存储键、词条组、行名、主属性、默认地区、颜色、尺寸常量 |
-| `App.state` | 全局状态（含 getter/setter、历史、基准） |
+| `App.state` | 业务状态（含 getter/setter、历史、基准） |
+| `App.uiState` | 临时 UI 状态（pendingApply / confirmCallback / timer / 高亮元素），v0.9.5 新增 |
 | `App.dom` | 所有 DOM 元素一次性缓存 |
 | `App.utils` | 单元格标准化、颜色转换、列索引、HTML 转义 |
 | `App.dataModel` | 空单元格 / 空行 / 初始行 / 示例数据工厂 |
+| `App.namespace` | 分层视图入口（v0.9.5 新增） |
 
 ### 服务层 `services/`
 | 挂载点 | 职责 |
 |--------|------|
 | `App.storage` | localStorage 统一封装（含数据集、地区、筛选的读写） |
-| `App.modal` | 弹窗管理与 Toast（幂等、滚动锁引用计数） |
+| `App.modal` | 弹窗管理与 Toast（幂等、滚动锁引用计数、modalStack） |
 | `App.imageStore` | IndexedDB 图片增删查、Blob URL、`closeDB()` |
 
 ### 功能层 `features/`
@@ -123,6 +126,7 @@
 | `App.stateColorSchemeManager` | preferences |
 | `App.storageManager` | preferences |
 | `App.note` | note |
+| **`App.keyboard`** | **keyboard（v0.9.6 新增）** |
 
 ### 入口层
 | 挂载点 | 职责 |
@@ -155,6 +159,8 @@
 15. updateLockedUI()            更新保护状态
 16. restoreRightPanelState()    恢复面板折叠
 17. events.bindAllEvents()      统一绑定事件
+17.5 namespace.init()           构建命名空间分层视图（v0.9.5 新增）
+17.6 keyboard.init()            初始化键盘快捷键（v0.9.6 新增）
 18. layout.switchPanel('input') 激活数据管理面板
 19. 首访显示关于弹窗 / 异步加载默认数据
 20. 版本检测（fetch version.json）
@@ -194,16 +200,18 @@
 - `openModal / closeModal` 使用**引用计数**控制滚动锁
 - `bindModalEvents` 幂等（`modalEventsBound` 标志）
 - 确认弹窗回调存储在 `window.__dialogConfirmCallback`，**关闭时立即清理**防残留
+- **`modalStack`**（v0.9.6）：记录弹窗打开顺序，`closeTopModal()` 供 `Esc` 逐层关闭
 
 ### 事件绑定
 
-三种模式并存：
+两种模式并存：
 
 | 模式 | 位置 | 说明 |
 |------|------|------|
 | 集中绑定 | `events.js` `bindAllEvents()` | 主流方式（18+ 个模块） |
-| 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` | 因依赖动态初始化 |
-| 内联 onclick | `interface-colors.js` | 历史遗留，建议未来整改 |
+| 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` | 因依赖动态初始化或时序敏感 |
+
+> v0.9.5 已移除 `interface-colors.js` 的内联 `oninput` / `onchange`，统一改为 `addEventListener`。
 
 ### 未获取统计（v0.9.1）
 
@@ -329,6 +337,7 @@ return 1;                                                     // 完全空白：
 5. 若需弹窗：复用 `App.modal` 的 `openModal / showConfirmDialog`
 6. 若需持久化：通过 `App.storage` 或 `App.imageStore`
 7. 若修改数据：写前 `App.history.pushHistory()`，写后 `renderAllTables() + saveData()`
+8. 在 `js/core/namespace.js` 的对应层加入新模块（供分层视图访问）
 
 ### 本地验证
 
@@ -337,6 +346,10 @@ return 1;                                                     // 完全空白：
 Get-ChildItem js -Recurse -Filter *.js |
   Where-Object { $_.Name -ne 'jszip.min.js' } |
   ForEach-Object { node --check $_.FullName }
+
+# 单元测试 + Lint（v0.9.3 起）
+npm test
+npm run lint
 ```
 
 ---
@@ -352,15 +365,15 @@ Get-ChildItem js -Recurse -Filter *.js |
 | **`import-export.js` 中的 `version: '2.0'`** | 这是**导出数据格式版本**，不是应用版本，勿改 |
 | **`note.js` 事件自绑** | 不在 `events.js` 中，需在 `initNoteFeature()` 里找 |
 | **`cell-acquire-tooltip.js` 的 init 在 main.js 中** | 不在 `events.js` 的 `bindAllEvents()` 里 |
-| **`interface-colors.js` 使用内联 onclick** | 与主流事件绑定模式不一致 |
+| **`keyboard.js` 的 init 在 main.js 中** | 时序敏感，须在 `events.bindAllEvents()` 之后 |
 | **导出 ZIP 图片统一 PNG** | 动画图片（GIF/WebP）会失去动画效果 |
 | **地区配置不随数据集导出** | 换环境需重新配置地区 |
 | **高亮 class 复用** | `unacquired.js` 与 `region-manager.js` 共用同名 class，切换面板时需清除残留 |
 | **两个表格同步变暗** | `_applyDimming` 只要任一处高亮，两个 table 都加 `unacquired-dimming` |
 | **筛选语义** | `null` = 全部选中；空数组 = 未选任何地区 |
-| **`data/default.js` 是空占位** | 当前未使用，可忽略 |
 | **`data.json` 引用图片文件名** | 文件名必须与 `data/images/` 中实际文件完全一致 |
 | **高亮 class 残留** | 面板切换时必须调用 `App.cellHighlighter.clear()`，否则红/绿描边会遗留 |
+| **`App.state` 与 `App.uiState` 分离** | 业务状态入 `App.state`，临时 UI 状态入 `App.uiState`，勿混用 |
 
 ---
 
@@ -394,16 +407,19 @@ Get-ChildItem js -Recurse -Filter *.js |
 | 未获取统计按地区独立 | 更直观；与"前 36 名"排行榜语义一致 |
 | 悬浮窗并列不互斥 | 用户可同时看到备注与获取地点；靠位置避让实现 |
 | 地区数据支持自定义 | 适应游戏版本更新；不硬编码在代码中 |
+| 命名空间分层视图（v0.9.5） | 不改挂载点即可获得分层补全；避免一次性大改 48 文件 |
+| 高亮索引缓存（v0.9.6） | Map 查表替代 320 次 querySelector，悬停延迟降至毫秒级 |
 
 ---
 
 ## 版本约定
 
-- **应用版本号**：`index.html`（3 处：title / 关于弹窗 / 底部按钮）
+- **应用版本号**：`index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）
+- **`package.json` 的 `version`**：手动同步（`bump-version.js` 不处理）
 - **`version.json`**：供运行时版本检测，可与应用版本号不同（构建号追踪）
 - **数据格式版本**：`import-export.js` 中的 `version: '2.0'`
 
-修改应用版本时**至少同步** `index.html` 的 3 处与 `README.md`。
+修改应用版本时**至少同步** `index.html` 的 4 处、`README.md`、`ARCHITECTURE.md`、`version.json`、`package.json`。
 
 ---
 
@@ -418,7 +434,20 @@ Get-ChildItem js -Recurse -Filter *.js |
   - `no-unused-vars`（未使用变量）：6
   - 其余：0
 
-  ---
+### 处置计划
+
+| 规则 | 数量 | 计划版本 |
+|------|-----|---------|
+| `no-unused-vars`（catch 参数） | ~21 | 0.9.5 架构重构时统一改为 `catch (_e)` |
+| `no-unused-vars`（未使用变量） | ~6 | 0.9.5 逐条清理 |
+| `prefer-const` | 3 | 0.9.5 架构重构时由 `--fix` 处理 |
+
+### 目标
+
+- v0.9.5：warning ≤ 10
+- v0.9.7：warning = 0
+
+---
 
 ## 测试基线
 
@@ -439,19 +468,15 @@ Get-ChildItem js -Recurse -Filter *.js |
 
 ```bash
 npm test
+```
 
-### 处置计划
-
-| 规则 | 数量 | 计划版本 |
-|------|-----|---------|
-| `no-unused-vars`（catch 参数） | ~21 | 0.9.5 架构重构时统一改为 `catch (_e)` |
-| `no-unused-vars`（未使用变量） | ~6 | 0.9.5 逐条清理 |
-| `prefer-const` | 3 | 0.9.5 架构重构时由 `--fix` 处理 |
+> 注：`test/_setup.js` 会被 Node 24 的 `--test` 扫描为"0 子测试"文件，
+> 输出中显示一条 pass，属正常现象。
 
 ### 目标
 
-- v0.9.5：warning ≤ 10
-- v0.9.7：warning = 0
+- v0.9.5+：新增模块须附对应测试
+- v0.9.7：覆盖率报告纳入验收
 
 ---
 
@@ -465,7 +490,7 @@ npm test
 |----|--------|------|
 | 核心层 | `App.core.*` | constants / state / uiState / dom / utils / dataModel |
 | 服务层 | `App.services.*` | storage / modal / imageStore |
-| 功能层 | `App.features.*` | 26 个业务模块 |
+| 功能层 | `App.features.*` | 27 个业务模块 |
 | 入口层 | `App.entry.*` | events / layout |
 
 - 定义于 `js/core/namespace.js`，由 `main.js` 的 `init()` 末尾调用 `App.namespace.init()`
@@ -481,3 +506,40 @@ npm test
 
 `interface-colors.js` 的 `oninput` / `onchange` 已改为 `addEventListener`，
 为未来 CSP 严格化铺路。
+
+---
+
+## 性能与交互（v0.9.6）
+
+### 高亮索引缓存
+
+`App.cellHighlighter` 新增 `buildIndex()`，构建 `Map<"r_c", td>` 索引：
+
+- 由 `table-renderer.js` 的 `renderAllTables()` 末尾调用
+- `highlight()` 内部改查表（`_getCell`），将 320 次 `querySelector` 降为 O(1)
+- `invalidateIndex()` 供表格重建后手动失效
+
+### 未获取统计计算缓存
+
+`unacquired.js` 新增：
+
+- 模块级 `_colIndexMap`：`colMap[groupName][subName] = colIndex`，替换 `getColumnIndex` 的 O(14) 遍历
+- 模块级 `_cellCache`：`renderList` 开始时按行缓存 `normalizeCell` 结果，结束时释放
+- `invalidateCache()`：由 `table-renderer.js` 的 `renderAllTables()` 调用
+
+**收益**：1920 次组合计算的总耗时从约 10~15ms 降至 3~5ms。
+
+### 键盘快捷键
+
+新增 `js/features/keyboard.js`：
+
+| 快捷键 | 行为 |
+|--------|------|
+| `Ctrl/Cmd + Z` | 撤回 |
+| `Ctrl/Cmd + Shift + Z` | 重做 |
+| `Ctrl/Cmd + Y` | 重做（Windows 习惯） |
+| `Escape` | 关闭最上层弹窗 |
+
+**规则**：焦点在 `input` / `textarea` / `select` / `contenteditable` 内时，除 `Escape` 外不触发。
+
+`App.modal` 新增 `modalStack` 与 `closeTopModal()` 支撑 `Escape` 逐层关闭。

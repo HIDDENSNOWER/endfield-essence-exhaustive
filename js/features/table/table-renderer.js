@@ -224,8 +224,18 @@
             const C = App.constants;
             this.renderTablePart(App.dom.tableHead1, App.dom.tableBody1, C.GROUP1, 0, C.COLS1);
             this.renderTablePart(App.dom.tableHead2, App.dom.tableBody2, C.GROUP2, C.COLS1, C.COLS2);
+
+            // v0.9.6：重建高亮索引缓存
+            if (App.cellHighlighter && App.cellHighlighter.buildIndex) {
+                App.cellHighlighter.buildIndex();
+            }
+            // v0.9.6：失效 unacquired 单元格缓存
+            if (App.unacquired && App.unacquired.invalidateCache) {
+                App.unacquired.invalidateCache();
+            }
+
             this.updateHighlightedCell();
-        
+
             // 如果有激活的备注搜索，重新应用
             if (App.noteSearch && App.dom.noteSearchInput && App.dom.noteSearchInput.value.trim()) {
                 App.noteSearch.search();
@@ -235,7 +245,7 @@
                 App.unacquired.renderList();
             }
         },
-
+        
         /**
          * 更新当前选中单元格高亮，并加载备注到输入面板
          *

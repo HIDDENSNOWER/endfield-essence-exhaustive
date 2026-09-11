@@ -172,6 +172,9 @@
         // 17.5 构建命名空间分层视图（v0.9.5 新增）
         safeCall(() => App.namespace.init(), '命名空间分层');
 
+        // 17.6 初始化键盘快捷键（v0.9.6 新增）
+        safeCall(() => App.keyboard.init(), '键盘快捷键初始化');
+
         // 18. 首次访问显示关于弹窗，之后加载默认数据集
         safeCall(() => {
             const aboutShown = sessionStorage.getItem('smarttable_about_shown');

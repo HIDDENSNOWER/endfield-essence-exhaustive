@@ -5,58 +5,101 @@
  * v0.9.2 重构：
  *   - 高亮逻辑改为调用 App.cellHighlighter（统一控制器）
  *   - combinations / getUnacquiredScore 抽取至 App.utils
- *   - 移除本模块内的 _applyDimming / _removeDimming / _highlightedCells
+ *
+ * v0.9.6 优化：
+ *   - 新增模块级 _colIndexMap（列索引 O(1) 查表，替换 getColumnIndex 的 O(14) 遍历）
+ *   - renderList 期间按行缓存 normalizeCell 结果，结束后释放
+ *   - 新增 invalidateCache() 供 table-renderer 主动失效
  */
 (function (App) {
     'use strict';
 
     const TOP_N = 36;
 
+    // ==================== 模块级缓存 ====================
+    /** 列索引缓存：_colIndexMap[groupName][subName] = colIndex */
+    let _colIndexMap = null;
+    /** 单元格缓存：_cellCache[rowIdx][colIdx] = normalizeCell 结果 */
+    let _cellCache = null;
+
+    /** 构建列索引 Map（惰性构建一次，模块生命周期内复用） */
+    function ensureColIndexMap() {
+        if (_colIndexMap) return _colIndexMap;
+        const C = App.constants;
+        _colIndexMap = {};
+        let offset = 0;
+        C.ALL_GROUPS.forEach(group => {
+            _colIndexMap[group.name] = {};
+            group.sub.forEach((sub, sIdx) => {
+                _colIndexMap[group.name][sub] = offset + sIdx;
+            });
+            offset += group.sub.length;
+        });
+        return _colIndexMap;
+    }
+
+    /** 构建单元格缓存（renderList 开始时调用） */
+    function buildCellCache() {
+        const rows = App.state.rows;
+        _cellCache = rows.map(row => row.data.map(c => App.utils.normalizeCell(c)));
+    }
+
+    /** 读缓存单元格 */
+    function getCachedCell(rowIdx, colIdx) {
+        const row = _cellCache && _cellCache[rowIdx];
+        return row ? row[colIdx] : null;
+    }
+
+    /** 释放缓存引用 */
+    function releaseCellCache() {
+        _cellCache = null;
+    }
+
     App.unacquired = {
         _hoveredLi: null,
         _eventsBound: false,
+
+        /** 外部主动失效缓存（供 table-renderer 调用） */
+        invalidateCache() {
+            _cellCache = null;
+        },
 
         // ==================== 内部：计算 ====================
 
         /** 计算某地区、某组合下的未获取缺口总数 */
         _countUnacquired(region, main3, attr) {
             const C = App.constants;
+            const colMap = ensureColIndexMap();
             const isRowAttr = C.ROW_NAMES.includes(attr);
             const isGroupAttr = C.ALL_GROUPS.some(g => g.name === attr);
             if (!isRowAttr && !isGroupAttr) return 0;
 
             let total = 0;
-            const rows = App.state.rows;
 
             if (isRowAttr) {
                 const rowIdx = C.ROW_NAMES.indexOf(attr);
-                const row = rows[rowIdx];
-                if (!row) return 0;
+                if (rowIdx < 0) return 0;
                 region.groups.forEach(groupName => {
-                    const gi = C.ALL_GROUPS.findIndex(g => g.name === groupName);
-                    if (gi < 0) return;
+                    const colBySub = colMap[groupName];
+                    if (!colBySub) return;
                     main3.forEach(mainAttr => {
-                        const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
-                        if (si < 0) return;
-                        const colIndex = App.utils.getColumnIndex(gi, si);
-                        const cell = App.utils.normalizeCell(row.data[colIndex]);
-                        total += App.utils.getUnacquiredScore(cell);
+                        const colIndex = colBySub[mainAttr];
+                        if (colIndex === undefined) return;
+                        const cell = getCachedCell(rowIdx, colIndex);
+                        if (cell) total += App.utils.getUnacquiredScore(cell);
                     });
                 });
             } else {
-                const gi = C.ALL_GROUPS.findIndex(g => g.name === attr);
-                if (gi < 0) return 0;
+                const colBySub = colMap[attr];
+                if (!colBySub) return 0;
                 region.rows.forEach(rowName => {
                     const rowIdx = C.ROW_NAMES.indexOf(rowName);
                     if (rowIdx < 0) return;
-                    const row = rows[rowIdx];
-                    if (!row) return;
                     main3.forEach(mainAttr => {
-                        const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
-                        if (si < 0) return;
-                        const colIndex = App.utils.getColumnIndex(gi, si);
-                        const cell = App.utils.normalizeCell(row.data[colIndex]);
-                        total += App.utils.getUnacquiredScore(cell);
+                        const colIndex = colBySub[mainAttr];
+                        if (colIndex === undefined) return;
+                        const cell = getCachedCell(rowIdx, colIndex);
+                        if (cell) total += App.utils.getUnacquiredScore(cell);
                     });
                 });
             }
@@ -66,6 +109,7 @@
         /** 获取指定组合对应的所有单元格坐标 */
         _getComboCells(region, main3, attr) {
             const C = App.constants;
+            const colMap = ensureColIndexMap();
             const cells = [];
             const isRowAttr = C.ROW_NAMES.includes(attr);
 
@@ -73,30 +117,24 @@
                 const rowIdx = C.ROW_NAMES.indexOf(attr);
                 if (rowIdx < 0) return cells;
                 region.groups.forEach(groupName => {
-                    const gi = C.ALL_GROUPS.findIndex(g => g.name === groupName);
-                    if (gi < 0) return;
+                    const colBySub = colMap[groupName];
+                    if (!colBySub) return;
                     main3.forEach(mainAttr => {
-                        const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
-                        if (si < 0) return;
-                        cells.push({
-                            rowIdx,
-                            colIndex: App.utils.getColumnIndex(gi, si)
-                        });
+                        const colIndex = colBySub[mainAttr];
+                        if (colIndex === undefined) return;
+                        cells.push({ rowIdx, colIndex });
                     });
                 });
             } else {
-                const gi = C.ALL_GROUPS.findIndex(g => g.name === attr);
-                if (gi < 0) return cells;
+                const colBySub = colMap[attr];
+                if (!colBySub) return cells;
                 region.rows.forEach(rowName => {
                     const rowIdx = C.ROW_NAMES.indexOf(rowName);
                     if (rowIdx < 0) return;
                     main3.forEach(mainAttr => {
-                        const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
-                        if (si < 0) return;
-                        cells.push({
-                            rowIdx,
-                            colIndex: App.utils.getColumnIndex(gi, si)
-                        });
+                        const colIndex = colBySub[mainAttr];
+                        if (colIndex === undefined) return;
+                        cells.push({ rowIdx, colIndex });
                     });
                 });
             }
@@ -107,9 +145,8 @@
         _calcProgress(cells) {
             let completed = 0;
             cells.forEach(({ rowIdx, colIndex }) => {
-                const rowData = App.state.rows[rowIdx]?.data;
-                if (!rowData) return;
-                const cell = App.utils.normalizeCell(rowData[colIndex]);
+                const cell = getCachedCell(rowIdx, colIndex);
+                if (!cell) return;
                 if (cell.t > 0 && cell.a === cell.t) completed++;
                 else if (cell.t === 0 && cell.v !== '') completed++;
             });
@@ -228,6 +265,9 @@
                 return;
             }
 
+            // v0.9.6：构建单元格缓存（整个 renderList 期间复用）
+            buildCellCache();
+
             const mainCombos = App.utils.combinations(C.SUB_ATTRS, 3);
 
             const items = [];
@@ -265,6 +305,9 @@
                     });
                 });
             });
+
+            // 缓存使用完毕，释放引用（防止长期持有）
+            releaseCellCache();
 
             if (items.length === 0) {
                 container.innerHTML = '<p class="input-hint" style="text-align:center; padding:24px 0;">🎉 所选地区已全部获取</p>';

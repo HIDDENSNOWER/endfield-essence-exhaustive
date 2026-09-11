@@ -76,7 +76,9 @@
                 stateColorSchemeManager: App.stateColorSchemeManager,
                 storageManager: App.storageManager,
                 // note
-                note: App.note
+                note: App.note,
+                // keyboard
+                keyboard: App.keyboard
             });
 
             // ==================== 入口层 ====================
