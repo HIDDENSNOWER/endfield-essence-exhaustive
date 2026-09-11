@@ -274,6 +274,59 @@
         },
 
         /**
+         * 生成从 arr 中取 k 个元素的所有组合
+         * @param {Array} arr
+         * @param {number} k
+         * @returns {Array<Array>}
+         *
+         * v0.9.2 新增：供 unacquired.js / region-manager.js 使用。
+         */
+        combinations(arr, k) {
+            const result = [];
+            const combine = (start, current) => {
+                if (current.length === k) { result.push(current.slice()); return; }
+                for (let i = start; i < arr.length; i++) {
+                    current.push(arr[i]);
+                    combine(i + 1, current);
+                    current.pop();
+                }
+            };
+            combine(0, []);
+            return result;
+        },
+
+        /**
+         * 计算单元格的"未获取缺口贡献"
+         * - t>0, a<t  → 缺口数 (t - a)
+         * - t>0, a=t  → 0（已刷满）
+         * - t=0, v≠'' → 0（有数值视为已获取）
+         * - t=0, v='' → 1（完全空白）
+         * @param {Object} cell - 已标准化单元格
+         * @returns {number}
+         *
+         * v0.9.2 新增：供 unacquired.js / region-manager.js 使用。
+         */
+        getUnacquiredScore(cell) {
+            if (cell.t > 0) return Math.max(0, cell.t - (cell.a || 0));
+            if (cell.v !== '') return 0;
+            return 1;
+        },
+
+        /**
+         * 格式化字节数为可读字符串
+         * @param {number} bytes
+         * @returns {string}
+         *
+         * v0.9.2 新增：供 storage-manager.js / cache-clear.js 使用。
+         */
+        formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+        },
+
+        /**
          * 将 base64 Data URL 转换为 Blob
          * @param {string} base64 - Data URL 或纯 base64 字符串
          * @returns {Blob} 二进制数据对象

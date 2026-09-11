@@ -129,13 +129,6 @@
             'btnConfirmRenameDataset',          // 确认按钮
             'btnCloseRenameDataset',            // 关闭按钮
 
-            // ---------- 删除数据集弹窗（旧版简单确认） ----------
-            'modalDeleteDataset',               // 弹窗遮罩
-            'deleteDatasetName',                // 数据集名称显示
-            'btnCancelDeleteDataset',           // 取消按钮
-            'btnConfirmDeleteDataset',          // 删除按钮
-            'btnCloseDeleteDataset',            // 关闭按钮
-
             // ---------- 通用提示弹窗 ----------
             'modalAlert',                       // 弹窗遮罩
             'alertTitle',                       // 标题

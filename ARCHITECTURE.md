@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.1** ｜ 与代码同步
+> 适用版本：**v0.9.2** ｜ 与代码同步
 
 ---
 
@@ -25,6 +25,7 @@
 | **地区增删改 / 悬停高亮** | **`features/data/region-manager.js`** | **`dom.js` / `features.css`** |
 | **未获取统计 / 进度条 / 筛选** | **`features/table/unacquired.js`** | **`features.css`** |
 | **可获取地点悬浮窗** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
+| **高亮控制（未获取/地区）** | **`features/table/cell-highlighter.js`** | **`features.css`** |
 | 单元格备注 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 建议 | `features/cell/cell-value.js` | `cell-record.js` |
 | 撤回 / 重做 | `features/cell/history.js` | — |
@@ -110,6 +111,7 @@
 | `App.cellTooltip` | table |
 | **`App.unacquired`** | **table（v0.9.1 新增）** |
 | **`App.cellAcquireTooltip`** | **table（v0.9.1 新增）** |
+| **`App.cellHighlighter`** | **table（v0.9.2 新增）** |
 | `App.cellValue` | cell |
 | `App.cellRecord` | cell |
 | `App.history` | cell |
@@ -257,6 +259,17 @@ return 1;                                                     // 完全空白：
 - 位置自动错开：使用 MutationObserver 监听 noteTooltip 的 `style` 变化，若重叠则重新定位
 - `z-index: 99` < noteTooltip `100` < modal `200`
 
+### 统一高亮控制（v0.9.2）
+
+`App.cellHighlighter` 集中管理表格单元格的高亮与变暗蒙版：
+
+- `highlight(cellList, options)`：接收 `[{rowIdx, colIndex, isUnacquired}]`，统一施加红/绿描边
+- `clear()`：按记录 + 全表兜底双重清理，消除 class 残留
+- `_applyDimming()` / `_removeDimming()`：两表格同步变暗
+
+调用方：`unacquired.js`（悬停未获取条目）、`region-manager.js`（悬停地区卡片）。
+面板切换时由 `main.js` 的 `switchPanel()` 调用 `clear()` 清理残留。
+
 ---
 
 ## 数据契约
@@ -347,6 +360,7 @@ Get-ChildItem js -Recurse -Filter *.js |
 | **筛选语义** | `null` = 全部选中；空数组 = 未选任何地区 |
 | **`data/default.js` 是空占位** | 当前未使用，可忽略 |
 | **`data.json` 引用图片文件名** | 文件名必须与 `data/images/` 中实际文件完全一致 |
+| **高亮 class 残留** | 面板切换时必须调用 `App.cellHighlighter.clear()`，否则红/绿描边会遗留 |
 
 ---
 

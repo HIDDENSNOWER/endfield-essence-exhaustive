@@ -2,28 +2,20 @@
  * region-manager.js - 地区管理（列表 / 编辑 / 悬停高亮）
  * 挂载到 App.regionManager
  *
- * 功能：
- * - 列出所有地区，支持新增 / 编辑 / 删除 / 恢复默认
- * - 悬停地区卡片时，在数据表中高亮该地区可刷取的全部基质单元格
- *   - 未完全获取 → 红色闪烁边框
- *   - 已完全获取 → 绿色闪烁边框
- *   - 其余数据格 → 变暗蒙版
+ * v0.9.2 重构：
+ *   - 高亮逻辑改为调用 App.cellHighlighter
+ *   - getUnacquiredScore 抽取至 App.utils
+ *   - 移除本模块内的 _applyDimming / _removeDimming / _highlightedCells
  */
 (function (App) {
     'use strict';
 
-    let editingIndex = -1; // -1 表示新增
-
-    /** 计算单元格的"未获取缺口贡献"（与 unacquired.js 保持一致） */
-    function getUnacquiredScore(cell) {
-        if (cell.t > 0) return Math.max(0, cell.t - (cell.a || 0));
-        if (cell.v !== '') return 0;
-        return 1;
-    }
+    let editingIndex = -1;
 
     App.regionManager = {
-        _highlightedCells: [],
         _hoveredCard: null,
+
+        // ==================== 渲染 ====================
 
         renderList() {
             const container = App.dom.regionList;
@@ -58,12 +50,9 @@
         // ==================== 悬停高亮 ====================
 
         /**
-         * 高亮某地区的全部可刷取单元格（8副属性 × 8词条 × 5主属性）
-         * @param {string} regionName
+         * 高亮某地区的全部可刷取单元格（8 副属性 × 8 词条 × 5 主属性 = 320 格）
          */
         _highlightRegion(regionName) {
-            this._clearHighlight();
-
             const regions = App.storage.getRegions();
             const region = regions.find(r => r.name === regionName);
             if (!region) return;
@@ -71,81 +60,39 @@
             const C = App.constants;
             const mainAttrs = C.SUB_ATTRS;
 
-            this._highlightedCells = [];
-            let firstUnacquiredTd = null;
+            const cellList = [];
 
-            // 遍历该地区的 8 个副属性（行）
             region.rows.forEach(rowName => {
                 const rowIdx = C.ROW_NAMES.indexOf(rowName);
                 if (rowIdx < 0) return;
                 const row = App.state.rows[rowIdx];
                 if (!row) return;
 
-                // 遍历该地区的 8 个词条（列组）
                 region.groups.forEach(groupName => {
                     const gi = C.ALL_GROUPS.findIndex(g => g.name === groupName);
                     if (gi < 0) return;
 
-                    // 遍历 5 个主属性（列）
                     mainAttrs.forEach(mainAttr => {
                         const si = C.ALL_GROUPS[gi].sub.indexOf(mainAttr);
                         if (si < 0) return;
                         const colIndex = App.utils.getColumnIndex(gi, si);
 
                         const cell = App.utils.normalizeCell(row.data[colIndex]);
-                        const score = getUnacquiredScore(cell);
-                        const td = document.querySelector(
-                            `td[data-rowindex="${rowIdx}"][data-colindex="${colIndex}"]`
-                        );
-                        if (!td) return;
-
-                        if (score > 0) {
-                            td.classList.add('unacquired-cell-highlight');
-                            if (!firstUnacquiredTd) firstUnacquiredTd = td;
-                        } else {
-                            td.classList.add('acquired-cell-highlight');
-                        }
-                        this._highlightedCells.push(td);
+                        cellList.push({
+                            rowIdx,
+                            colIndex,
+                            isUnacquired: App.utils.getUnacquiredScore(cell) > 0
+                        });
                     });
                 });
             });
 
-            // 变暗蒙版（两个表格都变暗）
-            this._applyDimming();
-
-            // 滚动到第一个红框
-            const scrollTarget = firstUnacquiredTd
-                || (this._highlightedCells.length > 0 ? this._highlightedCells[0] : null);
-            if (scrollTarget) {
-                scrollTarget.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }
+            App.cellHighlighter.highlight(cellList);
         },
 
+        /** 清除高亮（转发到 cellHighlighter） */
         _clearHighlight() {
-            if (this._highlightedCells && this._highlightedCells.length > 0) {
-                this._highlightedCells.forEach(td => {
-                    td.classList.remove('unacquired-cell-highlight');
-                    td.classList.remove('acquired-cell-highlight');
-                });
-            }
-            this._highlightedCells = [];
-            this._removeDimming();
-        },
-
-        _applyDimming() {
-            const hasAny = this._highlightedCells.length > 0;
-            ['tableBody1', 'tableBody2'].forEach(id => {
-                const body = document.getElementById(id);
-                if (!body) return;
-                const table = body.closest('table');
-                if (!table) return;
-                table.classList.toggle('unacquired-dimming', hasAny);
-            });
-        },
-
-        _removeDimming() {
-            document.querySelectorAll('table.unacquired-dimming')
-                .forEach(t => t.classList.remove('unacquired-dimming'));
+            App.cellHighlighter.clear();
         },
 
         // ==================== 编辑 / 删除 ====================
@@ -260,7 +207,6 @@
             }
 
             if (dom.regionList) {
-                // 编辑 / 删除按钮
                 dom.regionList.addEventListener('click', (e) => {
                     const btn = e.target.closest('button[data-action]');
                     if (!btn) return;
@@ -269,7 +215,6 @@
                     else if (btn.dataset.action === 'delete') this.deleteRegion(index);
                 });
 
-                // 悬停高亮
                 dom.regionList.addEventListener('mouseover', (e) => {
                     const card = e.target.closest('.region-card');
                     if (!card) return;
@@ -283,12 +228,12 @@
                     if (!card) return;
                     if (e.relatedTarget && card.contains(e.relatedTarget)) return;
                     this._hoveredCard = null;
-                    this._clearHighlight();
+                    App.cellHighlighter.clear();
                 });
 
                 dom.regionList.addEventListener('mouseleave', () => {
                     this._hoveredCard = null;
-                    this._clearHighlight();
+                    App.cellHighlighter.clear();
                 });
             }
         }

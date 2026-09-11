@@ -18,14 +18,6 @@
     const WARN_PERCENT_KEY = 'smarttable_quota_warn_percent';
     const DEFAULT_WARN_PERCENT = 80;
 
-    /** 格式化字节数为可读字符串 */
-    function formatBytes(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
-        return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-    }
-
     /** 获取单个 localStorage 键的占用字节数（UTF-16 近似，每个字符 2 字节） */
     function getLocalStorageSize(key) {
         try {
@@ -192,7 +184,7 @@
                 <div class="dataset-storage-item">
                     <div class="dataset-storage-header">
                         <span class="dataset-storage-name">${safeName}</span>
-                        <span class="dataset-storage-size">${formatBytes(ds.size)}</span>
+                        <span class="dataset-storage-size">${App.utils.formatBytes(ds.size)}</span>
                     </div>
                     <div class="dataset-storage-meta">
                         <span>图片数量：${ds.imageCount}</span>
@@ -270,7 +262,7 @@
                     const estimate = await navigator.storage.estimate();
                     quota = estimate.quota || 0;
                     usage = estimate.usage || 0;
-                    this._addLog(`  → quota = ${formatBytes(quota)}, usage = ${formatBytes(usage)}`);
+                    this._addLog(`  → quota = ${App.utils.formatBytes(quota)}, usage = ${App.utils.formatBytes(usage)}`);
                 } else {
                     this._addLog('当前浏览器不支持 storage.estimate()，无法获取配额。');
                 }
@@ -279,16 +271,16 @@
                 // 计算 localStorage 分类
                 this._addLog('开始扫描 localStorage ...');
                 const { datasetsSize, remarksSize, settingsSize, otherLocalStorageSize } = calculateCategorySizes();
-                this._addLog(`  数据集占用: ${formatBytes(datasetsSize)}`);
-                this._addLog(`  备注占用: ${formatBytes(remarksSize)}`);
-                this._addLog(`  设置占用: ${formatBytes(settingsSize)}`);
-                this._addLog(`  其他 localStorage 占用: ${formatBytes(otherLocalStorageSize)}`);
+                this._addLog(`  数据集占用: ${App.utils.formatBytes(datasetsSize)}`);
+                this._addLog(`  备注占用: ${App.utils.formatBytes(remarksSize)}`);
+                this._addLog(`  设置占用: ${App.utils.formatBytes(settingsSize)}`);
+                this._addLog(`  其他 localStorage 占用: ${App.utils.formatBytes(otherLocalStorageSize)}`);
                 this._renderLog();
 
                 // 估算 IndexedDB 占用
                 this._addLog('估算 IndexedDB 图片占用 ...');
                 const imagesSize = await getIndexedDBSize();
-                this._addLog(`  → 图片占用: ${formatBytes(imagesSize)}`);
+                this._addLog(`  → 图片占用: ${App.utils.formatBytes(imagesSize)}`);
                 this._renderLog();
 
                 // 渲染数据集详细列表
@@ -302,27 +294,27 @@
                 const warnPercent = getWarnPercent();
                 const percent = effectiveQuota > 0 ? (usage / effectiveQuota) * 100 : 0;
 
-                this._addLog(`有效配额: ${customQuota > 0 ? formatBytes(customQuota) + ' (自定义)' : formatBytes(quota)}`);
+                this._addLog(`有效配额: ${customQuota > 0 ? App.utils.formatBytes(customQuota) + ' (自定义)' : App.utils.formatBytes(quota)}`);
                 this._addLog(`使用百分比: ${percent.toFixed(2)}% (警示线: ${warnPercent}%)`);
                 this._renderLog();
 
                 // 更新顶部总览
                 if (document.getElementById('storageQuota')) {
                     document.getElementById('storageQuota').textContent =
-                        customQuota > 0 ? formatBytes(customQuota) + ' (自定义)' : formatBytes(quota);
-                    document.getElementById('storageUsage').textContent = formatBytes(usage);
+                        customQuota > 0 ? App.utils.formatBytes(customQuota) + ' (自定义)' : App.utils.formatBytes(quota);
+                    document.getElementById('storageUsage').textContent = App.utils.formatBytes(usage);
                     document.getElementById('storageRemaining').textContent =
-                        customQuota > 0 ? formatBytes(Math.max(0, customQuota - usage)) : formatBytes(Math.max(0, quota - usage));
+                        customQuota > 0 ? App.utils.formatBytes(Math.max(0, customQuota - usage)) : App.utils.formatBytes(Math.max(0, quota - usage));
                     document.getElementById('storageProgressBar').style.width = percent.toFixed(2) + '%';
                 }
 
                 // 更新明细
                 if (document.getElementById('storageDatasets')) {
-                    document.getElementById('storageDatasets').textContent = formatBytes(datasetsSize);
-                    document.getElementById('storageRemarks').textContent = formatBytes(remarksSize);
-                    document.getElementById('storageSettings').textContent = formatBytes(settingsSize);
-                    document.getElementById('storageImages').textContent = formatBytes(imagesSize);
-                    document.getElementById('storageOther').textContent = formatBytes(otherLocalStorageSize);
+                    document.getElementById('storageDatasets').textContent = App.utils.formatBytes(datasetsSize);
+                    document.getElementById('storageRemarks').textContent = App.utils.formatBytes(remarksSize);
+                    document.getElementById('storageSettings').textContent = App.utils.formatBytes(settingsSize);
+                    document.getElementById('storageImages').textContent = App.utils.formatBytes(imagesSize);
+                    document.getElementById('storageOther').textContent = App.utils.formatBytes(otherLocalStorageSize);
 
                     const total = usage > 0 ? usage : 1;
                     document.getElementById('barDatasets').style.width = ((datasetsSize / total) * 100).toFixed(2) + '%';

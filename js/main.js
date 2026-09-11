@@ -12,6 +12,12 @@
     App.layout = {
         switchPanel(panelName) {
             if (App.state.leftPanel !== 'table') return;
+
+            // v0.9.2：切换面板时清除高亮，避免残留
+            if (App.cellHighlighter) App.cellHighlighter.clear();
+            if (App.unacquired) App.unacquired._hoveredLi = null;
+            if (App.regionManager) App.regionManager._hoveredCard = null;
+
             App.state.activePanel = panelName;
             const dom = App.dom;
             dom.sidebarBtns.forEach(btn => {

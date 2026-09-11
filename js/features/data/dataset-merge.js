@@ -386,7 +386,7 @@
             const list = App.storage.getDatasetList();
             App.dom.mergePickList.innerHTML = list.map(k => {
                 const isProtected = App.constants.PROTECTED_DATASETS.includes(k);
-                const safeName = this.escapeHtml(k);
+                const safeName = App.utils.escapeHtml(k);
                 return `<label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;">` +
                     `<input type="checkbox" value="${safeName}"> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${safeName}${isProtected ? ' 🔒' : ''}</span>` +
                     `</label>`;
@@ -516,14 +516,14 @@
             const s = this._session;
             const p = s.plan;
             const sourceLines = p.perSource.map(ps =>
-                `<div style="margin-left:10px;">· <b>${this.escapeHtml(ps.label)}</b>：新增 <b>${ps.filled}</b> 格 · 保留 <b>${ps.kept}</b> 格 · 一致 <b>${ps.same}</b> 格` +
+                `<div style="margin-left:10px;">· <b>${App.utils.escapeHtml(ps.label)}</b>：新增 <b>${ps.filled}</b> 格 · 保留 <b>${ps.kept}</b> 格 · 一致 <b>${ps.same}</b> 格` +
                 (ps.appendedRows ? ` · 追加 <b>${ps.appendedRows}</b> 行` : '') +
                 (ps.conflictCount ? ` · <b style="color:var(--status-full-bg);">冲突 ${ps.conflictCount}</b>` : '') +
                 `</div>`
             ).join('');
 
             App.dom.mergeSummary.innerHTML =
-                `<div>目标数据集：<b>${this.escapeHtml(s.finalKey)}</b>（${s.baseRows.length} 行） ← 来源数据集 ${s.sourceItems.length} 个</div>` +
+                `<div>目标数据集：<b>${App.utils.escapeHtml(s.finalKey)}</b>（${s.baseRows.length} 行） ← 来源数据集 ${s.sourceItems.length} 个</div>` +
                 sourceLines +
                 (p.conflicts.length
                     ? `<div style="margin-top:6px; color:var(--status-full-bg);">共 <b>${p.conflicts.length}</b> 个冲突单元格：可逐格选择处理方式，或通过全局策略批量应用。</div>`
@@ -566,11 +566,11 @@
             const rowsHtml = s.plan.conflicts.map((conf) => {
                 const eff = this.effectiveStrategy(conf);
                 const res = conflictResult(conf, eff);
-                const pos = this.escapeHtml(`${conf.rowName} › ${conf.groupName} › ${conf.subName}`);
-                const cur = this.escapeHtml(formatCell(conf.target));
-                const src = this.escapeHtml(formatCell(conf.source));
-                const resTxt = this.escapeHtml(formatCell(res));
-                const srcName = this.escapeHtml(conf.sourceLabel);
+                const pos = App.utils.escapeHtml(`${conf.rowName} › ${conf.groupName} › ${conf.subName}`);
+                const cur = App.utils.escapeHtml(formatCell(conf.target));
+                const src = App.utils.escapeHtml(formatCell(conf.source));
+                const resTxt = App.utils.escapeHtml(formatCell(res));
+                const srcName = App.utils.escapeHtml(conf.sourceLabel);
                 const selOpts = [['follow', '跟随全局'], ['overwrite', '覆盖'], ['merge', '智能合并'], ['keep', '保留现有']]
                     .map(([v, label]) => {
                         const selected = (s.overrides[conf.key] || 'follow') === v ? ' selected' : '';
@@ -586,13 +586,13 @@
                     `</tr>`;
             }).join('');
 
-            const headSrcName = multi ? this.escapeHtml(s.sourceItems[0].label) : '';
+            const headSrcName = multi ? App.utils.escapeHtml(s.sourceItems[0].label) : '';
             App.dom.mergeConflictList.innerHTML =
                 `<table class="merge-table">` +
                 `<thead><tr>` +
                 (multi ? `<th class="col-srcname">来源数据集</th>` : '') +
                 `<th class="col-pos">位置</th>` +
-                `<th class="col-cur">当前值（${this.escapeHtml(s.finalKey)}）</th>` +
+                `<th class="col-cur">当前值（${App.utils.escapeHtml(s.finalKey)}）</th>` +
                 `<th class="col-src">导入值（${multi ? '来源' : headSrcName}）</th>` +
                 `<th class="col-act">本格处理</th>` +
                 `<th class="col-res">策略结果（${this.strategyLabel(s.strategy)}）</th>` +
@@ -606,23 +606,16 @@
         /** 在详情区展示指定冲突单元格的完整信息 */
         showCellDetail(conf) {
             const d = App.dom.mergeCellDetail;
-            const pos = this.escapeHtml(`${conf.rowName} › ${conf.groupName} › ${conf.subName}`);
-            const targetTitle = this.escapeHtml(this._session.finalKey);
-            const sourceTitle = this.escapeHtml(conf.sourceLabel);
+            const pos = App.utils.escapeHtml(`${conf.rowName} › ${conf.groupName} › ${conf.subName}`);
+            const targetTitle = App.utils.escapeHtml(this._session.finalKey);
+            const sourceTitle = App.utils.escapeHtml(conf.sourceLabel);
             d.innerHTML =
                 `<div style="font-weight:600; margin-bottom:4px;">${pos}</div>` +
                 `<div style="white-space:pre-wrap; word-break:break-all; font-size:0.76rem; line-height:1.5;">` +
-                `<span style="color:var(--text-secondary);">【${targetTitle}】</span>\n${this.escapeHtml(formatCellDetail(conf.target))}\n\n` +
-                `<span style="color:var(--text-secondary);">【${sourceTitle}】</span>\n${this.escapeHtml(formatCellDetail(conf.source))}` +
+                `<span style="color:var(--text-secondary);">【${targetTitle}】</span>\n${App.utils.escapeHtml(formatCellDetail(conf.target))}\n\n` +
+                `<span style="color:var(--text-secondary);">【${sourceTitle}】</span>\n${App.utils.escapeHtml(formatCellDetail(conf.source))}` +
                 `</div>`;
             d.style.display = 'block';
-        },
-
-        /** HTML 转义（详情文本安全展示） */
-        escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         },
 
         // ==================== 提交 ====================

@@ -19,20 +19,6 @@
     // 存储键分类（与 constants.js 保持一致）
     const K = App.constants;
 
-    /** HTML 转义 */
-    function escapeHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    /** 格式化字节数 */
-    function fmtBytes(n) {
-        if (n < 1024) return n + ' B';
-        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
-        return (n / 1024 / 1024).toFixed(2) + ' MB';
-    }
-
     /** 字符串的 UTF-8 字节大小 */
     function sizeOf(str) {
         try {
@@ -80,7 +66,7 @@
                     const parsed = JSON.parse(raw);
                     if (Array.isArray(parsed)) info = parsed.length + ' 行 × ' + (parsed[0] && parsed[0].data ? parsed[0].data.length : 0) + ' 列';
                 } catch (e) { info = summarize(raw, 40); }
-                return `<div style="line-height:1.7;">· <b>${escapeHtml(name)}</b>：${info}（${fmtBytes(sizeOf(raw))}）</div>`;
+                return `<div style="line-height:1.7;">· <b>${App.utils.escapeHtml(name)}</b>：${info}（${App.utils.formatBytes(sizeOf(raw))}）</div>`;
             }).join('');
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍数据集（${datasetList.length} 个）</div>${lines}`);
         }
@@ -90,7 +76,7 @@
         const remarkNames = Object.keys(remarks || {});
         if (remarkNames.length) {
             const lines = remarkNames.map(name =>
-                `<div style="line-height:1.7;">· <b>${escapeHtml(name)}</b>：${escapeHtml(summarize(remarks[name], 60))}</div>`
+                `<div style="line-height:1.7;">· <b>${App.utils.escapeHtml(name)}</b>：${App.utils.escapeHtml(summarize(remarks[name], 60))}</div>`
             ).join('');
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍数据集备注（${remarkNames.length} 条）</div>${lines}`);
         }
@@ -113,7 +99,7 @@
         if (current) settings.push('当前选中数据集：' + current);
         if (settings.length) {
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍设置与偏好</div>` +
-                settings.map(s => `<div style="line-height:1.7;">· ${escapeHtml(s)}</div>`).join(''));
+                settings.map(s => `<div style="line-height:1.7;">· ${App.utils.escapeHtml(s)}</div>`).join(''));
         }
 
         // ==================== sessionStorage ====================
@@ -121,7 +107,7 @@
         try {
             for (let i = 0; i < sessionStorage.length; i++) {
                 const k = sessionStorage.key(i);
-                sessItems.push(escapeHtml(k) + '：' + escapeHtml(summarize(sessionStorage.getItem(k), 40)));
+                sessItems.push(App.utils.escapeHtml(k) + '：' + App.utils.escapeHtml(summarize(sessionStorage.getItem(k), 40)));
                 totalBytes += sizeOf(sessionStorage.getItem(k));
             }
         } catch (e) { /* 忽略 */ }
@@ -129,12 +115,12 @@
             sections.push(`<div style="font-weight:600; margin:6px 0 2px;">▍临时会话数据</div>` +
                 sessItems.map(s => `<div style="line-height:1.7;">· ${s}</div>`).join(''));
         }
-        
-        // ---- IndexedDB 图片占用（新增） ----
+
+        // ---- IndexedDB 图片占用 ----
         if (imagesSize > 0) {
             sections.push(
                 `<div style="font-weight:600; margin:6px 0 2px;">▍备注图片（IndexedDB）</div>` +
-                `<div style="line-height:1.7;">· <b>eee_image_db</b>：约 ${fmtBytes(imagesSize)}</div>`
+                `<div style="line-height:1.7;">· <b>eee_image_db</b>：约 ${App.utils.formatBytes(imagesSize)}</div>`
             );
             totalBytes += imagesSize;
         }
@@ -145,7 +131,7 @@
         }
 
         // ---- 汇总 ----
-        const totalLine = `<div style="margin-top:6px; font-size:0.78rem; color:var(--text-secondary);">当前共保存 ${lKeys.length + sessItems.length} 项数据，总占用 <b>${fmtBytes(totalBytes)}</b></div>`;
+        const totalLine = `<div style="margin-top:6px; font-size:0.78rem; color:var(--text-secondary);">当前共保存 ${lKeys.length + sessItems.length} 项数据，总占用 <b>${App.utils.formatBytes(totalBytes)}</b></div>`;
 
         return `
             <p style="font-size:0.82rem; color:var(--text-primary); line-height:1.6; margin-bottom:6px;">

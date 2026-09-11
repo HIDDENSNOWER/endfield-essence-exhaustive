@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.1</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.2</title>
 
     <!-- 样式表：按层叠顺序引入 -->
     <link rel="stylesheet" href="css/base.css">
@@ -379,8 +379,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.1(&quot;再访基地&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.1("再访基地"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.2(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.2("裂隙填充"更新)
         </button>
     </footer>
 
@@ -439,17 +439,6 @@
                 <input type="text" id="renameDatasetName" placeholder="新名称" maxlength="50" style="width:100%;">
             </div>
             <div class="modal-footer"><button class="btn" id="btnCancelRenameDataset">取消</button><button class="btn btn-primary" id="btnConfirmRenameDataset">确认</button></div>
-        </div>
-    </div>
-
-    <!-- 删除数据集弹窗（旧版简单确认） -->
-    <div class="modal-overlay" id="modalDeleteDataset" style="display:none;">
-        <div class="modal" style="max-width:400px;">
-            <div class="modal-header"><span>删除数据集</span><button class="btn-icon btn-sm" id="btnCloseDeleteDataset" style="border:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button></div>
-            <div class="modal-body">
-                <p>确定要删除数据集 “<span id="deleteDatasetName"></span>” 吗？此操作不可撤销。</p>
-            </div>
-            <div class="modal-footer"><button class="btn" id="btnCancelDeleteDataset">取消</button><button class="btn btn-danger" id="btnConfirmDeleteDataset">删除</button></div>
         </div>
     </div>
 
@@ -904,7 +893,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.1("再访基地"更新)</div>
+                    <div class="version-ver">ver.0.9.2("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -1024,6 +1013,7 @@
     <script src="js/features/table/table-renderer.js"></script>
     <script src="js/features/table/row-filter.js"></script>
     <script src="js/features/table/stats.js"></script>
+    <script src="js/features/table/cell-highlighter.js"></script>
     <script src="js/features/table/unacquired.js"></script>
     <script src="js/features/table/note-search.js"></script>
     <script src="js/features/table/cell-tooltip.js"></script>
