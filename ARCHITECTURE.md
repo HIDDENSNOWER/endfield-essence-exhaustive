@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.3** ｜ 与代码同步
+> 适用版本：**v0.9.4** ｜ 与代码同步
 
 ---
 
@@ -417,6 +417,28 @@ Get-ChildItem js -Recurse -Filter *.js |
   - `prefer-const`：3
   - `no-unused-vars`（未使用变量）：6
   - 其余：0
+
+  ---
+
+## 测试基线
+
+### v0.9.4（首次引入单元测试）
+
+**工具**：Node 内置 `node --test`，零额外依赖
+
+**用例总数**：90
+
+| 测试文件 | 用例数 | 覆盖 |
+|---------|-------|------|
+| `test/constants.test.js` | 7 | 常量一致性（14 组 × 5 副属性、12 行、COLS 派生、默认地区） |
+| `test/utils.test.js` | 50 | normalizeCell / parseTriple / getColumnIndex / combinations / getUnacquiredScore / formatBytes / 颜色转换 / escapeHtml |
+| `test/dataset-merge.test.js` | 22 | classifyCell / mergeCell / applyStrategy / diffDatasets / buildMultiDiff / applyMultiStrategy / formatCell |
+| `test/dataset-manager.test.js` | 11 | isCellOperationAllowed 保护逻辑（v/t/a 三条规则 + 越界安全） |
+
+**运行**：
+
+```bash
+npm test
 
 ### 处置计划
 
