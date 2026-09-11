@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.2** ｜ 与代码同步
+> 适用版本：**v0.9.3** ｜ 与代码同步
 
 ---
 
@@ -404,3 +404,29 @@ Get-ChildItem js -Recurse -Filter *.js |
 - **数据格式版本**：`import-export.js` 中的 `version: '2.0'`
 
 修改应用版本时**至少同步** `index.html` 的 3 处与 `README.md`。
+
+---
+
+## Lint 基线
+
+### v0.9.3（首次引入 ESLint 9 + Prettier）
+
+- **error：0**
+- **warning：30**
+  - `no-unused-vars`：21（多为 `catch (e) {}` 未用 e）
+  - `prefer-const`：3
+  - `no-unused-vars`（未使用变量）：6
+  - 其余：0
+
+### 处置计划
+
+| 规则 | 数量 | 计划版本 |
+|------|-----|---------|
+| `no-unused-vars`（catch 参数） | ~21 | 0.9.5 架构重构时统一改为 `catch (_e)` |
+| `no-unused-vars`（未使用变量） | ~6 | 0.9.5 逐条清理 |
+| `prefer-const` | 3 | 0.9.5 架构重构时由 `--fix` 处理 |
+
+### 目标
+
+- v0.9.5：warning ≤ 10
+- v0.9.7：warning = 0

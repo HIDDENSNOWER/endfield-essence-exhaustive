@@ -1,0 +1,20 @@
+{
+    "name": "endfield-essence-exhaustive",
+    "private": true,
+    "version": "0.9.3",
+    "description": "EEE · 终末地基质穷举数据记录与统计工具",
+    "scripts": {
+      "lint": "eslint js/ bump-version.js",
+      "lint:fix": "eslint js/ bump-version.js --fix",
+      "format": "prettier --write \"js/**/*.js\"",
+      "format:check": "prettier --check \"js/**/*.js\"",
+      "test": "node --test test/"
+    },
+    "devDependencies": {
+      "eslint": "^9.15.0",
+      "prettier": "^3.3.3"
+    },
+    "engines": {
+      "node": ">=18.18"
+    }
+  }

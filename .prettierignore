@@ -1,0 +1,5 @@
+node_modules/
+js/lib/
+data/
+*.min.js
+*.md

@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "none",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "checkJs": false,
+        "allowJs": true,
+        "noEmit": true,
+        "moduleResolution": "node",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["js/*"]
+        }
+    },
+    "include": [
+        "js/**/*.js",
+        "bump-version.js"
+    ],
+    "exclude": [
+        "node_modules",
+        "js/lib/jszip.min.js",
+        "data"
+    ]
+}
