@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.10** ｜ 与代码同步
+> 适用版本：**v0.9.11** ｜ 与代码同步
 
 ---
 
@@ -72,8 +72,8 @@
 | 持久化 | localStorage（数据/设置/地区）+ IndexedDB（图片） |
 | 外部依赖 | 仅 `jszip.min.js` |
 | 运行要求 | HTTP 服务器（`file://` 下 fetch 被拦截） |
-| 表格结构 | 12 行 × 14 词条组 × 5 主属性 = 840 格 |
-| 刷取组合 | 每地区 10 主属性组合 × 16 属性（8副+8词） = 160 种 |
+| 表格结构 | 12 属性 × 14 系列技能 × 5 能力值 = 840 格 |
+| 刷取组合 | 每地区 10 能力值组合 × 16（8 属性 + 8 系列技能） = 160 种 |
 
 ---
 
@@ -82,7 +82,7 @@
 ### 核心层 `core/`
 | 挂载点 | 职责 |
 |--------|------|
-| `App.constants` | 存储键、词条组、行名、主属性、默认地区、颜色、尺寸常量 |
+| `App.constants` | 存储键、系列技能、属性、能力值、默认地区、颜色、尺寸常量 |
 | `App.state` | 业务状态（含 getter/setter、历史、基准） |
 | `App.uiState` | 临时 UI 状态（pendingApply / confirmCallback / timer / 高亮元素），v0.9.5 新增 |
 | `App.dom` | 所有 DOM 元素一次性缓存 |
@@ -151,7 +151,7 @@
  5. 确保示例数据集存在
  6. datasetManager.loadData()   加载当前数据集
  7. updateDatasetSelect()       渲染数据集下拉框
- 8. populateDropdowns()         填充行/词条/副属性
+ 8. populateDropdowns()         填充属性/系列技能/能力值
  9. resetTripleInputs()         三联输入框重置
 10. initTableStyle()            表格尺寸 + 底色
 11. initNoteFeature()           备注模块（含自绑事件）
@@ -218,7 +218,7 @@
 
 ### 未获取统计（v0.9.1）
 
-**统计单位**：`(地区, 3主属性, 副属性或词条)` —— 每地区 160 种组合。
+**统计单位**：`(地区, 3 能力值, 属性或系列技能)` —— 每地区 160 种组合。
 
 **缺口贡献**（每格）：
 ```js
@@ -252,7 +252,7 @@ return 1;                                                     // 完全空白：
 
 **持久化**：`smarttable_regions`（用户修改后写入；未修改时读取 `DEFAULT_REGIONS`）。
 
-**悬停高亮**：鼠标悬停地区卡片 → 高亮该地区 8 副属性 × 8 词条 × 5 主属性 = **320 格**，规则与未获取统计一致。
+**悬停高亮**：鼠标悬停地区卡片 → 高亮该地区 8 属性 × 8 系列技能 × 5 能力值 = **320 格**，规则与未获取统计一致。
 
 ### 可获取地点悬浮窗（v0.9.1）
 
@@ -260,8 +260,8 @@ return 1;                                                     // 完全空白：
 
 **内容**：
 - 每个可获取此基质的地区
-- 两条刷取路径：选副属性「X」 / 选词条「Y」
-- 每条路径下列出 6 种含当前主属性的 3 主属性组合
+- 两条刷取路径：选属性「X」 / 选系列技能「Y」
+- 每条路径下列出 6 种含当前主属性的 3 能力值组合
 
 **地区来源**：优先读 `smarttable_unacquired_region_filter` 筛选的地区；无结果时回退全部并显示提示。
 
@@ -463,7 +463,7 @@ npm run lint
 
 | 测试文件 | 用例数 | 覆盖 |
 |---------|-------|------|
-| `test/constants.test.js` | 7 | 常量一致性（14 组 × 5 副属性、12 行、COLS 派生、默认地区） |
+| `test/constants.test.js` | 7 | 常量一致性（14 系列技能 × 5 能力值、12 属性、COLS 派生、默认地区） |
 | `test/utils.test.js` | 50 | normalizeCell / parseTriple / getColumnIndex / combinations / getUnacquiredScore / formatBytes / 颜色转换 / escapeHtml |
 | `test/dataset-merge.test.js` | 22 | classifyCell / mergeCell / applyStrategy / diffDatasets / buildMultiDiff / applyMultiStrategy / formatCell |
 | `test/dataset-manager.test.js` | 11 | isCellOperationAllowed 保护逻辑（v/t/a 三条规则 + 越界安全） |

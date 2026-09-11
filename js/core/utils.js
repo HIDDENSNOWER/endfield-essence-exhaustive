@@ -89,22 +89,22 @@
         },
 
         /**
-         * 根据词条组索引和副属性索引计算全局列索引
-         * @param {number} groupIdx - 词条组索引（0~13）
-         * @param {number} subIdx - 副属性索引（0~4）
+         * 根据系列技能索引和能力值索引计算全局列索引
+         * @param {number} groupIdx - 系列技能索引（0~13）
+         * @param {number} subIdx - 能力值索引（0~4）
          * @returns {number} 全局列索引（0-69）
          *
-         * 作用：将局部的（组索引，副属性索引）转换为全局的列位置。
-         * 每个词条组有5个副属性，因此全局列索引 = 前面所有组的副属性总数 + 当前副属性索引。
+         * 作用：将局部的（技能索引，能力值索引）转换为全局的列位置。
+         * 每个系列技能有 5 个能力值，因此全局列索引 = 前面所有技能的能力值总数 + 当前能力值索引。
          */
         getColumnIndex(groupIdx, subIdx) {
             const groups = App.constants.ALL_GROUPS;
             // 越界防护：非法组索引返回 -1，由调用方处理
             if (groupIdx < 0 || groupIdx >= groups.length) return -1;
             let col = 0;
-            // 累加之前所有组的副属性数量
+            // 累加之前所有技能的能力值数量
             for (let i = 0; i < groupIdx; i++) col += groups[i].sub.length;
-            // 加上当前组内的副属性索引
+            // 加上当前技能内的能力值索引
             return col + subIdx;
         },
 
@@ -114,7 +114,7 @@
          * @param {number} colIndex - 全局列索引
          * @returns {{rowName: string, groupName: string, subName: string}}
          *
-         * 作用：根据行索引和全局列索引，解析出该单元格对应的行名、词条组名、副属性名。
+         * 作用：根据行索引和全局列索引，解析出该单元格对应的属性名、系列技能名、能力值名。
          */
         getCellNames(rowIdx, colIndex) {
             const groups = App.constants.ALL_GROUPS;
@@ -124,7 +124,7 @@
                 return { rowName: '?', groupName: '?', subName: '?' };
             }
             let remaining = colIndex;
-            // 找到所属的词条组
+            // 找到所属的系列技能
             for (let i = 0; i < groups.length; i++) {
                 const subLen = groups[i].sub.length;
                 if (remaining < subLen) {
@@ -209,16 +209,16 @@
         /**
          * 填充所有下拉框选项
          *
-         * 作用：初始化数据输入面板和录入面板中的行名、词条组下拉框，
-         * 并根据第一个词条组更新副属性下拉框。
+         * 作用：初始化数据输入面板和录入面板中的属性、系列技能下拉框，
+         * 并根据第一个系列技能更新能力值下拉框。
          */
         populateDropdowns() {
             const dom = App.dom;
             const rowNames = App.constants.ROW_NAMES;
             const groups = App.constants.ALL_GROUPS;
-            // 生成行名选项 HTML
+            // 生成属性选项 HTML
             const rowOpts = rowNames.map((n, i) => `<option value="${i}">${n}</option>`).join('');
-            // 生成词条组选项 HTML
+            // 生成系列技能选项 HTML
             const groupOpts = groups.map((g, i) => `<option value="${i}">${g.name}</option>`).join('');
             // 填充到数据输入面板
             dom.inputRow.innerHTML = rowOpts;
@@ -226,14 +226,14 @@
             // 填充到录入面板
             dom.recordRow.innerHTML = rowOpts;
             dom.recordGroup.innerHTML = groupOpts;
-            // 更新副属性下拉框（默认第一个组）
+            // 更新能力值下拉框（默认第一个技能）
             this.updateSubColOptions(0);
             this.updateRecordSubColOptions(0);
         },
 
         /**
-         * 更新数据输入面板的副属性下拉框
-         * @param {number} groupIdx - 词条组索引
+         * 更新数据输入面板的能力值下拉框
+         * @param {number} groupIdx - 系列技能索引
          *
          * 作用：根据选中的词条组，更新其对应的副属性选项。
          */
@@ -245,8 +245,8 @@
         },
 
         /**
-         * 更新录入面板的副属性下拉框
-         * @param {number} groupIdx - 词条组索引
+         * 更新录入面板的能力值下拉框
+         * @param {number} groupIdx - 系列技能索引
          *
          * 作用：根据选中的词条组，更新录入面板的副属性选项。
          */

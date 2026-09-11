@@ -31,7 +31,7 @@
          */
         applyRecord() {
             const dom = App.dom;
-            // 获取录入面板选中的副属性、行、词条组索引
+            // 获取录入面板选中的能力值、属性、系列技能索引
             const subIdx = parseInt(dom.recordSubCol.value);
             const rowIdx = parseInt(dom.recordRow.value);
             const groupIdx = parseInt(dom.recordGroup.value);

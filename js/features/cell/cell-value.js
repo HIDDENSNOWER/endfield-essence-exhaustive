@@ -14,7 +14,7 @@
  * - bindCellValueEvents：绑定所有相关按钮和弹窗的事件
  *
  * 数值规则：
- * - 输入框最多三位数字，每位代表不同维度（副属性、行、词条组）。
+ * - 输入框最多三位数字，每位代表不同维度（能力值、属性、系列技能）。
  * - 若当前单元格已有实装基质（t>0），则输入新数值时只增加获取数。
  * - 否则，若旧值和新值都是三位数字，则弹出对比弹窗，给出建议。
  * - 所有操作均受默认数据集保护机制约束。
@@ -76,7 +76,7 @@
             if (cell.t > 0) {
                 // 如果已全部获取，阻止继续录入
                 if (cell.a >= cell.t) {
-                    App.modal.showFullAcquireModal(`当前重复词条组合（${rowName} - ${groupName} - ${subName}）已全部获取，请停止录入。`);
+                    App.modal.showFullAcquireModal(`当前基质组合（${rowName} - ${groupName} - ${subName}）已全部获取，请停止录入。`);
                     return;
                 }
                 // 构造新单元格：v不变，t不变，a+1

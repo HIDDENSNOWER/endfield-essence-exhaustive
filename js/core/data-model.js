@@ -53,16 +53,16 @@
         },
 
         /**
-         * 创建初始行数据（12 个提升项，每个含 70 列空数据）
+         * 创建初始行数据（12 个属性，每个含 70 列空数据）
          * @returns {Array<{name: string, data: Array}>}
          * 
-         * 返回的数组包含12个对象，每个对象对应一个提升项（行名），
+         * 返回的数组包含12个对象，每个对象对应一个属性，
          * 其 data 属性为70列的空单元格数组。
          */
         createInitialRows() {
-            const rowNames = App.constants.ROW_NAMES;   // 获取行名列表（12个）
+            const rowNames = App.constants.ROW_NAMES;   // 获取属性列表（12 个）
             return rowNames.map(name => ({
-                name: name,                              // 行名，如"攻击提升"
+                name: name,                              // 属性名，如"攻击提升"
                 data: this.createEmptyRowData()          // 该行的70个空单元格
             }));
         },

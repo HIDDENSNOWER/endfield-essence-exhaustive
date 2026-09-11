@@ -73,9 +73,9 @@
             'inputHint',                        // 数据输入提示文字区域
 
             // ---------- 数据输入面板下拉框 ----------
-            'inputRow',                         // 副属性（行）选择下拉框
-            'inputGroup',                       // 词条组选择下拉框
-            'inputSubCol',                      // 主属性（副属性）选择下拉框
+            'inputRow',                         // 属性选择下拉框
+            'inputGroup',                       // 系列技能选择下拉框
+            'inputSubCol',                      // 能力值选择下拉框
 
             // ---------- 数据集管理按钮 ----------
             'btnExport',                        // 导出按钮
@@ -149,9 +149,9 @@
             'statsPanel',                       // 统计面板
             'statsContent',                     // 统计内容容器
             'recordPanel',                      // 录入面板
-            'recordSubCol',                     // 录入面板主属性选择
-            'recordRow',                        // 录入面板副属性选择
-            'recordGroup',                      // 录入面板词条选择
+            'recordSubCol',                     // 录入面板能力值选择
+            'recordRow',                        // 录入面板属性选择
+            'recordGroup',                      // 录入面板系列技能选择
             'panelContainer',                   // 右侧面板容器
             'btnRecordApply',                   // 录入按钮
             'recordHint',                       // 录入提示文字
@@ -164,8 +164,8 @@
             'modalRegionEdit',                  // 地区编辑弹窗
             'regionEditTitle',                  // 弹窗标题
             'regionEditName',                   // 地区名输入框
-            'regionEditRows',                   // 副属性复选框容器
-            'regionEditGroups',                 // 词条复选框容器
+            'regionEditRows',                   // 属性复选框容器
+            'regionEditGroups',                 // 系列技能复选框容器
             'btnConfirmRegionEdit',             // 保存按钮
             'btnCancelRegionEdit',              // 取消按钮
             'btnCloseRegionEdit',               // 关闭按钮

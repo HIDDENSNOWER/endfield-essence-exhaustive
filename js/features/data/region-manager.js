@@ -36,11 +36,11 @@
                     </div>
                     <div class="region-card-body">
                         <div class="region-attr-row">
-                            <span class="region-label">副属性</span>
+                            <span class="region-label">属性</span>
                             ${region.rows.map(r => `<span class="region-tag">${App.utils.escapeHtml(r)}</span>`).join('')}
                         </div>
                         <div class="region-attr-row">
-                            <span class="region-label">词条</span>
+                            <span class="region-label">系列技能</span>
                             ${region.groups.map(g => `<span class="region-tag">${App.utils.escapeHtml(g)}</span>`).join('')}
                         </div>
                     </div>
@@ -50,7 +50,7 @@
         // ==================== 悬停高亮 ====================
 
         /**
-         * 高亮某地区的全部可刷取单元格（8 副属性 × 8 词条 × 5 主属性 = 320 格）
+         * 高亮某地区的全部可刷取单元格（8 属性 × 8 系列技能 × 5 能力值 = 320 格）
          */
         _highlightRegion(regionName) {
             const regions = App.storage.getRegions();
@@ -126,7 +126,7 @@
             const groups = Array.from(document.querySelectorAll('#regionEditGroups input:checked')).map(i => i.value);
 
             if (rows.length === 0 || groups.length === 0) {
-                App.modal.showAlert('副属性和词条至少各选一个', '提示');
+                App.modal.showAlert('属性和系列技能至少各选一个', '提示');
                 return;
             }
 

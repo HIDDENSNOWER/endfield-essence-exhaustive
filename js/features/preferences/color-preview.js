@@ -91,7 +91,7 @@
             const tr1 = document.createElement('tr');
             const corner = document.createElement('th');
             corner.rowSpan = 2;
-            corner.textContent = '提升项';
+            corner.textContent = '属性';
             tr1.appendChild(corner);
             groups.forEach((g, idx) => {
                 const th = document.createElement('th');

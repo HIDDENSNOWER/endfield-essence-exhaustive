@@ -11,7 +11,7 @@
  *
  * 渲染规则：
  * - 表格分为两个部分（第一部分：强攻~残暴，第二部分：附术~效益）
- * - 第一列为行名（提升项），后续为数据列
+ * - 第一列为属性名，后续为数据列
  * - 单元格根据 t（重复数）和 a（获取数）显示不同状态和文本
  * - 奇偶行/列使用不同的背景色
  */
@@ -23,7 +23,7 @@
          * 获取当前筛选后的行数据
          * @returns {Array} 过滤后的行数据数组
          *
-         * 根据 state.selectedRows 中的行名列表，
+         * 根据 state.selectedRows 中的属性名列表，
          * 从 state.rows 中筛选出需要显示的行。
          */
         getFilteredRows() {
@@ -45,7 +45,7 @@
          * 渲染表格的指定部分
          * @param {HTMLTableSectionElement} thead - 表头元素
          * @param {HTMLTableSectionElement} tbody - 表体元素
-         * @param {Array} groups - 词条组数组
+         * @param {Array} groups - 系列技能数组
          * @param {number} colOffset - 列偏移量（第二部分需偏移第一部分的列数）
          * @param {number} totalCols - 本部分总列数
          *
@@ -80,10 +80,10 @@
             // ==================== 渲染表头 ====================
             thead.innerHTML = '';
 
-            // 表头第一行：角标 + 词条组名称
+            // 表头第一行：角标 + 系列技能名称
             const row1 = document.createElement('tr');
             const thCorner = document.createElement('th');
-            thCorner.textContent = '提升项';
+            thCorner.textContent = '属性';
             thCorner.rowSpan = 2; // 跨两行
             row1.appendChild(thCorner);
 
@@ -100,7 +100,7 @@
             });
             thead.appendChild(row1);
 
-            // 表头第二行：副属性名称
+            // 表头第二行：能力值名称
             const row2 = document.createElement('tr');
             groups.forEach((group, groupIdx) => {
                 const globalIdx = (groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx);
@@ -142,12 +142,12 @@
                 const originalIndex = App.state.rows.indexOf(row);
                 const tr = document.createElement('tr');
 
-                // 第一列：行名
+                // 第一列：属性名
                 const tdName = document.createElement('td');
                 tdName.textContent = row.name;
                 tr.appendChild(tdName);
 
-                // 遍历每个词条组的每个副属性
+                // 遍历每个系列技能的每个能力值
                 groups.forEach((group, groupIdx) => {
                     const globalIdx = (groups === App.constants.GROUP1 ? groupIdx : App.constants.GROUP1.length + groupIdx);
                     group.sub.forEach((subName, subIdx) => {

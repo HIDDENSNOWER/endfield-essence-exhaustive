@@ -3,8 +3,8 @@
  * 挂载到 App.stats
  *
  * 本模块负责统计面板的渲染与交互：
- * - renderStats：统计所有词条组的数据（总基质数、总实装基质、已获取、未获取），
- *   生成摘要表格、排序控件和每个词条组的统计卡片，并支持排序功能。
+ * - renderStats：统计所有系列技能的数据（总基质数、总实装基质、已获取、未获取），
+ *   生成摘要表格、排序控件和每个系列技能的统计卡片，并支持排序功能。
  *
  * 统计口径：
  * - totalMatrix（总基质数）：有数值的单元格算1个；实装基质按已获取数计算
@@ -22,16 +22,16 @@
         /**
          * 渲染统计面板
          *
-         * 统计所有词条组的数据，生成摘要、排序控件和统计卡片，
+         * 统计所有系列技能的数据，生成摘要、排序控件和统计卡片，
          * 并绑定排序控件的 change 事件。
          */
         renderStats() {
             const C = App.constants;
 
             // ==================== 初始化统计数据 ====================
-            // 为每个词条组创建一个统计对象，初始值均为0
+            // 为每个系列技能创建一个统计对象，初始值均为0
             const stats = C.ALL_GROUPS.map(group => ({
-                name: group.name,       // 词条组名称
+                name: group.name,       // 系列技能名称
                 totalMatrix: 0,         // 总基质数
                 totalT: 0,              // 总实装基质数
                 totalA: 0               // 已获取实装基质数
@@ -42,7 +42,7 @@
                 row.data.forEach((cell, colIndex) => {
                     const c = App.utils.normalizeCell(cell);
 
-                    // 确定当前列属于哪个词条组
+                    // 确定当前列属于哪个系列技能
                     let groupIdx = -1;
                     let remaining = colIndex;
                     for (let i = 0; i < C.ALL_GROUPS.length; i++) {
@@ -71,7 +71,7 @@
                 });
             });
 
-            // 计算每个词条组的未获取数
+            // 计算每个系列技能的未获取数
             stats.forEach(s => s.unacquired = s.totalT - s.totalA);
 
             // ==================== 计算总计 ====================
@@ -133,7 +133,7 @@
                 </div>
             </div>`;
 
-            // ---- 每个词条组的统计卡片 ----
+            // ---- 每个系列技能的统计卡片 ----
             stats.forEach(s => {
                 html += `
                 <div class="stat-card">

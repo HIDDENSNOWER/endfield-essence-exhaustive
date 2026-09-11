@@ -81,7 +81,7 @@
         return JSON.parse(JSON.stringify(cell));
     }
 
-    /** 按列索引定位词条组与副属性（用于冲突清单展示） */
+    /** 按列索引定位系列技能与能力值（用于冲突清单展示） */
     function locate(colIdx) {
         let offset = 0;
         for (const group of C.ALL_GROUPS) {

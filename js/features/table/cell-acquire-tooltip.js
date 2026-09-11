@@ -211,11 +211,11 @@
                 html += `<div class="acquire-region-block">
                     <div class="acquire-region-name">📍 ${App.utils.escapeHtml(item.region)}</div>
                     <div class="acquire-path">
-                        <div class="acquire-path-label">选副属性「${rowName}」 + 任一主属性组合：</div>
+                        <div class="acquire-path-label">选属性「${rowName}」 + 任一能力值组合：</div>
                         <div class="acquire-combo-list">${comboTags}</div>
                     </div>
                     <div class="acquire-path">
-                        <div class="acquire-path-label">选词条「${groupName}」 + 任一主属性组合：</div>
+                        <div class="acquire-path-label">选系列技能「${groupName}」 + 任一能力值组合：</div>
                         <div class="acquire-combo-list">${comboTags}</div>
                     </div>
                 </div>`;
