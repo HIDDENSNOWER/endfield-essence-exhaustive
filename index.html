@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.12</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.13</title>
 
     <!-- 内容安全策略（CSP） -->
     <meta http-equiv="Content-Security-Policy"
@@ -341,6 +341,37 @@
 
             <aside class="unacquired-panel" id="unacquiredPanel">
                 <div class="panel-title">📊 未获取基质统计</div>
+
+                <!-- 检索区（v0.9.13 新增） -->
+                <div class="search-section">
+                    <div class="search-section-title">🔍 检索刷取组合</div>
+                    <div class="search-row">
+                        <label class="search-label">地区</label>
+                        <select id="searchRegion" class="search-select" title="选择地区"></select>
+                    </div>
+                    <div class="search-row">
+                        <label class="search-label">类型</label>
+                        <select id="searchType" class="search-select" title="选择类型">
+                            <option value="row">属性</option>
+                            <option value="group">系列技能</option>
+                        </select>
+                    </div>
+                    <div class="search-row">
+                        <label class="search-label">目标</label>
+                        <select id="searchItem" class="search-select" title="选择具体项"></select>
+                    </div>
+                    <div class="search-row">
+                        <label class="search-label">能力值</label>
+                        <select id="searchCombo" class="search-select" title="选择 3 能力值组合"></select>
+                    </div>
+                    <div class="search-actions">
+                        <button class="btn btn-primary btn-sm" id="btnSearch">检索</button>
+                        <button class="btn btn-sm" id="btnClearSearch">清除</button>
+                    </div>
+                </div>
+
+                <div id="searchResult" class="search-result" style="display:none;"></div>
+
                 <details class="region-filter-details" id="regionFilterDetails">
                     <summary class="region-filter-summary">
                         <span>🗺️ 筛选地区</span>
@@ -354,6 +385,12 @@
                         <div id="regionFilterCheckboxes" class="region-filter-checkboxes"></div>
                     </div>
                 </details>
+                <!-- 显示模式切换（v0.9.13） -->
+                <div class="unacquired-mode-tabs" id="unacquiredModeTabs">
+                    <button class="unacquired-mode-tab active" data-mode="top">未获取前 36</button>
+                    <button class="unacquired-mode-tab" data-mode="bottom">未获取后 36</button>
+                    <button class="unacquired-mode-tab" data-mode="full">全收集</button>
+                </div>
                 <div id="unacquiredContent" class="unacquired-content"></div>
             </aside>
 
@@ -381,8 +418,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.12(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.12("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.13(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.13("裂隙填充"更新)
         </button>
     </footer>
 
@@ -895,7 +932,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.12("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.13("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>

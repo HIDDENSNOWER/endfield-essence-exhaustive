@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.12**
+> 适用版本：**v0.9.13**
 
 ---
 
@@ -19,7 +19,7 @@
 | 导入 / 导出 / 合并 | `features/data/import-export.js` / `dataset-merge.js` | `lib/jszip.min.js` |
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | **地区增删改 / 悬停高亮** | **`features/data/region-manager.js`** | **`dom.js` / `features.css`** |
-| **未获取统计 / 筛选 / 进度条** | **`features/table/unacquired.js`** | **`features.css`** |
+| **未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定** | **`features/table/unacquired.js`** | **`features.css` / `dom.js`** |
 | **可获取地点悬浮窗** | **`features/table/cell-acquire-tooltip.js`** | **`features.css`** |
 | **高亮控制** | **`features/table/cell-highlighter.js`** | **`features.css`** |
 | **键盘快捷键** | **`features/keyboard.js`** | **`services/modal.js`** |
@@ -193,7 +193,7 @@
 | 集中绑定 | `events.js` `bindAllEvents()`（主流，18+ 模块） |
 | 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` |
 
-### 未获取统计
+### 未获取统计（v0.9.13）
 
 **统计单位**：`(地区, 3 能力值, 属性或系列技能)` —— 每地区 160 种组合。
 
@@ -204,7 +204,32 @@ if (cell.v !== '') return 0;                                  // 有数值：已
 return 1;                                                     // 完全空白：+1
 ```
 
-**展示**：收集所有未获取 > 0 的条目，按缺口降序取前 36；每条含组合行 + 地区行 + 进度条（`已完成/24`）+ 缺口数。
+**展示（v0.9.13 三模式）**：
+
+| 模式 | `_mode` 值 | 内容 |
+|------|-----------|------|
+| 未获取前 36 | `top` | 缺口 > 0 的条目，按缺口降序取前 36 |
+| 未获取后 36 | `bottom` | 缺口 > 0 的条目，按缺口升序取前 36 |
+| 全收集 | `full` | 缺口 = 0 的条目（全部刷满） |
+
+每条含组合行 + 地区行 + 进度条（`已完成 / 24`）+ 缺口数。
+
+**刷取组合检索（v0.9.13）**：
+
+- 入口：`initSearch()` 填充地区 / 能力值组合下拉框；`bindSearchEvents()` 注册事件
+- 输入：`searchRegion`（地区）+ `searchType`（属性 / 系列技能）+ `searchItem`（目标）+ `searchCombo`（3 能力值组合）
+- 联动：`_updateSearchItems()` 随地区/类型变化刷新目标下拉框；`_updateSearchCombos()` 初始化 10 种组合
+- 执行：`doSearch()` 计算缺口与进度 → `_renderSearchResult()` 输出单条结果卡片 → `cellHighlighter.highlight()` 高亮表格
+- 清除：`clearSearch()` 解除锁定 + 隐藏结果卡 + 清空高亮
+- 结果卡与列表项**共用悬停 / 双击逻辑**（`_bindListInteractions` 同时注册到 `unacquiredContent` 与 `searchResult`）
+
+**双击锁定高亮（v0.9.13）**：
+
+- 状态：`_lockedLi`（被锁定的 `<li>`）+ `_lockedBtnLi`（插入的取消按钮 `<li>`）
+- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮对应格 → 在条目后插入"取消高亮"按钮
+- `_unlockItem(clearHighlight)`：移除按钮 `<li>` → 清空状态 → 可选清空高亮
+- 悬停其他条目时临时高亮；移出时**优先恢复锁定高亮**，未锁定则清空
+- 切换面板 / `renderList()` / `doSearch()` 前均自动 `_unlockItem(false)` 解除
 
 **地区筛选**：折叠式复选框，状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
 
@@ -217,6 +242,8 @@ return 1;                                                     // 完全空白：
 **持久化**：`smarttable_regions`；未修改时读取 `DEFAULT_REGIONS`（12 地区）。
 
 **悬停高亮**：悬停地区卡片 → 高亮 8 属性 × 8 系列技能 × 5 能力值 = **320 格**。
+
+**收集进度条（v0.9.11）**：卡片底部显示 `已完成 / 320`（X%），分档着色（<30% 红 / 30~70% 橙 / ≥70% 绿）。
 
 ### 可获取地点悬浮窗
 
@@ -357,6 +384,9 @@ npm run lint
 | **`migration.js` 的 `CURRENT_VERSION`** | 每次发版需同步（`bump-version.js` 已处理） |
 | **`error-handler.js` init 时序** | 必须在 `init()` 最早期 |
 | **术语映射** | 能力值 / 属性 / 系列技能；代码字段名不变 |
+| **未获取统计三模式** | `_mode` 切换后面板标题变化，但组件 id 不变 |
+| **双击锁定需手动解除** | 切换面板 / 重渲染列表 / 再次检索会自动解除 |
+| **检索结果与排序列表共用悬停逻辑** | 两者都走 `_bindListInteractions`，勿重复绑定 |
 
 ---
 
@@ -378,6 +408,7 @@ npm run lint
 | 错误边界 | 捕获同步/异步错误，避免白屏 |
 | 数据迁移 | 按版本顺序执行，单步失败不阻断 |
 | A11y | `role="dialog"` / 焦点陷阱 / 焦点恢复 |
+| 检索容错 | 检索前必填校验，缺项弹 Alert |
 
 ---
 
@@ -396,6 +427,9 @@ npm run lint
 | 高亮索引缓存 | Map 查表替代 320 次 querySelector |
 | 术语用游戏内文案 | 降低玩家理解成本；代码字段名不变 |
 | 进度条复用行缓存 | 12 张卡片 × 320 格，缓存后 normalizeCell 只跑 840 次 |
+| 三模式共用一个 `_mode` | 状态最小化；切换即重渲染 |
+| 检索卡与列表项共用逻辑 | 抽出 `_bindListInteractions`；避免事件重复绑定 |
+| 双击锁定用 DOM 兄弟节点 | 不引入额外容器；按钮随列表重渲染自动消失 |
 
 ---
 
@@ -436,7 +470,8 @@ npm run lint
 | v0.9.9 | 维护与工程化 | CI 升级 v5/Node 24 + Lint 清零 + DOM 测试 + 覆盖率 |
 | v0.9.10 | 首屏优化 | 加载遮罩 + 脚本 defer |
 | v0.9.11 | 术语校准 | 能力值 / 属性 / 系列技能 + `bump-version.js` 覆盖 6 文件 |
-| **v0.9.12** | **地区进度条（规划）** | **地区卡片收集进度条 X/320 + 分档着色** |
+| v0.9.12 | 地区进度条 | 地区卡片收集进度条 X/320 + 分档着色 |
+| **v0.9.13** | **未获取统计增强** | **刷取组合检索系统 + 三模式切换 + 双击锁定高亮** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

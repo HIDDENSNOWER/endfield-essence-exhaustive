@@ -1,15 +1,10 @@
 /**
- * unacquired.js - 未获取基质统计（前 36 名 + 地区筛选 + 双色悬停高亮 + 变暗蒙版 + 进度条）
+ * unacquired.js - 未获取基质统计（排序列表 + 三模式切换 + 地区筛选 + 双色悬停高亮 + 变暗蒙版 + 进度条 + 检索系统 + 双击锁定）
  * 挂载到 App.unacquired
  *
- * v0.9.2 重构：
- *   - 高亮逻辑改为调用 App.cellHighlighter（统一控制器）
- *   - combinations / getUnacquiredScore 抽取至 App.utils
- *
- * v0.9.6 优化：
- *   - 新增模块级 _colIndexMap（列索引 O(1) 查表，替换 getColumnIndex 的 O(14) 遍历）
- *   - renderList 期间按行缓存 normalizeCell 结果，结束后释放
- *   - 新增 invalidateCache() 供 table-renderer 主动失效
+ * v0.9.2：高亮委托给 App.cellHighlighter
+ * v0.9.6：新增列索引 Map 与单元格缓存
+ * v0.9.13：新增刷取组合检索系统；新增三种显示模式切换；新增双击锁定高亮
  */
 (function (App) {
     'use strict';
@@ -17,12 +12,9 @@
     const TOP_N = 36;
 
     // ==================== 模块级缓存 ====================
-    /** 列索引缓存：_colIndexMap[groupName][subName] = colIndex */
     let _colIndexMap = null;
-    /** 单元格缓存：_cellCache[rowIdx][colIdx] = normalizeCell 结果 */
     let _cellCache = null;
 
-    /** 构建列索引 Map（惰性构建一次，模块生命周期内复用） */
     function ensureColIndexMap() {
         if (_colIndexMap) return _colIndexMap;
         const C = App.constants;
@@ -38,35 +30,38 @@
         return _colIndexMap;
     }
 
-    /** 构建单元格缓存（renderList 开始时调用） */
     function buildCellCache() {
         const rows = App.state.rows;
         _cellCache = rows.map(row => row.data.map(c => App.utils.normalizeCell(c)));
     }
 
-    /** 读缓存单元格 */
+    function releaseCellCache() {
+        _cellCache = null;
+    }
+
     function getCachedCell(rowIdx, colIdx) {
         const row = _cellCache && _cellCache[rowIdx];
         return row ? row[colIdx] : null;
     }
 
-    /** 释放缓存引用 */
-    function releaseCellCache() {
-        _cellCache = null;
-    }
-
     App.unacquired = {
         _hoveredLi: null,
         _eventsBound: false,
+        _searchEventsBound: false,
+        _modeTabEventsBound: false,
+        /** 当前显示模式：'top' | 'bottom' | 'full' */
+        _mode: 'top',
+        /** 双击锁定的 <li> 元素（持久高亮） */
+        _lockedLi: null,
+        /** 锁定卡片下方插入的取消按钮 <li> 元素 */
+        _lockedBtnLi: null,
 
-        /** 外部主动失效缓存（供 table-renderer 调用） */
         invalidateCache() {
             _cellCache = null;
         },
 
         // ==================== 内部：计算 ====================
 
-        /** 计算某地区、某组合下的未获取缺口总数 */
         _countUnacquired(region, main3, attr) {
             const C = App.constants;
             const colMap = ensureColIndexMap();
@@ -106,7 +101,6 @@
             return total;
         },
 
-        /** 获取指定组合对应的所有单元格坐标 */
         _getComboCells(region, main3, attr) {
             const C = App.constants;
             const colMap = ensureColIndexMap();
@@ -141,7 +135,6 @@
             return cells;
         },
 
-        /** 计算组合的完成度 */
         _calcProgress(cells) {
             let completed = 0;
             cells.forEach(({ rowIdx, colIndex }) => {
@@ -158,7 +151,6 @@
             };
         },
 
-        /** 百分比 → 档位 class */
         _progressClass(percent) {
             if (percent >= 70) return 'progress-high';
             if (percent >= 30) return 'progress-mid';
@@ -220,12 +212,10 @@
             this.renderList();
         },
 
-        /** 清除高亮（转发到 cellHighlighter） */
         _clearHighlight() {
             App.cellHighlighter.clear();
         },
 
-        /** 高亮指定地区、组合的未获取格 */
         _highlightComboCells(regionName, main3Str, attr) {
             const regions = App.storage.getRegions();
             const region = regions.find(r => r.name === regionName);
@@ -249,13 +239,212 @@
             App.cellHighlighter.highlight(cellList);
         },
 
-        // ==================== 渲染 ====================
+        // ==================== 锁定高亮（v0.9.13） ====================
+
+        /**
+         * 锁定一个列表项：持续高亮 + 在其下方插入"取消高亮"按钮
+         * @param {HTMLElement} li - 目标 <li>
+         */
+        _lockItem(li) {
+            // 若点击的正是当前锁定项，忽略
+            if (this._lockedLi === li) return;
+
+            // 先解除旧锁定（不清理高亮，因为马上会重新高亮）
+            this._unlockItem(false);
+
+            this._lockedLi = li;
+
+            // 高亮该条目
+            this._highlightComboCells(li.dataset.region, li.dataset.mains, li.dataset.attr);
+
+            // 插入取消按钮（作为 li 的下一个兄弟 <li>）
+            const cancelLi = document.createElement('li');
+            cancelLi.className = 'unacquired-cancel-wrap';
+            cancelLi.innerHTML = '<button type="button" class="unacquired-cancel-btn">取消高亮</button>';
+            li.insertAdjacentElement('afterend', cancelLi);
+            this._lockedBtnLi = cancelLi;
+        },
+
+        /**
+         * 解除锁定
+         * @param {boolean} [clearHighlight=true] - 是否同时清除表格高亮
+         */
+        _unlockItem(clearHighlight = true) {
+            if (this._lockedBtnLi && this._lockedBtnLi.parentNode) {
+                this._lockedBtnLi.remove();
+            }
+            this._lockedBtnLi = null;
+            this._lockedLi = null;
+
+            if (clearHighlight) {
+                App.cellHighlighter.clear();
+            }
+        },
+
+        // ==================== 显示模式切换（v0.9.13） ====================
+
+        setMode(mode) {
+            if (mode !== 'top' && mode !== 'bottom' && mode !== 'full') return;
+            if (this._mode === mode) return;
+            this._mode = mode;
+
+            const dom = App.dom;
+            if (dom.unacquiredModeTabs) {
+                dom.unacquiredModeTabs.querySelectorAll('.unacquired-mode-tab').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === mode);
+                });
+            }
+            this.renderList();
+        },
+
+        bindModeTabEvents() {
+            const dom = App.dom;
+            if (!dom.unacquiredModeTabs) return;
+            if (this._modeTabEventsBound) return;
+            this._modeTabEventsBound = true;
+
+            dom.unacquiredModeTabs.addEventListener('click', (e) => {
+                const btn = e.target.closest('.unacquired-mode-tab');
+                if (!btn) return;
+                const mode = btn.dataset.mode;
+                if (!mode) return;
+                this.setMode(mode);
+            });
+        },
+
+        // ==================== 检索系统（v0.9.13） ====================
+
+        initSearch() {
+            const dom = App.dom;
+            if (!dom.searchRegion) return;
+
+            const regions = App.storage.getRegions();
+            dom.searchRegion.innerHTML = regions.map(r =>
+                `<option value="${App.utils.escapeHtml(r.name)}">${App.utils.escapeHtml(r.name)}</option>`
+            ).join('');
+
+            this._updateSearchCombos();
+            this._updateSearchItems();
+        },
+
+        _updateSearchItems() {
+            const dom = App.dom;
+            if (!dom.searchItem || !dom.searchRegion || !dom.searchType) return;
+
+            const regionName = dom.searchRegion.value;
+            const type = dom.searchType.value;
+            const region = App.storage.getRegions().find(r => r.name === regionName);
+
+            if (!region) {
+                dom.searchItem.innerHTML = '';
+                return;
+            }
+
+            const items = type === 'row' ? region.rows : region.groups;
+            dom.searchItem.innerHTML = items.map(i =>
+                `<option value="${App.utils.escapeHtml(i)}">${App.utils.escapeHtml(i)}</option>`
+            ).join('');
+        },
+
+        _updateSearchCombos() {
+            const dom = App.dom;
+            if (!dom.searchCombo) return;
+
+            const combos = App.utils.combinations(App.constants.SUB_ATTRS, 3);
+            dom.searchCombo.innerHTML = combos.map(c =>
+                `<option value="${c.join('-')}">${c.join('-')}</option>`
+            ).join('');
+        },
+
+        doSearch() {
+            const dom = App.dom;
+            const regionName = dom.searchRegion.value;
+            const item = dom.searchItem.value;
+            const combo = dom.searchCombo.value;
+
+            if (!regionName || !item || !combo) {
+                App.modal.showAlert('请完整选择地区、类型、目标、能力值组合', '提示');
+                return;
+            }
+
+            const region = App.storage.getRegions().find(r => r.name === regionName);
+            if (!region) return;
+
+            const main3 = combo.split('-');
+
+            buildCellCache();
+            const count = this._countUnacquired(region, main3, item);
+            const cells = this._getComboCells(region, main3, item);
+            const progress = this._calcProgress(cells);
+            releaseCellCache();
+
+            // 清除旧锁定（检索结果将替换 DOM）
+            this._unlockItem(false);
+
+            this._renderSearchResult({ regionName, item, combo, count, progress });
+
+            const cellList = cells.map(({ rowIdx, colIndex }) => {
+                const cell = App.utils.normalizeCell(App.state.rows[rowIdx].data[colIndex]);
+                return {
+                    rowIdx,
+                    colIndex,
+                    isUnacquired: App.utils.getUnacquiredScore(cell) > 0
+                };
+            });
+            App.cellHighlighter.highlight(cellList);
+        },
+
+        _renderSearchResult(info) {
+            const dom = App.dom;
+            if (!dom.searchResult) return;
+
+            const progressClass = this._progressClass(info.progress.percent);
+
+            dom.searchResult.style.display = 'block';
+            dom.searchResult.innerHTML = `
+                <div class="search-result-header">
+                    <span>🔍 检索结果</span>
+                </div>
+                <ul class="unacquired-top-list">
+                    <li class="unacquired-top-item unacquired-search-item"
+                        data-region="${App.utils.escapeHtml(info.regionName)}"
+                        data-mains="${App.utils.escapeHtml(info.combo)}"
+                        data-attr="${App.utils.escapeHtml(info.item)}">
+                        <span class="unacquired-rank">🔍</span>
+                        <div class="unacquired-top-content">
+                            <div class="unacquired-top-desc">${App.utils.escapeHtml(info.combo)}/${App.utils.escapeHtml(info.item)}</div>
+                            <div class="unacquired-top-region">${App.utils.escapeHtml(info.regionName)}</div>
+                            <div class="unacquired-progress-wrap">
+                                <div class="unacquired-progress-bar">
+                                    <div class="unacquired-progress-fill ${progressClass}" style="width:${info.progress.percent}%"></div>
+                                </div>
+                                <span class="unacquired-progress-text">${info.progress.percent}%</span>
+                            </div>
+                        </div>
+                        <span class="unacquired-top-count">未获取：${info.count}</span>
+                    </li>
+                </ul>`;
+        },
+
+        clearSearch() {
+            const dom = App.dom;
+            this._unlockItem(false);
+            if (dom.searchResult) {
+                dom.searchResult.style.display = 'none';
+                dom.searchResult.innerHTML = '';
+            }
+            App.cellHighlighter.clear();
+        },
+
+        // ==================== 渲染（排序列表 + 三模式） ====================
 
         renderList() {
             const C = App.constants;
             const container = App.dom.unacquiredContent;
             if (!container) return;
 
+            // 重渲染前清除锁定与高亮
+            this._unlockItem(false);
             App.cellHighlighter.clear();
             this._hoveredLi = null;
 
@@ -265,68 +454,94 @@
                 return;
             }
 
-            // v0.9.6：构建单元格缓存（整个 renderList 期间复用）
             buildCellCache();
 
             const mainCombos = App.utils.combinations(C.SUB_ATTRS, 3);
 
-            const items = [];
+            const allItems = [];
             regions.forEach(region => {
                 region.rows.forEach(rowName => {
                     mainCombos.forEach(main3 => {
                         const count = this._countUnacquired(region, main3, rowName);
-                        if (count > 0) {
-                            const cells = this._getComboCells(region, main3, rowName);
-                            const progress = this._calcProgress(cells);
-                            items.push({
-                                region: region.name,
-                                main3: main3.join('-'),
-                                attr: rowName,
-                                count,
-                                progress
-                            });
-                        }
+                        const cells = this._getComboCells(region, main3, rowName);
+                        const progress = this._calcProgress(cells);
+                        allItems.push({
+                            region: region.name,
+                            main3: main3.join('-'),
+                            attr: rowName,
+                            count,
+                            progress
+                        });
                     });
                 });
                 region.groups.forEach(groupName => {
                     mainCombos.forEach(main3 => {
                         const count = this._countUnacquired(region, main3, groupName);
-                        if (count > 0) {
-                            const cells = this._getComboCells(region, main3, groupName);
-                            const progress = this._calcProgress(cells);
-                            items.push({
-                                region: region.name,
-                                main3: main3.join('-'),
-                                attr: groupName,
-                                count,
-                                progress
-                            });
-                        }
+                        const cells = this._getComboCells(region, main3, groupName);
+                        const progress = this._calcProgress(cells);
+                        allItems.push({
+                            region: region.name,
+                            main3: main3.join('-'),
+                            attr: groupName,
+                            count,
+                            progress
+                        });
                     });
                 });
             });
 
-            // 缓存使用完毕，释放引用（防止长期持有）
             releaseCellCache();
 
-            if (items.length === 0) {
-                container.innerHTML = '<p class="input-hint" style="text-align:center; padding:24px 0;">🎉 所选地区已全部获取</p>';
-                return;
+            const mode = this._mode || 'top';
+            let displayItems;
+            let summaryHtml;
+
+            if (mode === 'top') {
+                const withUnacquired = allItems.filter(it => it.count > 0);
+                if (withUnacquired.length === 0) {
+                    container.innerHTML = '<p class="input-hint" style="text-align:center; padding:24px 0;">🎉 所选地区已全部获取</p>';
+                    return;
+                }
+                withUnacquired.sort((a, b) => b.count - a.count);
+                displayItems = withUnacquired.slice(0, TOP_N);
+                summaryHtml = `未获取前 <b>${displayItems.length}</b> 名（共 <b>${withUnacquired.length}</b> 项）`;
+            } else if (mode === 'bottom') {
+                const withUnacquired = allItems.filter(it => it.count > 0);
+                if (withUnacquired.length === 0) {
+                    container.innerHTML = '<p class="input-hint" style="text-align:center; padding:24px 0;">🎉 所选地区已全部获取</p>';
+                    return;
+                }
+                withUnacquired.sort((a, b) => a.count - b.count);
+                displayItems = withUnacquired.slice(0, TOP_N);
+                summaryHtml = `未获取后 <b>${displayItems.length}</b> 名（共 <b>${withUnacquired.length}</b> 项）`;
+            } else {
+                const fullItems = allItems.filter(it => it.count === 0);
+                if (fullItems.length === 0) {
+                    container.innerHTML = '<p class="input-hint" style="text-align:center; padding:24px 0;">暂未完全收集任何组合</p>';
+                    return;
+                }
+                displayItems = fullItems;
+                summaryHtml = `全收集 <b>${displayItems.length}</b> 项`;
             }
 
-            items.sort((a, b) => b.count - a.count);
-            const top = items.slice(0, TOP_N);
-
-            let html = `<div class="unacquired-summary">前 <b>${top.length}</b> 名（共 <b>${items.length}</b> 项）</div>`;
+            let html = `<div class="unacquired-summary">${summaryHtml}</div>`;
             html += '<ul class="unacquired-top-list">';
 
-            top.forEach((item, idx) => {
+            displayItems.forEach((item, idx) => {
                 const progressClass = this._progressClass(item.progress.percent);
+                let rankHtml;
+
+                if (mode === 'full') {
+                    rankHtml = '<span class="unacquired-rank">✓</span>';
+                } else {
+                    rankHtml = `<span class="unacquired-rank">${idx + 1}</span>`;
+                }
+
                 html += `<li class="unacquired-top-item"
                     data-region="${App.utils.escapeHtml(item.region)}"
                     data-mains="${App.utils.escapeHtml(item.main3)}"
                     data-attr="${App.utils.escapeHtml(item.attr)}">
-                    <span class="unacquired-rank">${idx + 1}</span>
+                    ${rankHtml}
                     <div class="unacquired-top-content">
                         <div class="unacquired-top-desc">${App.utils.escapeHtml(item.main3)}/${App.utils.escapeHtml(item.attr)}</div>
                         <div class="unacquired-top-region">${App.utils.escapeHtml(item.region)}</div>
@@ -375,31 +590,103 @@
             }
 
             if (dom.unacquiredContent) {
-                dom.unacquiredContent.addEventListener('mouseover', (e) => {
-                    const li = e.target.closest('.unacquired-top-item');
-                    if (!li) return;
-                    if (this._hoveredLi === li) return;
-                    this._hoveredLi = li;
-                    this._highlightComboCells(
-                        li.dataset.region,
-                        li.dataset.mains,
-                        li.dataset.attr
-                    );
-                });
-
-                dom.unacquiredContent.addEventListener('mouseout', (e) => {
-                    const li = e.target.closest('.unacquired-top-item');
-                    if (!li) return;
-                    if (e.relatedTarget && li.contains(e.relatedTarget)) return;
-                    this._hoveredLi = null;
-                    App.cellHighlighter.clear();
-                });
-
-                dom.unacquiredContent.addEventListener('mouseleave', () => {
-                    this._hoveredLi = null;
-                    App.cellHighlighter.clear();
-                });
+                this._bindListInteractions(dom.unacquiredContent);
             }
+        },
+
+        /**
+         * 绑定列表容器的全部交互（悬停 / 双击锁定 / 取消按钮）
+         * 供排序列表与检索结果共用
+         */
+        _bindListInteractions(container) {
+            // ---- 悬停高亮 ----
+            container.addEventListener('mouseover', (e) => {
+                const li = e.target.closest('.unacquired-top-item');
+                if (!li) return;
+                if (this._hoveredLi === li) return;
+                this._hoveredLi = li;
+                this._highlightComboCells(
+                    li.dataset.region,
+                    li.dataset.mains,
+                    li.dataset.attr
+                );
+            });
+
+            container.addEventListener('mouseout', (e) => {
+                const li = e.target.closest('.unacquired-top-item');
+                if (!li) return;
+                if (e.relatedTarget && li.contains(e.relatedTarget)) return;
+                this._hoveredLi = null;
+
+                // 优先恢复锁定高亮
+                if (this._lockedLi) {
+                    this._highlightComboCells(
+                        this._lockedLi.dataset.region,
+                        this._lockedLi.dataset.mains,
+                        this._lockedLi.dataset.attr
+                    );
+                } else {
+                    App.cellHighlighter.clear();
+                }
+            });
+
+            container.addEventListener('mouseleave', () => {
+                this._hoveredLi = null;
+
+                if (this._lockedLi) {
+                    this._highlightComboCells(
+                        this._lockedLi.dataset.region,
+                        this._lockedLi.dataset.mains,
+                        this._lockedLi.dataset.attr
+                    );
+                } else {
+                    App.cellHighlighter.clear();
+                }
+            });
+
+            // ---- 双击锁定 ----
+            container.addEventListener('dblclick', (e) => {
+                // 点击取消按钮时不锁定
+                if (e.target.closest('.unacquired-cancel-btn')) return;
+                const li = e.target.closest('.unacquired-top-item');
+                if (!li) return;
+                this._lockItem(li);
+            });
+
+            // ---- 取消按钮点击（事件委托） ----
+            container.addEventListener('click', (e) => {
+                const btn = e.target.closest('.unacquired-cancel-btn');
+                if (!btn) return;
+                e.stopPropagation();
+                this._unlockItem(true);
+            });
+        },
+
+        bindSearchEvents() {
+            const dom = App.dom;
+            if (this._searchEventsBound) return;
+            this._searchEventsBound = true;
+
+            if (dom.searchRegion) {
+                dom.searchRegion.addEventListener('change', () => this._updateSearchItems());
+            }
+            if (dom.searchType) {
+                dom.searchType.addEventListener('change', () => this._updateSearchItems());
+            }
+            if (dom.btnSearch) {
+                dom.btnSearch.addEventListener('click', () => this.doSearch());
+            }
+            if (dom.btnClearSearch) {
+                dom.btnClearSearch.addEventListener('click', () => this.clearSearch());
+            }
+
+            if (dom.searchResult) {
+                this._bindListInteractions(dom.searchResult);
+            }
+
+            [dom.searchRegion, dom.searchType, dom.searchItem, dom.searchCombo].forEach(el => {
+                if (el) App.utils.enableWheelSelect(el);
+            });
         }
     };
 

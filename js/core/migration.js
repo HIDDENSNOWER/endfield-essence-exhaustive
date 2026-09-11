@@ -22,7 +22,7 @@
     'use strict';
 
     /** 当前应用版本（与 package.json / version.json 保持同步） */
-    const CURRENT_VERSION = '0.9.12';
+    const CURRENT_VERSION = '0.9.13';
 
     /** 版本记录存储键 */
     const VERSION_KEY = 'smarttable_version';

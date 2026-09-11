@@ -1,7 +1,7 @@
 {
   "name": "endfield-essence-exhaustive",
   "private": true,
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "EEE · 终末地基质穷举数据记录与统计工具",
   "scripts": {
     "lint": "eslint js/ bump-version.js",

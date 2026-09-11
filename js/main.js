@@ -30,6 +30,7 @@
             dom.regionPanel.classList.toggle('active-panel', panelName === 'region');         // ← 新增
             if (panelName === 'stats') App.stats.renderStats();
             if (panelName === 'unacquired') {
+                App.unacquired.initSearch();
                 App.unacquired.renderRegionFilter();  // ← 新增
                 App.unacquired.renderList();
             }

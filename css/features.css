@@ -1126,3 +1126,212 @@ table.unacquired-dimming thead th {
     min-width: 90px;
     text-align: right;
 }
+
+/* ==================== 未获取统计 - 检索系统（v0.9.13） ==================== */
+
+.search-section {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.search-section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+.search-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    min-width: 44px;
+    flex-shrink: 0;
+}
+
+.search-select {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 6px;
+    font-size: 0.74rem;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.search-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.search-actions .btn {
+    flex: 1;
+    font-size: 0.74rem;
+    padding: 4px 8px;
+}
+
+/* ==================== 检索结果 ==================== */
+
+.search-result {
+    background: var(--bg-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 0.75rem;
+}
+
+.search-result-header {
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border-muted);
+    margin-bottom: 6px;
+}
+
+.search-result-title {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.search-result-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    word-break: break-all;
+}
+
+.search-result-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.search-count-num {
+    color: var(--danger-primary);
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.search-result-progress {
+    margin-bottom: 8px;
+}
+
+.search-result-table-wrap {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border-muted);
+    border-radius: 4px;
+}
+
+.search-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    table-layout: fixed;
+}
+
+.search-result-table th,
+.search-result-table td {
+    padding: 3px 5px;
+    border-bottom: 1px solid var(--border-muted);
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-result-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.search-result-table td:nth-child(1) { width: 32%; }
+.search-result-table td:nth-child(2) { width: 22%; }
+.search-result-table td:nth-child(3) { width: 16%; }
+.search-result-table td:nth-child(4) { width: 30%; }
+
+.search-status-full    { color: var(--success-primary); }
+.search-status-partial { color: #f0ad4e; }
+.search-status-none    { color: var(--danger-primary); }
+
+/* ==================== 未获取统计 - 显示模式切换（v0.9.13） ==================== */
+
+.unacquired-mode-tabs {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 8px;
+    padding: 3px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+}
+
+.unacquired-mode-tab {
+    flex: 1;
+    padding: 5px 4px;
+    font-size: 0.72rem;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.unacquired-mode-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.unacquired-mode-tab.active {
+    background: var(--accent-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ==================== 双击锁定 · 取消高亮按钮（v0.9.13） ==================== */
+
+.unacquired-cancel-wrap {
+    list-style: none;
+    margin-top: -3px;              /* 与上方卡片视觉贴紧 */
+    padding: 0;
+}
+
+.unacquired-cancel-btn {
+    width: 100%;                   /* 与卡片同宽 */
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-family: inherit;
+    background: transparent;
+    border: 1px dashed var(--accent-primary);
+    border-radius: 4px;
+    color: var(--accent-primary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.unacquired-cancel-btn:hover {
+    background: var(--accent-primary);
+    color: #fff;
+    border-style: solid;
+}

@@ -110,6 +110,16 @@
             if (App.unacquired && App.unacquired.bindRegionFilterEvents) {
                 App.unacquired.bindRegionFilterEvents();
             }
+
+            // 未获取统计的显示模式切换（v0.9.13）
+            if (App.unacquired && App.unacquired.bindModeTabEvents) {
+                App.unacquired.bindModeTabEvents();
+            }
+
+            // 未获取统计的检索系统（v0.9.13）
+            if (App.unacquired && App.unacquired.bindSearchEvents) {
+                App.unacquired.bindSearchEvents();
+            }
         },
 
         /**

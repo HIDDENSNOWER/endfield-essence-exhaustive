@@ -175,6 +175,16 @@
             'btnRegionFilterAll',               // 全选按钮
             'btnRegionFilterNone',              // 全不选按钮
 
+            // ---------- 未获取统计 - 显示模式切换 + 检索系统（v0.9.13） ----------
+            'unacquiredModeTabs',               // 显示模式切换 tab 容器
+            'searchRegion',                     // 检索 - 地区下拉框
+            'searchType',                       // 检索 - 类型下拉框
+            'searchItem',                       // 检索 - 目标下拉框
+            'searchCombo',                      // 检索 - 能力值组合下拉框
+            'btnSearch',                        // 检索 - 按钮
+            'btnClearSearch',                   // 检索 - 清除按钮
+            'searchResult',                     // 检索 - 结果容器
+            
             // ---------- 表格尺寸设置 ----------
             'colWidthSlider',                   // 列宽滑块
             'rowHeightSlider',                  // 行高滑块
