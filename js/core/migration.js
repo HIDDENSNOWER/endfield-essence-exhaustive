@@ -22,7 +22,7 @@
     'use strict';
 
     /** 当前应用版本（与 package.json / version.json 保持同步） */
-    const CURRENT_VERSION = '0.9.16';
+    const CURRENT_VERSION = '0.9.17';
 
     /** 版本记录存储键 */
     const VERSION_KEY = 'smarttable_version';
@@ -72,8 +72,12 @@
          * 支持 X.Y.Z 形式；缺失段按 0 处理
          */
         _lt(a, b) {
-            const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
-            const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+            const pa = String(a)
+                .split('.')
+                .map((n) => parseInt(n, 10) || 0);
+            const pb = String(b)
+                .split('.')
+                .map((n) => parseInt(n, 10) || 0);
             for (let i = 0; i < 3; i++) {
                 const va = pa[i] || 0;
                 const vb = pb[i] || 0;
@@ -115,5 +119,4 @@
             // 无操作
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

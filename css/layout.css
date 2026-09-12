@@ -250,27 +250,48 @@ tbody td:first-child:hover {
     box-shadow: var(--shadow-sm);
 }
 
-/* ==================== 空页面 ==================== */
+/* ==================== 左侧统计页面 ==================== */
 
-/* 空白页面容器（切换左侧面板时显示） */
-.empty-page {
+/* 左侧统计页：只是一个滚动容器 */
+.left-stats-page {
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--bg-secondary);
+    padding: 16px;
+    min-height: 0;
+}
+
+/* stats-panel 只是布局包装层，不带任何外观 */
+.left-stats-page .stats-panel {
+    width: 100%;
+    max-width: none;      /* ← 去掉上限 */
+    margin: 0;            /* ← 去掉居中 */
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    display: block;
+}
+
+/* ==================== 左侧空页面 ==================== */
+
+.left-empty-page {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--bg-secondary);
+    min-height: 0;
 }
 
-/* 空白页面内容 */
-.empty-page-content {
+.left-empty-page .empty-page-content {
     text-align: center;
     color: var(--text-tertiary);
     font-size: 1.2rem;
     opacity: 0.6;
 }
 
-/* 空白页面文字 */
-.empty-page-content p {
+.left-empty-page .empty-page-content p {
     margin-top: 16px;
     font-size: 1rem;
 }

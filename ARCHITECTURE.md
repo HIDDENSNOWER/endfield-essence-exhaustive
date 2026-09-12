@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.16**
+> 适用版本：**v0.9.17**
 
 ---
 
@@ -21,19 +21,20 @@
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features.css` |
 | 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features.css` / `dom.js` |
+| 统计信息面板（总览 / 进度 / 维度明细 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features.css` / `layout.css` |
 | 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features.css` |
 | 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features.css` |
-| **悬浮窗定位工具** | **`core/utils.js`（`buildAroundCursor` / `rectsOverlap`）** | **`note.js` / `cell-acquire-tooltip.js`** |
+| 悬浮窗定位工具 | `core/utils.js`（`buildAroundCursor` / `rectsOverlap`） | `note.js` / `cell-acquire-tooltip.js` |
 | 高亮控制 / 索引缓存 | `features/table/cell-highlighter.js` | `features/table/table-renderer.js` / `features/keyboard.js` |
 | 键盘快捷键 | `features/keyboard.js` | `services/modal.js` |
 | 单元格备注数据 + 图片 | `features/note/note.js` | `services/image-store.js` |
 | 数值录入 / 对比 / 撤回重做 | `features/cell/cell-value.js` / `cell-record.js` / `history.js` | — |
-| 行筛选 / 统计面板 | `features/table/row-filter.js` / `stats.js` | — |
+| 行筛选 | `features/table/row-filter.js` | — |
 | 存储管理 / 清除缓存 | `features/preferences/storage-manager.js` / `features/data/cache-clear.js` | — |
 | 错误边界 / 数据迁移 / 分层视图 | `core/error-handler.js` / `migration.js` / `namespace.js` | `main.js` |
 | 新常量 / 新 DOM / 新事件 | `core/constants.js` / `core/dom.js` / `js/events.js` | — |
-| **CI / 提交前 hook** | **`.github/workflows/ci.yml` / `.husky/pre-commit` / `package.json`（`lint-staged`）** | — |
-| **版本号一键更新** | **`bump-version.js`** | **7 文件（含 `package-lock.json`）** |
+| CI / 提交前 hook | `.github/workflows/ci.yml` / `.husky/pre-commit` / `package.json`（`lint-staged`） | — |
+| 版本号一键更新 | `bump-version.js` | 7 文件（含 `package-lock.json`） |
 
 ---
 
@@ -92,7 +93,7 @@
 | `App.state` | 业务状态（rows / theme / baseline / history / panel / sort） |
 | `App.uiState` | 临时 UI 状态（pendingApply / confirmCallback / timer / 高亮元素） |
 | `App.dom` | DOM 元素一次性缓存 |
-| `App.utils` | 单元格标准化、颜色转换、列索引、HTML 转义、**悬浮窗候选位** |
+| `App.utils` | 单元格标准化、颜色转换、列索引、HTML 转义、悬浮窗候选位 |
 | `App.dataModel` | 空单元格 / 空行 / 初始行 / 示例数据工厂 |
 | `App.namespace` | 分层视图入口（`App.core.*` / `services.*` / `features.*` / `entry.*`）；`App.core` / `App.services` 冻结 |
 
@@ -167,7 +168,7 @@
 
 ### 数据保护
 
-默认数据集受"只增不减"保护——`isCellOperationAllowed()` 检查新单元格是否低于基准：
+默认数据集受“只增不减”保护——`isCellOperationAllowed()` 检查新单元格是否低于基准：
 
 - 基准有 `v` → 新 `v` 必须相同
 - 基准有 `t` → 新 `t` 不能更小
@@ -189,11 +190,11 @@
 ### 弹窗管理（v0.9.16 修复）
 
 - 引用计数控制滚动锁；`bindModalEvents` 幂等
-- **`openModal` 重复打开同一弹窗时不重复计数**（v0.9.16 修复）：
+- `openModal` 重复打开同一弹窗时不重复计数：
   - 先设置 `display:flex` / A11y 属性（幂等刷新）
-  - 若已在 `modalStack` 中 → **直接返回**，不 `modalOpenCount++`
+  - 若已在 `modalStack` 中 → 直接返回，不 `modalOpenCount++`
   - 修复前的 bug：先移除再压入 → 计数累加 → `body.overflow` 永久锁定
-- 确认弹窗回调存 `window.__dialogConfirmCallback`，**关闭时立即清理**
+- 确认弹窗回调存 `window.__dialogConfirmCallback`，关闭时立即清理
 - `modalStack` + `closeTopModal()` 支持 `Esc` 逐层关闭
 - A11y：`role="dialog"` / `aria-modal` / Tab 焦点陷阱 / 关闭后焦点恢复
 - 测试钩子：`_resetState()`（`@internal`）供测试重置闭包状态
@@ -223,7 +224,7 @@
 - 全局列索引 `colIdx ∈ [0, 69]`
 - 第一部分 `[0, 34]`（对应 `ALL_GROUPS[0..6]`）
 - 第二部分 `[35, 69]`（对应 `ALL_GROUPS[7..13]`）
-- 两部分横向不相邻，但**上下视为连续**
+- 两部分横向不相邻，但上下视为连续
 
 **上下键跨表算法**：
 
@@ -243,7 +244,7 @@
 
 **左右键**：
 
-- 到第一部分 `colIdx = 0` 或 `colIdx = 34` 时**不跨表**，直接 return true
+- 到第一部分 `colIdx = 0` 或 `colIdx = 34` 时不跨表，直接 return true
 - 到第二部分 `colIdx = 35` 或 `colIdx = 69` 时同样不跨表
 
 **列索引 ↔ 系列技能/能力值换算**：
@@ -269,7 +270,7 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 4. `App.tableRenderer.updateHighlightedCell()` → 高亮新单元格 + 加载备注
 5. `_scrollCellIntoView(newRow, newCol)` → `scrollIntoView({ block: 'nearest', inline: 'nearest' })`
 
-**行筛选交互**：`_getVisibleRowIndices()` 从 `App.state.selectedRows` 推导可见行索引数组；上下键在**可见行**之间移动，跨表时用可见行列表的**首尾**。
+**行筛选交互**：`_getVisibleRowIndices()` 从 `App.state.selectedRows` 推导可见行索引数组；上下键在可见行之间移动，跨表时用可见行列表的首尾。
 
 **焦点释放**（`_bindTableBlurHandler`）：
 
@@ -295,8 +296,8 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 
 | 角色 | 悬浮窗 | 触发延迟 | 定位依据 |
 |------|--------|---------|---------|
-| **主窗** | 可获取地点（acquire） | 300ms | 鼠标 8 候选位 |
-| **从窗** | 单元格备注（note） | 350ms | 主窗实际矩形外侧 8 候选位；主窗未显示时回退鼠标候选位 |
+| 主窗 | 可获取地点（acquire） | 300ms | 鼠标 8 候选位 |
+| 从窗 | 单元格备注（note） | 350ms | 主窗实际矩形外侧 8 候选位；主窗未显示时回退鼠标候选位 |
 
 **从窗候选位生成**（围绕主窗矩形 `A = {left, top, right, bottom}`，间距 `gap = 8`）：
 
@@ -313,10 +314,10 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 
 **关键不变量**：
 
-1. 主窗**永不理会**从窗
-2. 从窗候选位**全部紧贴主窗边缘**，几何上不可能重叠
+1. 主窗永不理会从窗
+2. 从窗候选位全部紧贴主窗边缘，几何上不可能重叠
 3. 50ms 延迟差保证主窗先完成定位
-4. 位置读取用 **`style.left/top` + `offsetWidth/Height`**，不用 `getBoundingClientRect()`
+4. 位置读取用 `style.left/top` + `offsetWidth/Height`，不用 `getBoundingClientRect()`
 
 **v0.9.16 工具抽取**：
 
@@ -355,10 +356,46 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 
 **语义**：
 
-- 冻结是**浅冻结**——只锁定顶层属性引用，不锁内部字段
+- 冻结是浅冻结——只锁定顶层属性引用，不锁内部字段
 - `App.core.constants = {}` 会失败（防止误替换模块）
 - `App.core.constants.ROW_NAMES = []` 仍可（正常数据操作不受影响）
-- `App.features` / `App.entry` **不冻结**（模块可能动态挂载）
+- `App.features` / `App.entry` 不冻结（模块可能动态挂载）
+
+### 统计面板（v0.9.17 重写）
+
+**位置**：左侧独立页（`#leftStatsPage`），不再占用右侧面板容器。右侧面板容器原「统计」按钮和面板已移除。
+
+**布局**：`.stats-layout` 三列 grid = 左列 | 分割条 | 右列
+- 左列：数据集卡片 + 统计信息卡片（并排）→ 进度卡片 → 维度明细卡片 → 缺口分析卡片
+- 右列：筛选卡片 → 结果列表卡片
+
+**关键状态**：
+- `_datasetKey`：统计面板当前查看的数据集（null = 跟随主界面）
+- `_dimension`：`sub` / `row` / `group`
+- `_filters`：三维度 `Set`，交集逻辑（未选维度 = 该维度不参与筛选；全空 = 不显示结果）
+
+**6 项总览口径**（5 种单元格状态 S0~S4）：
+- S0 空：`v='' & t=0` → 未填充
+- S1 纯数值：`v≠'' & t=0` → 已填充（完整）
+- S2 实装未获取：`t>0 & a=0` → 未填充
+- S3 实装部分：`t>0 & 0<a<t` → 已填充（不完整，加权 a/t）
+- S4 实装满：`t>0 & a=t` → 已填充（完整）
+
+**缺口贡献**：
+```js
+if (t > 0) return Math.max(0, t - a);
+if (!v) return 1;
+return 0;
+```
+
+**缺口分析**：单 `<table class="nx-unified">` 组织 31 列（左 15 + 间隙 1 + 右 15），13 行。单元格颜色按 `hsl(120 → 0)` 连续映射，每表独立 max 归一化。底部 `.nx-colorbar-gradient` 显示标尺。
+
+**右列宽度**：
+- 存储：`smarttable_stats_right_width`（280~720 px）
+- 锁定：`smarttable_stats_right_locked`
+- 拖动：mousedown + mousemove（rAF 节流）+ mouseup 保存
+
+**详情悬浮窗**：fixed 定位遮罩 + 居中面板，点空白关闭。
 
 ### 未获取统计
 
@@ -386,7 +423,7 @@ return 1;                                                     // 完全空白：
 **双击锁定高亮**：
 
 - 状态：`_lockedLi`（被锁定的 `<li>`）+ `_lockedBtnLi`（取消按钮 `<li>`）
-- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮 → 插入"取消高亮"按钮
+- `_lockItem(li)`：解除旧锁定 → 记录新锁定 → 高亮 → 插入“取消高亮”按钮
 - `_unlockItem(clearHighlight)`：移除按钮 `<li>` → 清空状态 → 可选清空高亮
 
 **地区筛选**：状态存 `smarttable_unacquired_region_filter`（`null` = 全部）。
@@ -425,7 +462,7 @@ return 1;                                                     // 完全空白：
 - **加载遮罩**：`#appLoading` → 表格渲染后 0.35s 淡出
 - **脚本并行**：`<body>` 底部全部脚本加 `defer`
 
-### 版本号管理（v0.9.16）
+### 版本号管理（v0.9.17）
 
 `bump-version.js` 一次命令更新 **7 个文件**：
 
@@ -435,11 +472,11 @@ return 1;                                                     // 完全空白：
 4. `index.html`（所有 `ver.X.Y.Z`）
 5. `README.md`（`**当前版本**：vX.Y.Z`）
 6. `ARCHITECTURE.md`（`适用版本：**vX.Y.Z**`）
-7. **`package-lock.json`**（通过 `npm install --package-lock-only` 自动同步）
+7. `package-lock.json`（通过 `npm install --package-lock-only` 自动同步）
 
 **设计要点**：
 
-- `package-lock.json` 是 npm 生成物，**不手动编辑**
+- `package-lock.json` 是 npm 生成物，不手动编辑
 - 通过 `execSync('npm install --package-lock-only', { shell: true })` 让 npm 维护
 - 失败降级为警告，不阻塞其他 6 文件更新
 - 支持 `node bump-version.js X.Y.Z` 或交互式输入
@@ -470,6 +507,8 @@ return 1;                                                     // 完全空白：
 | `smarttable_regions` | 地区配置 `[{name, rows, groups}]` |
 | `smarttable_unacquired_region_filter` | 未获取统计的地区筛选（数组或 `null`） |
 | `smarttable_cell_nav_keys` | 单元格导航按键 `{up, down, left, right}` |
+| `smarttable_stats_right_width` | 统计面板右列宽度（280~720 px） |
+| `smarttable_stats_right_locked` | 统计面板右列锁定（`'0'` / `'1'`） |
 | `<数据集名>` | 该数据集的行数据 |
 
 ### sessionStorage / IndexedDB
@@ -484,7 +523,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 测试体系（v0.9.16）
+## 测试体系（v0.9.17）
 
 ### 测试文件分布
 
@@ -500,8 +539,6 @@ return 1;                                                     // 完全空白：
 | `test/note.test.js`（jsdom） | 8 | `App.note.positionNoteTooltip` 主从定位 |
 | `test/unacquired.test.js`（jsdom） | 12 | `App.unacquired` 模式切换 / 双击锁定 |
 | **合计** | **164** | — |
-
-> 注：早前 v0.9.15 的 103 + v0.9.16 新增 41 = 144（本轮对话实测），加上后续文件统计口径可能略有差异。
 
 ### jsdom 使用规范
 
@@ -519,12 +556,12 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 工程化与 CI（v0.9.16）
+## 工程化与 CI（v0.9.17）
 
 ### GitHub Actions（`.github/workflows/ci.yml`）
 
 - **触发**：push / PR 到 `main` / `master`
-- **矩阵**：Node 22、Node 24（**不含 18/20**，因 jsdom 30 引擎要求）
+- **矩阵**：Node 22、Node 24（不含 18/20，因 jsdom 30 引擎要求）
 - **步骤**：`checkout@v5` → `setup-node@v5`（缓存 npm）→ `npm ci` → `lint` → `test` → `test:coverage` → `npm audit --audit-level=high`
 - **并发控制**：`concurrency` 取消同分支旧运行
 - **超时**：默认（约 30 秒 / job，缓存命中时）
@@ -548,7 +585,7 @@ npx lint-staged
 
 ### 版本号一键同步（`bump-version.js`）
 
-见"版本号管理"章节。
+见“版本号管理”章节。
 
 ---
 
@@ -595,7 +632,7 @@ npx lint-staged
 
 1. 创建 `test/xxx.test.js`
 2. **必须** `new JSDOM(html, { url: 'http://localhost/' })`
-3. 遵循"模块级单例 bootstrap + beforeEach 仅重置状态"模式
+3. 遵循“模块级单例 bootstrap + beforeEach 仅重置状态”模式
 4. 加载依赖顺序：`constants` → `utils` → 被测模块
 5. 若模块有闭包状态，为其提供 `_resetState()` 钩子（`@internal`）
 
@@ -670,7 +707,7 @@ npm run lint
 | **`key-capture-input` 需在 `init()` 前渲染** | `bindNavKeySettings` 依赖 DOM 存在 |
 | **自定义按键不能是修饰键** | `Control` / `Alt` / `Shift` / `Meta` / `CapsLock` 被过滤 |
 | **`Object.freeze` 是浅冻结** | 只锁顶层引用，不锁内部字段（`App.core.constants.X` 仍可写） |
-| **控制台非严格模式无法验证 freeze** | 控制台赋值冻结属性**不抛错**（静默失败）；用 `Object.isFrozen()` 或"值是否改变"判断 |
+| **控制台非严格模式无法验证 freeze** | 控制台赋值冻结属性不抛错（静默失败）；用 `Object.isFrozen()` 或“值是否改变”判断 |
 | **`App.features` / `App.entry` 不冻结** | 模块可能动态挂载 |
 | **`modal.js:openModal` 引用计数** | 重复打开必须 `if (already) return;`，不得先移除再压入（会漏减） |
 | **`modal.js` 测试需调 `_resetState()`** | 闭包变量跨测试不重置 |
@@ -679,6 +716,10 @@ npm run lint
 | **`package-lock.json` 由 npm 维护** | 不手动编辑；用 `npm install --package-lock-only` 同步 |
 | **husky `prepare` 脚本** | 在 CI 中可能触发；必要时加 `env: HUSKY: 0` |
 | **`bump-version.js` 覆盖 7 文件** | 含 `package-lock.json`（通过 npm 命令自动同步） |
+| **`stats.js` 大量使用 `!= null`** | ESLint `eqeqeq` 严格模式下会报错；统一改用 `!!cell.v` 或 `cell.v !== null && cell.v !== undefined` |
+| **`stats.js` 使用 `cancelAnimationFrame`** | 文件顶部加 `/* global cancelAnimationFrame */`，否则 `no-undef` |
+| **缺口分析 `<table>` 的 `table-layout: fixed` 需明确宽度** | 只用 `width: max-content` 会算出 1,000,000px 溢出；必须内联 `style="width:Npx"` 或用 `<colgroup>` |
+| **`_filters` / `_listLimit` 是 `const`** | 全选按钮不能整体重新赋值，要用 `clear()` + `forEach(add)` |
 
 ---
 
@@ -689,7 +730,7 @@ npm run lint
 | XSS 防护 | `innerHTML` 前统一 `escapeHtml` |
 | CSP | `script-src 'self'` |
 | 存储键隔离 | `isReservedKey` 拒绝 `smarttable_*` |
-| 数据防覆盖 | 默认数据集"只增不减" |
+| 数据防覆盖 | 默认数据集“只增不减” |
 | 回调防残留 | 关闭确认弹窗立即清空 |
 | 存储失败提示 | `storage.set / setJSON` 返回布尔 |
 | 历史隔离 | 切换 / 清空 / 导入 / 合并后清空 |
@@ -704,9 +745,9 @@ npm run lint
 | 悬浮窗布局不重叠 | 主从定位 + 8 外侧候选 + 权威位置读取 |
 | 键盘导航隔离 | 弹窗打开 / 焦点在输入框时自动跳过 |
 | 自定义按键回退 | localStorage 读取失败时用默认方向键 |
-| **命名空间冻结** | `App.core` / `App.services` 运行时只读 |
-| **CI 依赖扫描** | `npm audit --audit-level=high` 为硬门禁 |
-| **提交前 lint** | husky + lint-staged 自动 `eslint --fix` |
+| 命名空间冻结 | `App.core` / `App.services` 运行时只读 |
+| CI 依赖扫描 | `npm audit --audit-level=high` 为硬门禁 |
+| 提交前 lint | husky + lint-staged 自动 `eslint --fix` |
 
 ---
 
@@ -720,7 +761,7 @@ npm run lint
 | 图片 → IndexedDB | localStorage 5~10 MB 限制对 base64 极易耗尽 |
 | 弹窗回调存 window | 简化事件绑定；靠 `closeConfirmDialog` 集中清理 |
 | 历史栈 20 步 | 平衡内存与可用性 |
-| 未获取统计按地区独立 | 直观；与"前 36 名"语义一致 |
+| 未获取统计按地区独立 | 直观；与“前 36 名”语义一致 |
 | 命名空间分层视图 | 不改挂载点即得分层补全 |
 | 高亮索引缓存 | Map 查表替代 320 次 querySelector |
 | 术语用游戏内文案 | 降低玩家理解成本；代码字段名不变 |
@@ -733,18 +774,22 @@ npm run lint
 | 禁止 MutationObserver 互追 | 单向（主→从）定位避免死循环/追逐 |
 | 触发延迟差 50ms | 保证主窗先定位 |
 | 键盘导航上下跨表、左右不跨 | 两部分视觉上横向不相邻，但纵向可视为连续 |
-| 跨表保持相对列位（±35） | 玩家在"残暴×主能力"处按 ↓ 期望落在"效益×主能力" |
-| 点击表格释放输入框焦点 | 避免方向键被"列宽"等输入框捕获 |
+| 跨表保持相对列位（±35） | 玩家在“残暴×主能力”处按 ↓ 期望落在“效益×主能力” |
+| 点击表格释放输入框焦点 | 避免方向键被“列宽”等输入框捕获 |
 | 自定义按键存 localStorage | 与项目其他设置保持一致，无需额外机制 |
 | 导航键捕获输入框 readonly | 防止移动端软键盘弹出干扰 |
-| **`Object.freeze` 冻结 core / services** | 防止运行时误替换模块引用；浅冻结不阻数据操作 |
-| **`namespace.init` 幂等** | 避免重复 `Object.assign` 向冻结对象写入 |
-| **提取悬浮窗定位工具到 utils** | 消除 note / acquire 双份维护；未来候选位策略仅改一处 |
-| **索引缓存复用** | `updateHighlightedCell` / `_scrollCellIntoView` 均优先 `_getCell` |
-| **husky + lint-staged** | 提交前自动 lint，只处理暂存文件（< 1 秒） |
-| **CI 双 Node 矩阵** | 覆盖 22 LTS 与 24 最新；jsdom 30 引擎要求不含 18/20 |
-| **Actions v5** | 消除 Node 20 弃用警告；与 GitHub runner Node 24 匹配 |
-| **`bump-version.js` 调 npm 命令同步 lock** | 遵循"lock 由 npm 维护"原则；避免手动改被覆盖 |
+| `Object.freeze` 冻结 core / services | 防止运行时误替换模块引用；浅冻结不阻数据操作 |
+| `namespace.init` 幂等 | 避免重复 `Object.assign` 向冻结对象写入 |
+| 提取悬浮窗定位工具到 utils | 消除 note / acquire 双份维护；未来候选位策略仅改一处 |
+| 索引缓存复用 | `updateHighlightedCell` / `_scrollCellIntoView` 均优先 `_getCell` |
+| husky + lint-staged | 提交前自动 lint，只处理暂存文件（< 1 秒） |
+| CI 双 Node 矩阵 | 覆盖 22 LTS 与 24 最新；jsdom 30 引擎要求不含 18/20 |
+| Actions v5 | 消除 Node 20 弃用警告；与 GitHub runner Node 24 匹配 |
+| `bump-version.js` 调 npm 命令同步 lock | 遵循“lock 由 npm 维护”原则；避免手动改被覆盖 |
+| 统计面板移至左侧独立页 | 右侧面板保持数据录入 / 筛选 / 列表等操作；统计是阅读态 |
+| 缺口分析用连续色阶而非分档 | 分档会掩盖同档内差异；连续色阶能反映任意两格强度差 |
+| 三交叉表单表对齐 | 31 列单表方案优于 grid 三块拼装，无高度耦合问题 |
+| 属性列头缩写、能力值行头全名 | 列头空间紧；能力值本身短，无需缩写 |
 
 ---
 
@@ -753,8 +798,8 @@ npm run lint
 | 项 | 值 |
 |----|-----|
 | ESLint | **0 error / 0 warning** |
-| 单元测试 | **144 pass / 0 fail** |
-| 覆盖率 | line 68% / branch 82% / funcs 61% |
+| 单元测试 | **164 pass / 0 fail** |
+| 覆盖率 | line 57% / branch 83% / funcs 49% |
 | CI | GitHub Actions：语法 + lint + test + coverage + audit |
 | Node 版本 | CI 矩阵：22、24 |
 | 依赖漏洞 | `npm audit --audit-level=high` 0 high |
@@ -770,9 +815,9 @@ npm run lint
 | `test/dom.test.js`（jsdom） | 13 |
 | `test/keyboard.test.js`（jsdom） | 21 |
 | `test/modal.test.js`（jsdom） | 20 |
-| **合计（本轮实测）** | **144** |
-
-> 后续新增 `note.test.js` / `unacquired.test.js`（T-09）若已落盘，用例数将达 160+。
+| `test/note.test.js`（jsdom） | 8 |
+| `test/unacquired.test.js`（jsdom） | 12 |
+| **合计（本轮实测）** | **164** |
 
 ---
 
@@ -795,9 +840,10 @@ npm run lint
 | v0.9.13 | 未获取统计增强 | 刷取组合检索系统 + 三模式切换 + 双击锁定高亮 |
 | v0.9.14 | 悬浮窗布局修复 | 主从定位 + 从窗依附主窗外侧 + 权威位置读取 |
 | v0.9.15 | 单元格键盘导航 | 方向键移动 + 跨表连续 + 自定义按键 + 焦点释放 |
-| **v0.9.16** | **工程化收尾** | **CI 完整化（双 Node + audit） + 测试补全（+41 用例） + 索引缓存复用 + 命名空间冻结 + husky/lint-staged + lock 同步** |
+| v0.9.16 | 工程化收尾 | CI 完整化（双 Node + audit） + 测试补全（+41 用例） + 索引缓存复用 + 命名空间冻结 + husky/lint-staged + lock 同步 |
+| **v0.9.17** | **统计面板重写** | **左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）
 - `package.json` / `js/core/migration.js` / `version.json` / `README.md` / `ARCHITECTURE.md` / `package-lock.json`
-- **`bump-version.js` 覆盖全部 7 文件**（第 7 个通过 npm 命令同步）
+- `bump-version.js` 覆盖全部 7 文件（第 7 个通过 npm 命令同步）

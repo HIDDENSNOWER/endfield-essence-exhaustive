@@ -181,23 +181,54 @@
         loadData() {
             const currentKey = App.storage.loadCurrentDatasetKey();
             const saved = App.storage.getJSON(currentKey, null);
-            if (saved && Array.isArray(saved) && saved.length > 0 && saved[0].name && Array.isArray(saved[0].data)) {
-                // 逐行标准化数据（逐行校验 data 为数组，坏行跳过，防止中途抛异常）
-                const rows = [];
-                saved.forEach(row => {
-                    if (row && typeof row.name === 'string' && Array.isArray(row.data)) {
-                        rows.push({
-                            name: row.name,
-                            data: row.data.map(App.utils.normalizeCell)
-                        });
-                    }
-                });
-                if (rows.length === 0) return false;
-                App.state.rows = rows;
-                App.storage.addDatasetKey(currentKey);
-                return true;
+            if (!saved || !Array.isArray(saved) || saved.length === 0 ||
+                !saved[0].name || !Array.isArray(saved[0].data)) {
+                return false;
             }
-            return false;
+        
+            // 1. 逐行标准化（坏行跳过）
+            const byName = new Map();
+            saved.forEach(row => {
+                if (row && typeof row.name === 'string' && Array.isArray(row.data)) {
+                    byName.set(row.name, {
+                        name: row.name,
+                        data: row.data.map(App.utils.normalizeCell)
+                    });
+                }
+            });
+        
+            // 2. 按 ROW_NAMES 顺序重建：缺的行补空行（并报警）
+            const ROW_NAMES = App.constants.ROW_NAMES;
+            const missing = [];
+            const rows = ROW_NAMES.map(name => {
+                if (byName.has(name)) return byName.get(name);
+                missing.push(name);
+                return {
+                    name,
+                    data: App.dataModel.createEmptyRowData()
+                };
+            });
+        
+            // 3. 存储里有 ROW_NAMES 之外的行（异常数据）：忽略，但记录
+            const extra = [...byName.keys()].filter(n => !ROW_NAMES.includes(n));
+        
+            // 4. 报警：缺失 / 多余行
+            if (missing.length > 0) {
+                console.warn(`[loadData] 数据集「${currentKey}」缺少 ${missing.length} 行，已自动补齐为空行：`, missing);
+                if (App.modal && typeof App.modal.showTemporaryHint === 'function') {
+                    App.modal.showTemporaryHint(
+                        `数据集缺少 ${missing.length} 行（${missing.join('、')}），已补齐为空行`,
+                        'error'
+                    );
+                }
+            }
+            if (extra.length > 0) {
+                console.warn(`[loadData] 数据集「${currentKey}」含有 ${extra.length} 个未定义行名，已忽略：`, extra);
+            }
+        
+            App.state.rows = rows;
+            App.storage.addDatasetKey(currentKey);
+            return true;
         },
 
         /**

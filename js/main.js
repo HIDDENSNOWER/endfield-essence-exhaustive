@@ -20,47 +20,58 @@
 
             App.state.activePanel = panelName;
             const dom = App.dom;
-            dom.sidebarBtns.forEach(btn => {
+            dom.sidebarBtns.forEach((btn) => {
                 btn.classList.toggle('active', btn.dataset.panel === panelName);
             });
             dom.inputPanel.classList.toggle('active-panel', panelName === 'input');
-            dom.statsPanel.classList.toggle('active-panel', panelName === 'stats');
             dom.recordPanel.classList.toggle('active-panel', panelName === 'record');
-            dom.unacquiredPanel.classList.toggle('active-panel', panelName === 'unacquired'); // ← 新增
-            dom.regionPanel.classList.toggle('active-panel', panelName === 'region');         // ← 新增
-            if (panelName === 'stats') App.stats.renderStats();
+            dom.unacquiredPanel.classList.toggle('active-panel', panelName === 'unacquired');
+            dom.regionPanel.classList.toggle('active-panel', panelName === 'region');
             if (panelName === 'unacquired') {
                 App.unacquired.initSearch();
-                App.unacquired.renderRegionFilter();  // ← 新增
+                App.unacquired.renderRegionFilter();
                 App.unacquired.renderList();
             }
-            if (panelName === 'region') App.regionManager.renderList();                        // ← 新增
+            if (panelName === 'region') App.regionManager.renderList();
             App.tableRenderer.updateHighlightedCell();
         },
 
         switchLeftPanel(panelName) {
             App.state.leftPanel = panelName;
             const dom = App.dom;
-            dom.leftSidebarBtns.forEach(btn => {
+            dom.leftSidebarBtns.forEach((btn) => {
                 btn.classList.toggle('active', btn.dataset.leftPanel === panelName);
             });
+
+            // 视图切换时清除高亮，避免残留
+            if (App.cellHighlighter) App.cellHighlighter.clear();
 
             const tableArea = dom.tableArea;
             const rightSidebar = document.getElementById('sidebar');
             const panelContainer = dom.panelContainer;
-            const emptyPage = dom.emptyPage;
+            const leftStatsPage = dom.leftStatsPage;
+            const leftEmptyPage = dom.leftEmptyPage;
 
             if (panelName === 'table') {
                 tableArea.style.display = '';
                 rightSidebar.style.display = '';
                 panelContainer.style.display = '';
-                emptyPage.style.display = 'none';
+                leftStatsPage.style.display = 'none';
+                leftEmptyPage.style.display = 'none';
                 this.switchPanel(App.state.activePanel);
+            } else if (panelName === 'stats') {
+                tableArea.style.display = 'none';
+                rightSidebar.style.display = 'none';
+                panelContainer.style.display = 'none';
+                leftStatsPage.style.display = 'flex';
+                leftEmptyPage.style.display = 'none';
+                App.stats.renderStats();
             } else if (panelName === 'empty') {
                 tableArea.style.display = 'none';
                 rightSidebar.style.display = 'none';
                 panelContainer.style.display = 'none';
-                emptyPage.style.display = 'flex';
+                leftStatsPage.style.display = 'none';
+                leftEmptyPage.style.display = 'flex';
             }
         }
     };
@@ -183,7 +194,9 @@
         safeCall(() => App.layout.switchPanel('input'), '初始面板切换');
 
         // 17. 更新提示
-        safeCall(() => { if (App.dom.inputHint) App.dom.inputHint.textContent = '准备就绪'; }, '提示更新');
+        safeCall(() => {
+            if (App.dom.inputHint) App.dom.inputHint.textContent = '准备就绪';
+        }, '提示更新');
 
         // 17.5 构建命名空间分层视图（v0.9.5 新增）
         safeCall(() => App.namespace.init(), '命名空间分层');
@@ -213,8 +226,8 @@
         // 版本检测（放在 init 函数末尾，所有初始化完成后）
         safeCall(() => {
             fetch('version.json?t=' + Date.now())
-                .then(res => res.json())
-                .then(data => {
+                .then((res) => res.json())
+                .then((data) => {
                     const remoteVersion = data.version;
                     const localVersion = localStorage.getItem('eee_app_version');
                     if (localVersion !== remoteVersion) {
@@ -232,11 +245,12 @@
                         }
                     }
                 })
-                .catch(() => { /* 网络错误忽略 */ });
+                .catch(() => {
+                    /* 网络错误忽略 */
+                });
         }, '版本检测');
-            }
+    }
 
     // 启动应用
     init();
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

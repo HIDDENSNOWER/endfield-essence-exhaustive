@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.16</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.17</title>
 
     <!-- 内容安全策略（CSP） -->
     <meta http-equiv="Content-Security-Policy"
@@ -113,10 +113,18 @@
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
             </button>
-            <button class="sidebar-btn" data-left-panel="empty" title="空白页">
+            <button class="sidebar-btn" data-left-panel="stats" title="统计信息">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+            </button>
+            <button class="sidebar-btn" data-left-panel="empty" title="空页面">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7l9-4 9 4-9 4-9-4z" />
+                    <path d="M3 12l9 4 9-4" />
+                    <path d="M3 17l9 4 9-4" />
                 </svg>
             </button>
         </nav>
@@ -196,14 +204,6 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-            </button>
-
-            <button class="sidebar-btn" data-panel="stats" title="统计信息">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
             </button>
 
@@ -310,11 +310,6 @@
                 <input type="file" id="importFile" accept=".zip,.json,application/zip,application/json" style="display:none;">
             </aside>
 
-            <aside class="stats-panel" id="statsPanel">
-                <div class="panel-title">📊 统计信息</div>
-                <div id="statsContent" class="stats-content"></div>
-            </aside>
-
             <aside class="record-panel" id="recordPanel">
                 <div class="panel-title">📥 录入面板</div>
                 <div class="form-group">
@@ -404,8 +399,14 @@
             </aside>
         </div>
 
-        <!-- 空页面容器 -->
-        <div class="empty-page" id="emptyPage" style="display:none;">
+        <div class="left-stats-page" id="leftStatsPage" style="display:none;">
+            <aside class="stats-panel">
+                <div class="panel-title">📊 统计信息</div>
+                <div id="statsContent" class="stats-content"></div>
+            </aside>
+        </div>
+
+        <div class="left-empty-page" id="leftEmptyPage" style="display:none;">
             <div class="empty-page-content">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -418,8 +419,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.16(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.16("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.17(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.17("裂隙填充"更新)
         </button>
     </footer>
 
@@ -965,7 +966,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.16("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.17("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -1058,9 +1059,7 @@
     </div>
 
     <!-- ==================== 脚本加载 ==================== -->
-    <script defer src="js/lib/jszip.min.js"
-    integrity="sha384-6chNr0UqObdbyqlGJEc7razc/xCq3t3mF88dOeIlgJ3FsGoixqh7IgdmaxwSPrVN"
-    crossorigin="anonymous"></script>
+    <script defer src="js/lib/jszip.min.js"></script>
 
     <!-- 核心层 -->
     <script defer src="js/core/error-handler.js"></script>
