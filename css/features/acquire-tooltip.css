@@ -1,0 +1,139 @@
+/* ==================== 可获取地点提示悬浮窗 ==================== */
+
+.acquire-tooltip {
+    position: fixed;
+    z-index: 99;
+    min-width: 320px;
+    max-width: 440px;
+    max-height: 480px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: text;
+}
+
+.acquire-tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-muted);
+    flex-shrink: 0;
+}
+
+.acquire-tooltip-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.acquire-tooltip-close {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.acquire-tooltip-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.acquire-tooltip-body {
+    padding: 8px 10px;
+    overflow-y: auto;
+    font-size: 0.76rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.acquire-empty {
+    color: var(--text-tertiary);
+    font-style: italic;
+    text-align: center;
+    padding: 10px;
+}
+
+.acquire-fallback-hint {
+    padding: 5px 8px;
+    margin-bottom: 6px;
+    background: var(--danger-bg, rgba(209, 36, 47, 0.1));
+    border: 1px solid var(--danger-primary);
+    border-radius: 4px;
+    color: var(--danger-primary);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.acquire-header-info {
+    padding: 4px 6px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    text-align: center;
+    color: var(--accent-primary);
+    word-break: break-all;
+}
+
+.acquire-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.acquire-region-block {
+    padding: 6px 8px;
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+}
+
+.acquire-region-name {
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.acquire-path {
+    margin-top: 5px;
+}
+
+.acquire-path-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 3px;
+}
+
+.acquire-combo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.acquire-combo-tag {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 0.68rem;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-muted);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: monospace;
+    white-space: nowrap;
+}

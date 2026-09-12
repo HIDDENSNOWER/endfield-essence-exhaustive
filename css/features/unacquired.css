@@ -1,0 +1,585 @@
+/* ==================== 未获取基质统计 ==================== */
+
+.unacquired-content {
+    font-size: 0.78rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.unacquired-summary {
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    border: 1px solid var(--border-muted);
+    margin-bottom: 8px;
+}
+.unacquired-summary b { color: var(--accent-primary); font-weight: 700; }
+
+.unacquired-region-card {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-primary);
+}
+
+.unacquired-region-title {
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.unacquired-region-count {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 6px;
+    background: var(--accent-primary);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.unacquired-combo-list {
+    list-style: none;
+    padding: 4px 0;
+    margin: 0;
+}
+
+.unacquired-combo-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 10px;
+    font-size: 0.76rem;
+    gap: 8px;
+}
+
+.unacquired-combo-list li:hover {
+    background: var(--bg-hover);
+}
+
+.unacquired-combo-name {
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unacquired-combo-count {
+    color: var(--danger-primary);
+    font-weight: 600;
+    font-family: monospace;
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+/* ==================== 未获取基质统计（前 36 名） ==================== */
+
+.unacquired-top-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.unacquired-top-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 5px 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 4px;
+    font-size: 0.74rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.unacquired-top-item:hover {
+    background: var(--bg-hover);
+}
+
+.unacquired-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.unacquired-top-item:nth-child(1) .unacquired-rank { background: var(--rank-gold); color: #fff; }
+.unacquired-top-item:nth-child(2) .unacquired-rank { background: var(--rank-silver); color: #fff; }
+.unacquired-top-item:nth-child(3) .unacquired-rank { background: var(--rank-bronze); color: #fff; }
+
+.unacquired-top-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.unacquired-top-desc {
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+.unacquired-top-region {
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unacquired-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+}
+
+.unacquired-progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid var(--border-muted);
+    min-width: 0;
+}
+
+.unacquired-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.unacquired-progress-fill.progress-low {
+    background: var(--danger-primary);
+}
+.unacquired-progress-fill.progress-mid {
+    background: var(--progress-mid-color);
+}
+.unacquired-progress-fill.progress-high {
+    background: var(--success-primary);
+}
+
+.unacquired-progress-text {
+    font-size: 0.65rem;
+    font-family: monospace;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    min-width: 26px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.unacquired-top-count {
+    color: var(--danger-primary);
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ==================== 未获取统计的地区筛选 ==================== */
+
+.region-filter-details {
+    margin-bottom: 8px;
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.region-filter-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+.region-filter-summary::-webkit-details-marker { display: none; }
+.region-filter-summary::after {
+    content: '▾';
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-left: 6px;
+    transition: transform 0.15s;
+}
+.region-filter-details[open] .region-filter-summary::after {
+    transform: rotate(180deg);
+}
+.region-filter-summary:hover {
+    background: var(--bg-hover);
+}
+
+.region-filter-count {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.region-filter-body {
+    padding: 6px 10px 8px;
+    border-top: 1px solid var(--border-muted);
+    background: var(--bg-primary);
+}
+
+.region-filter-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.region-filter-actions .btn {
+    flex: 1;
+    font-size: 0.72rem;
+    padding: 3px 6px;
+}
+
+.region-filter-checkboxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.region-filter-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.74rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.region-filter-item:hover {
+    background: var(--bg-hover);
+}
+.region-filter-item input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.region-filter-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==================== 未获取 / 已获取单元格高亮（悬停统计条目时） ==================== */
+
+.unacquired-cell-highlight {
+    outline: 2px solid var(--danger-primary) !important;
+    outline-offset: -2px;
+    position: relative;
+    z-index: 6;
+    animation: unacquired-cell-blink 1s ease-in-out infinite;
+}
+
+@keyframes unacquired-cell-blink {
+    0%, 100% {
+        outline-color: var(--danger-primary);
+        box-shadow: inset 0 0 0 1px rgba(209, 36, 47, 0.3);
+    }
+    50% {
+        outline-color: transparent;
+        box-shadow: inset 0 0 0 1px transparent;
+    }
+}
+
+.acquired-cell-highlight {
+    outline: 2px solid var(--success-primary) !important;
+    outline-offset: -2px;
+    position: relative;
+    z-index: 6;
+    animation: acquired-cell-blink 1s ease-in-out infinite;
+}
+
+@keyframes acquired-cell-blink {
+    0%, 100% {
+        outline-color: var(--success-primary);
+        box-shadow: inset 0 0 0 1px rgba(26, 127, 55, 0.3);
+    }
+    50% {
+        outline-color: transparent;
+        box-shadow: inset 0 0 0 1px transparent;
+    }
+}
+
+/* ==================== 悬停未获取条目时的变暗蒙版 ==================== */
+
+table.unacquired-dimming tbody td:not(:first-child):not(.unacquired-cell-highlight):not(.acquired-cell-highlight) {
+    position: relative;
+}
+
+table.unacquired-dimming tbody td:not(:first-child):not(.unacquired-cell-highlight):not(.acquired-cell-highlight)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--dimming-overlay);
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.15s;
+}
+
+table.unacquired-dimming tbody td:first-child:not(.unacquired-cell-highlight):not(.acquired-cell-highlight) {
+    background-image: linear-gradient(var(--dimming-overlay), var(--dimming-overlay));
+    transition: background-image 0.15s;
+}
+
+table.unacquired-dimming thead th {
+    opacity: 0.55;
+    transition: opacity 0.15s;
+}
+
+/* ==================== 未获取统计 - 检索系统 ==================== */
+
+.search-section {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.search-section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+.search-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    min-width: 44px;
+    flex-shrink: 0;
+}
+
+.search-select {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 6px;
+    font-size: 0.74rem;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.search-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.search-actions .btn {
+    flex: 1;
+    font-size: 0.74rem;
+    padding: 4px 8px;
+}
+
+/* ==================== 检索结果 ==================== */
+
+.search-result {
+    background: var(--bg-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 0.75rem;
+}
+
+.search-result-header {
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border-muted);
+    margin-bottom: 6px;
+}
+
+.search-result-title {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.search-result-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    word-break: break-all;
+}
+
+.search-result-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.search-count-num {
+    color: var(--danger-primary);
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.search-result-progress {
+    margin-bottom: 8px;
+}
+
+.search-result-table-wrap {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border-muted);
+    border-radius: 4px;
+}
+
+.search-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    table-layout: fixed;
+}
+
+.search-result-table th,
+.search-result-table td {
+    padding: 3px 5px;
+    border-bottom: 1px solid var(--border-muted);
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-result-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.search-result-table td:nth-child(1) { width: 32%; }
+.search-result-table td:nth-child(2) { width: 22%; }
+.search-result-table td:nth-child(3) { width: 16%; }
+.search-result-table td:nth-child(4) { width: 30%; }
+
+.search-status-full    { color: var(--success-primary); }
+.search-status-partial { color: #f0ad4e; }
+.search-status-none    { color: var(--danger-primary); }
+
+/* ==================== 未获取统计 - 显示模式切换 ==================== */
+
+.unacquired-mode-tabs {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 8px;
+    padding: 3px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+}
+
+.unacquired-mode-tab {
+    flex: 1;
+    padding: 5px 4px;
+    font-size: 0.72rem;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.unacquired-mode-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.unacquired-mode-tab.active {
+    background: var(--accent-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ==================== 双击锁定 · 取消高亮按钮 ==================== */
+
+.unacquired-cancel-wrap {
+    list-style: none;
+    margin-top: -3px;
+    padding: 0;
+}
+
+.unacquired-cancel-btn {
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-family: inherit;
+    background: transparent;
+    border: 1px dashed var(--accent-primary);
+    border-radius: 4px;
+    color: var(--accent-primary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.unacquired-cancel-btn:hover {
+    background: var(--accent-primary);
+    color: #fff;
+    border-style: solid;
+}

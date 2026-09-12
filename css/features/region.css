@@ -1,0 +1,181 @@
+/* ==================== 地区管理 ==================== */
+
+.region-toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.region-toolbar .btn {
+    flex: 1;
+    font-size: 0.76rem;
+    padding: 5px 8px;
+}
+
+.region-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.region-card {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.region-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.region-card .region-card-actions .btn {
+    cursor: pointer;
+}
+
+.region-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-muted);
+    gap: 8px;
+}
+
+.region-card-name {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.region-card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.region-card-actions .btn {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+}
+
+.region-card-body {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.region-attr-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.region-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 42px;
+}
+
+.region-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.7rem;
+    background: var(--bg-hover);
+    border-radius: 3px;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.region-checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 10px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-muted);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.region-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+.region-checkbox-item:hover {
+    background: var(--bg-hover);
+}
+.region-checkbox-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ==================== 地区卡片收集进度条 ==================== */
+
+.region-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border-muted);
+}
+
+.region-progress-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.region-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-muted);
+    min-width: 0;
+}
+
+.region-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.region-progress-fill.progress-low {
+    background: var(--danger-primary);
+}
+.region-progress-fill.progress-mid {
+    background: var(--progress-mid-color, #f0ad4e);
+}
+.region-progress-fill.progress-high {
+    background: var(--success-primary);
+}
+
+.region-progress-text {
+    font-size: 0.68rem;
+    font-family: monospace;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 90px;
+    text-align: right;
+}

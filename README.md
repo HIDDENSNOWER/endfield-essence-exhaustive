@@ -5,7 +5,7 @@
 > 为《明日方舟：终末地》设计的纯前端单页工具，用于记录、管理、统计“基质”数据。
 > **零构建、零依赖、零后端** —— 一个文件夹拷贝走即可用。
 
-**当前版本**：v0.9.18
+**当前版本**：v0.9.19
 
 ---
 
@@ -218,7 +218,13 @@ endfield-essence-exhaustive/
 │   ├── base.css                    基础变量与主题
 │   ├── layout.css                  页面布局（含加载遮罩）
 │   ├── components.css              通用组件
-│   ├── features.css                功能特性（含统计面板 / 悬浮窗样式）
+│   ├── features/                   功能特性
+│   │   ├── note.css                备注 / 悬浮框 / 图片查看
+│   │   ├── loading.css             加载指示器
+│   │   ├── unacquired.css          未获取统计全套
+│   │   ├── region.css              地区管理 + 收集进度条
+│   │   ├── acquire-tooltip.css     可获取地点悬浮窗
+│   │   └── stats.css               统计面板全套
 │   └── settings/                   设置弹窗样式
 ├── js/
 │   ├── lib/jszip.min.js            ZIP 库（唯一外部依赖）
@@ -255,7 +261,7 @@ npm run lint           # ESLint（0 error 门禁）
 npm run lint:fix       # 自动修复
 npm run format         # Prettier 格式化
 
-node bump-version.js 0.9.18   # 版本号更新（覆盖 7 文件，含 lock）
+node bump-version.js x.x.x   # 版本号更新（覆盖 7 文件，含 lock）
 ```
 
 ### 提交前自动化
@@ -387,6 +393,7 @@ node bump-version.js 0.9.18   # 版本号更新（覆盖 7 文件，含 lock）
 - 悬浮窗主从定位（v0.9.14）：从窗围绕主窗实际矩形布局
 - 键盘导航（v0.9.15）：跨表连续 + 自定义按键 + 焦点释放
 - 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强）：左侧独立页 + 三交叉表 + 连续色阶 + 详情悬浮窗 + 基质口径维度明细
+- CSS 模块化（v0.9.19）：`features.css` 拆为 `css/features/` 下 6 个功能文件（note / loading / unacquired / region / acquire-tooltip / stats），按功能归类，无死代码
 
 开发细节见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
@@ -413,13 +420,14 @@ node bump-version.js 0.9.18   # 版本号更新（覆盖 7 文件，含 lock）
 | v0.9.15 | 单元格键盘导航（方向键 / 自定义按键 / 跨表连续） |
 | v0.9.16 | 工程化收尾（CI 完整化 / 测试补全 / 索引缓存 / 命名空间冻结 / husky） |
 | v0.9.17 | 统计面板重写（左侧独立页 / 数据集切换 / 三维度 / 三交叉表缺口分析 / 详情悬浮窗 / 右列可拖动） |
-| **v0.9.18** | **统计维度明细增强（三维度排序切换 / 基质口径 / 已获取绿未获取红双色 / 5 行视窗 + 滚轮 / 展开收起 / 状态持久化）** |
+| v0.9.18 | 统计维度明细增强（三维度排序切换 / 基质口径 / 已获取绿未获取红双色 / 5 行视窗 + 滚轮 / 展开收起 / 状态持久化） |
+| **v0.9.19** | **CSS 模块化拆分（features.css → css/features/ 6 文件）** |
 
 ---
 
 ## 版本与反馈
 
-- **当前版本**：v0.9.18
+- **当前版本**：v0.9.19
 - **反馈邮箱**：binjianxuewu@outlook.com
 - **适用游戏版本**：明日方舟：终末地（数据持续更新中）
 

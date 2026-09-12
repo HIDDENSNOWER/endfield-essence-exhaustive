@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.18**
+> 适用版本：**v0.9.19**
 
 ---
 
@@ -19,11 +19,11 @@
 | 数据集 CRUD / 备注 | `features/data/dataset-manager.js` / `dataset-remark.js` | `dom.js` |
 | 导入 / 导出 / 合并 | `features/data/import-export.js` / `dataset-merge.js` | `lib/jszip.min.js` |
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
-| 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features.css` |
-| 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features.css` / `dom.js` |
-| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features.css` / `layout.css` |
-| 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features.css` |
-| 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features.css` |
+| 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features/region.css` |
+| 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features/unacquired.css` / `dom.js` |
+| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features/stats.css` / `layout.css` |
+| 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features/acquire-tooltip.css` |
+| 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features/note.css` |
 | 悬浮窗定位工具 | `core/utils.js`（`buildAroundCursor` / `rectsOverlap`） | `note.js` / `cell-acquire-tooltip.js` |
 | 高亮控制 / 索引缓存 | `features/table/cell-highlighter.js` | `features/table/table-renderer.js` / `features/keyboard.js` |
 | 键盘快捷键 | `features/keyboard.js` | `services/modal.js` |
@@ -33,9 +33,11 @@
 | 存储管理 / 清除缓存 | `features/preferences/storage-manager.js` / `features/data/cache-clear.js` | — |
 | 错误边界 / 数据迁移 / 分层视图 | `core/error-handler.js` / `migration.js` / `namespace.js` | `main.js` |
 | 新常量 / 新 DOM / 新事件 | `core/constants.js` / `core/dom.js` / `js/events.js` | — |
+| 备注 / 悬浮框 / 图片查看样式 | `css/features/note.css` | — |
+| 加载指示器样式 | `css/features/loading.css` | — |
+| 地区卡片 / 收集进度条样式 | `css/features/region.css` | — |
 | CI / 提交前 hook | `.github/workflows/ci.yml` / `.husky/pre-commit` / `package.json`（`lint-staged`） | — |
 | 版本号一键更新 | `bump-version.js` | 7 文件（含 `package-lock.json`） |
-
 ---
 
 ## 30 秒速览
@@ -60,6 +62,7 @@
 - **依赖规则**：上层可依赖下层，下层不可依赖上层；同层可互调
 - **规模**：52 个自写源文件 / 约 16,000 行
 - **形态**：纯前端 SPA，无框架 / 无构建 / 无后端
+- **CSS**：模块化拆分——`base` / `layout` / `components` + `features/`（6 文件）+ `settings/`
 - **持久化**：localStorage（数据 / 设置 / 地区 / 导航按键 / 统计面板状态）+ IndexedDB（图片）
 - **外部依赖**：仅 `jszip.min.js`
 - **开发依赖**：eslint / prettier / jsdom / husky / lint-staged
@@ -501,7 +504,7 @@ return 1;                                                     // 完全空白：
 - **加载遮罩**：`#appLoading` → 表格渲染后 0.35s 淡出
 - **脚本并行**：`<body>` 底部全部脚本加 `defer`
 
-### 版本号管理（v0.9.18）
+### 版本号管理
 
 `bump-version.js` 一次命令更新 **7 个文件**：
 
@@ -564,7 +567,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 测试体系（v0.9.18）
+## 测试体系（v0.9.19）
 
 ### 测试文件分布
 
@@ -597,7 +600,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 工程化与 CI（v0.9.18）
+## 工程化与 CI（v0.9.19）
 
 ### GitHub Actions（`.github/workflows/ci.yml`）
 
@@ -618,7 +621,8 @@ npx lint-staged
 ```json
 {
   "js/**/*.js": ["eslint --fix", "prettier --write"],
-  "*.{json,md}": ["prettier --write"]
+  "*.{json,md}": ["prettier --write"],
+  "css/**/*.css": ["prettier --write"]
 }
 ```
 
@@ -778,6 +782,9 @@ npm run lint
 | **`#statsDimBlock` 与 `.is-expanded` 成对** | 展开时用 `.is-expanded` 覆盖 `max-height` / `overflow-y`；缺 CSS 则展开无效 |
 | **维度明细固定 5 行依赖 `min-height: 26px`** | 行高漂移会导致视窗切行；改字号 / padding 需同步调整 `#statsDimBlock` 的 `max-height` |
 | **维度明细行有 `border-top` 时 `box-sizing`** | 必须 `box-sizing: border-box`，否则 `min-height` 会被 border 撑大 |
+| **`index.html` 引用 6 个 CSS 而非旧的 `features.css`** | 拆分为 v0.9.19；若只删了旧文件忘了改引用，页面会裸奔 |
+| **CSS 拆分后 `.gitignore` 可能误伤 `css/features/`** | 有些 gitignore 模板带 `features/` 规则；`git status --short css/` 应显示 6 个新文件 |
+| **`lint-staged` 默认不含 CSS** | v0.9.19 前只处理 js/json/md；若想 CSS 也走 prettier，需在 `package.json` 显式加 `"css/**/*.css": ["prettier --write"]` |
 
 ---
 
@@ -908,7 +915,8 @@ npm run lint
 | v0.9.15 | 单元格键盘导航 | 方向键移动 + 跨表连续 + 自定义按键 + 焦点释放 |
 | v0.9.16 | 工程化收尾 | CI 完整化（双 Node + audit） + 测试补全（+41 用例） + 索引缓存复用 + 命名空间冻结 + husky/lint-staged + lock 同步 |
 | v0.9.17 | 统计面板重写 | 左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除 |
-| **v0.9.18** | **统计维度明细增强** | **三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化** |
+| v0.9.18 | 统计维度明细增强 | 三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化 |
+| **v0.9.19** | **CSS 模块化拆分** | **features.css 拆为 note / loading / unacquired / region / acquire-tooltip / stats 六文件；清理死代码（三表缺口分析样式）** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）
