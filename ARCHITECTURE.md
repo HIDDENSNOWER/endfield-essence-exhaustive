@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.17**
+> 适用版本：**v0.9.18**
 
 ---
 
@@ -21,7 +21,7 @@
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features.css` |
 | 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features.css` / `dom.js` |
-| 统计信息面板（总览 / 进度 / 维度明细 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features.css` / `layout.css` |
+| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features.css` / `layout.css` |
 | 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features.css` |
 | 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features.css` |
 | 悬浮窗定位工具 | `core/utils.js`（`buildAroundCursor` / `rectsOverlap`） | `note.js` / `cell-acquire-tooltip.js` |
@@ -60,7 +60,7 @@
 - **依赖规则**：上层可依赖下层，下层不可依赖上层；同层可互调
 - **规模**：52 个自写源文件 / 约 16,000 行
 - **形态**：纯前端 SPA，无框架 / 无构建 / 无后端
-- **持久化**：localStorage（数据 / 设置 / 地区 / 导航按键）+ IndexedDB（图片）
+- **持久化**：localStorage（数据 / 设置 / 地区 / 导航按键 / 统计面板状态）+ IndexedDB（图片）
 - **外部依赖**：仅 `jszip.min.js`
 - **开发依赖**：eslint / prettier / jsdom / husky / lint-staged
 - **运行要求**：HTTP 服务器（`file://` 下 fetch 被拦截）
@@ -204,7 +204,7 @@
 | 模式 | 位置 |
 |------|------|
 | 集中绑定 | `events.js` `bindAllEvents()`（主流，18+ 模块） |
-| 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` |
+| 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` / `stats.js` `_bindEvents()` |
 
 ### 键盘导航
 
@@ -361,7 +361,7 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 - `App.core.constants.ROW_NAMES = []` 仍可（正常数据操作不受影响）
 - `App.features` / `App.entry` 不冻结（模块可能动态挂载）
 
-### 统计面板（v0.9.17 重写）
+### 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强）
 
 **位置**：左侧独立页（`#leftStatsPage`），不再占用右侧面板容器。右侧面板容器原「统计」按钮和面板已移除。
 
@@ -373,6 +373,8 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 - `_datasetKey`：统计面板当前查看的数据集（null = 跟随主界面）
 - `_dimension`：`sub` / `row` / `group`
 - `_filters`：三维度 `Set`，交集逻辑（未选维度 = 该维度不参与筛选；全空 = 不显示结果）
+- `_dimSort`：`gap-desc` / `gap-asc` / `default`（持久化 `smarttable_stats_dim_sort`）
+- `_dimExpanded`：维度明细展开状态（持久化 `smarttable_stats_dim_expanded`）
 
 **6 项总览口径**（5 种单元格状态 S0~S4）：
 - S0 空：`v='' & t=0` → 未填充
@@ -396,6 +398,43 @@ return 0;
 - 拖动：mousedown + mousemove（rAF 节流）+ mouseup 保存
 
 **详情悬浮窗**：fixed 定位遮罩 + 居中面板，点空白关闭。
+
+**维度明细（v0.9.18）**：
+
+- 三维度切换：能力值 / 属性 / 系列技能
+- **排序选择器**（`#statsDimSort`）三种模式：
+  - `gap-desc`：未获取降序 / 获取升序（默认）
+  - `gap-asc`：未获取升序 / 获取降序
+  - `default`：按 `SUB_ATTRS` / `ROW_NAMES` / `ALL_GROUPS` 数组原序
+  - 排序逻辑在 `sortDimList(list, order)` 中集中实现
+  - 排序键为 `b.none`（未获取**格数**），非基质数
+- **基质口径数据**：
+  - `newBucket` 扩展两个累加器：`totalEssence` / `ownedEssence`
+  - 聚合规则与 `calcOverviewStats` / `calcGroupStats` 完全一致：
+    ```js
+    b.totalEssence += Math.max(1, t);
+    if (t > 0) b.ownedEssence += a;
+    else if (cell.v) b.ownedEssence += 1;
+    ```
+  - 行内显示「已获取基质数（绿） / 未获取基质数（红）」
+  - 进度条宽度 = 右侧百分比 = `ownedEssence / totalEssence × 100%`
+  - 三处数字同源，视觉上永远自洽
+  - 各行 `totalEssence` 相加 = 总览「总基质数」；与「统计信息」详情窗一致
+- **双色显示**：
+  - `<b class="stat-owned">` → `.stats-dim-row-gap .stat-owned { color: #52c41a }`
+  - `<b class="stat-missing">` → `.stats-dim-row-gap .stat-missing { color: #ff4d4f }`
+  - 优先级覆盖现有 `.stats-dim-row-gap b { color: var(--danger-primary) }`（0,2,0 > 0,1,1）
+- **固定 5 行视窗 + 滚轮滚动**：
+  - `#statsDimBlock { max-height: 130px; overflow-y: auto; scrollbar-gutter: stable }`
+  - 130px = 5 行 × 26px；行高由 `.stats-dim-row { min-height: 26px; box-sizing: border-box }` 锁定
+  - 滚动条美化：`#statsDimBlock::-webkit-scrollbar` 系列
+- **展开 / 收起按钮**（`#statsDimToggle`）：
+  - `_dimExpanded` 控制状态；`_applyDimExpanded()` 应用 DOM 类 `.is-expanded`
+  - 展开时 `#statsDimBlock.is-expanded { max-height: none; overflow-y: visible }`
+  - 按钮文案：`展开` / `收起`；`aria-expanded` 同步
+  - 行数 ≤ 5 时按钮自动隐藏（无滚动无意义）
+  - **点击处理必须在 `click` 监听器内**（按钮是 click 事件）；误放 `change` 监听器会完全失效
+  - 状态持久化到 `smarttable_stats_dim_expanded`
 
 ### 未获取统计
 
@@ -462,7 +501,7 @@ return 1;                                                     // 完全空白：
 - **加载遮罩**：`#appLoading` → 表格渲染后 0.35s 淡出
 - **脚本并行**：`<body>` 底部全部脚本加 `defer`
 
-### 版本号管理（v0.9.17）
+### 版本号管理（v0.9.18）
 
 `bump-version.js` 一次命令更新 **7 个文件**：
 
@@ -509,6 +548,8 @@ return 1;                                                     // 完全空白：
 | `smarttable_cell_nav_keys` | 单元格导航按键 `{up, down, left, right}` |
 | `smarttable_stats_right_width` | 统计面板右列宽度（280~720 px） |
 | `smarttable_stats_right_locked` | 统计面板右列锁定（`'0'` / `'1'`） |
+| `smarttable_stats_dim_sort` | 维度明细排序（`gap-desc` / `gap-asc` / `default`） |
+| `smarttable_stats_dim_expanded` | 维度明细展开状态（`'0'` / `'1'`） |
 | `<数据集名>` | 该数据集的行数据 |
 
 ### sessionStorage / IndexedDB
@@ -523,7 +564,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 测试体系（v0.9.17）
+## 测试体系（v0.9.18）
 
 ### 测试文件分布
 
@@ -556,7 +597,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 工程化与 CI（v0.9.17）
+## 工程化与 CI（v0.9.18）
 
 ### GitHub Actions（`.github/workflows/ci.yml`）
 
@@ -628,6 +669,17 @@ npx lint-staged
 3. 若需要 Ctrl/Cmd 修饰，放在 `const mod = e.ctrlKey || e.metaKey;` 之后
 4. 若需自定义按键，参考 `bindNavKeySettings` 与 `smarttable_cell_nav_keys` 模式
 
+### 新增统计面板子区块（参考 v0.9.18 维度明细增强）
+
+1. **骨架**：`_ensureUI` 里加 `<section class="stats-block">`，标题栏内放操作组
+2. **状态**：模块顶部定义 `const XXX_KEY` + `let _xxx`；配套 `loadXxx()` / `saveXxx()`
+3. **事件**：
+   - 点击类 → `container.addEventListener('click', ...)` 内处理（**勿放 change**）
+   - 下拉 / 输入类 → `container.addEventListener('change', ...)` 内处理
+4. **渲染**：`_renderXxx()` 独立函数；数据准备抽 `sortXxx()` / `calcXxx()`
+5. **加载**：`_renderAll()` 里先 `_xxx = loadXxx()`，再 `_renderXxxSelect()` / `_renderXxx()`
+6. **持久化**：状态改变时立即 `saveXxx()`
+
 ### 新增测试
 
 1. 创建 `test/xxx.test.js`
@@ -643,18 +695,18 @@ npx lint-staged
 npm ci && npm run lint && npm test
 
 # 2. 更新版本号（7 文件）
-node bump-version.js 0.9.17
+node bump-version.js 0.9.18
 
 # 3. 更新 README / ARCHITECTURE 版本演进表（手动）
 
 # 4. 提交
 git add -A
-git commit -m "v0.9.17 <主题>"
+git commit -m "v0.9.18 <主题>"
 git push
 
 # 5. 打 tag
-git tag -a v0.9.17 -m "v0.9.17 <主题>"
-git push origin v0.9.17
+git tag -a v0.9.18 -m "v0.9.18 <主题>"
+git push origin v0.9.18
 ```
 
 ### 本地验证
@@ -720,6 +772,12 @@ npm run lint
 | **`stats.js` 使用 `cancelAnimationFrame`** | 文件顶部加 `/* global cancelAnimationFrame */`，否则 `no-undef` |
 | **缺口分析 `<table>` 的 `table-layout: fixed` 需明确宽度** | 只用 `width: max-content` 会算出 1,000,000px 溢出；必须内联 `style="width:Npx"` 或用 `<colgroup>` |
 | **`_filters` / `_listLimit` 是 `const`** | 全选按钮不能整体重新赋值，要用 `clear()` + `forEach(add)` |
+| **维度明细排序键用格数** | `sortDimList` 按 `b.none`（未获取**格数**）排序；显示的数字是**基质数**。若两者需要一致，需改用 `b.totalEssence - b.ownedEssence` |
+| **维度明细排序选择器是 `change` 事件** | `<select>` 触发 change；与按钮的 click 事件必须分开监听 |
+| **`statsDimToggle` 必须在 `click` 监听器处理** | 按钮是 click 事件，误放 `change` 监听器会完全失效（且 `t` 未定义会抛错） |
+| **`#statsDimBlock` 与 `.is-expanded` 成对** | 展开时用 `.is-expanded` 覆盖 `max-height` / `overflow-y`；缺 CSS 则展开无效 |
+| **维度明细固定 5 行依赖 `min-height: 26px`** | 行高漂移会导致视窗切行；改字号 / padding 需同步调整 `#statsDimBlock` 的 `max-height` |
+| **维度明细行有 `border-top` 时 `box-sizing`** | 必须 `box-sizing: border-box`，否则 `min-height` 会被 border 撑大 |
 
 ---
 
@@ -790,6 +848,14 @@ npm run lint
 | 缺口分析用连续色阶而非分档 | 分档会掩盖同档内差异；连续色阶能反映任意两格强度差 |
 | 三交叉表单表对齐 | 31 列单表方案优于 grid 三块拼装，无高度耦合问题 |
 | 属性列头缩写、能力值行头全名 | 列头空间紧；能力值本身短，无需缩写 |
+| 维度明细用**基质口径**而非格数 | 与总览 / 详情窗统一；partial 不再隐形；进度与百分比自洽 |
+| 维度明细文字绿红双色 | 直觉化：绿 = 已获取，红 = 未获取；与单元格状态色一致 |
+| 维度明细排序用格数而非基质 | 保留原有语义“未获取”= 未获取**格**；与显示基质数独立 |
+| 维度明细固定 5 行视窗 | 面板高度可控；不挤压下方缺口分析卡片 |
+| 展开 / 收起按钮状态持久化 | 避免每次进入都要重调 |
+| 行数 ≤ 5 时隐藏展开按钮 | 无滚动即无展开意义；避免无功能按钮 |
+| 用 `.is-expanded` 类切换展开 | CSS 与 JS 解耦；一个类切换 `max-height` 与 `overflow` |
+| `statsDimToggle` 用 `click` 事件 | `<button>` 原生触发 click；与 `<select>` 的 change 分离 |
 
 ---
 
@@ -841,7 +907,8 @@ npm run lint
 | v0.9.14 | 悬浮窗布局修复 | 主从定位 + 从窗依附主窗外侧 + 权威位置读取 |
 | v0.9.15 | 单元格键盘导航 | 方向键移动 + 跨表连续 + 自定义按键 + 焦点释放 |
 | v0.9.16 | 工程化收尾 | CI 完整化（双 Node + audit） + 测试补全（+41 用例） + 索引缓存复用 + 命名空间冻结 + husky/lint-staged + lock 同步 |
-| **v0.9.17** | **统计面板重写** | **左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除** |
+| v0.9.17 | 统计面板重写 | 左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除 |
+| **v0.9.18** | **统计维度明细增强** | **三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化** |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

@@ -1833,11 +1833,13 @@ body.stats-resizer-locked .stats-resizer-lock {
 
 .stats-dim-row {
     display: grid;
-    grid-template-columns: 96px 100px minmax(0, 1fr) 44px;
+    grid-template-columns: 96px 150px minmax(0, 1fr) 44px;
     gap: 8px;
     align-items: center;
     padding: 5px 0;
     font-size: 0.72rem;
+    min-height: 26px;
+    box-sizing: border-box;
 }
 .stats-dim-row + .stats-dim-row {
     border-top: 1px dashed var(--border-muted);
@@ -1893,7 +1895,7 @@ body.stats-resizer-locked .stats-resizer-lock {
 .nx-layout {
     display: flex;
     gap: 16px;
-    align-items: stretch;              /* ← 必须有 */
+    align-items: stretch;
     justify-content: center;
 }
 
@@ -1905,7 +1907,7 @@ body.stats-resizer-locked .stats-resizer-lock {
 
 .nx-right {
     flex: 0 0 auto;
-    align-self: stretch;              /* ← 强制拉伸到左栏等高 */
+    align-self: stretch;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -1927,8 +1929,6 @@ body.stats-resizer-locked .stats-resizer-lock {
 .nx-table {
     border-collapse: collapse;
     font-size: 0.6rem;
-    /* 去掉 table-layout: fixed 和 width: max-content；
-       colgroup 会自然给出正确宽度 */
     width: auto;
     margin: 0;
 }
@@ -2265,4 +2265,58 @@ body.stats-resizer-locked .stats-resizer-lock {
 .stats-filter-actions {
     display: flex;
     gap: 6px;
+}
+
+/* ==================== 维度明细：排序选择器 + 展开/收起 ==================== */
+
+/* 标题栏右侧操作组（排序下拉 + 展开按钮） */
+.stats-dim-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 排序下拉 */
+.stats-dim-sort-select {
+    font-size: 0.72rem;
+    padding: 3px 6px;
+    max-width: 220px;
+}
+
+/* 维度明细容器：收起态固定 5 行 + 滚轮 */
+#statsDimBlock {
+    max-height: 130px;              /* 5 行 × 26px */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;       /* 滚动条常驻，避免行宽跳动 */
+}
+
+/* 展开态：解除高度限制 */
+#statsDimBlock.is-expanded {
+    max-height: none;
+    overflow-y: visible;
+    scrollbar-gutter: auto;
+}
+
+/* 滚动条美化 */
+#statsDimBlock::-webkit-scrollbar {
+    width: 6px;
+}
+#statsDimBlock::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 3px;
+}
+#statsDimBlock::-webkit-scrollbar-thumb:hover {
+    background: var(--border-emphasis);
+}
+#statsDimBlock::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 维度明细：已获取绿 / 未获取红 */
+.stats-dim-row-gap .stat-owned {
+    color: #52c41a;
+}
+.stats-dim-row-gap .stat-missing {
+    color: #ff4d4f;
 }

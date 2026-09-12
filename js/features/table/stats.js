@@ -16,6 +16,14 @@
     const STATUS_TEXT = { has: '已拥有', none: '未获取', partial: '部分获取', full: '全部获取' };
     const STATUS_ORDER = { has: 0, partial: 1, full: 2, none: 3 };
 
+    // 维度排序
+    const DIM_SORT_KEY = 'smarttable_stats_dim_sort';
+    let _dimSort = 'gap-desc';
+
+    // 维度明细展开状态
+    const DIM_EXPANDED_KEY = 'smarttable_stats_dim_expanded';
+    let _dimExpanded = false;
+
     // ==================== 右列宽度（可拖动） ====================
     const RIGHT_WIDTH_KEY = 'smarttable_stats_right_width';
     const DEFAULT_RIGHT = 400;
@@ -87,7 +95,16 @@
     }
 
     function newBucket(name) {
-        return { name, total: 0, has: 0, none: 0, partial: 0, full: 0 };
+        return {
+            name,
+            total: 0,
+            has: 0,
+            none: 0,
+            partial: 0,
+            full: 0,
+            totalEssence: 0,
+            ownedEssence: 0
+        };
     }
 
     function getRegionsForCell(rowName, groupName) {
@@ -234,6 +251,67 @@
         return Number.isInteger(n) ? String(n) : n.toFixed(1);
     }
 
+    function loadDimSort() {
+        try {
+            const v = localStorage.getItem(DIM_SORT_KEY);
+            if (v === 'gap-desc' || v === 'gap-asc' || v === 'default') return v;
+        } catch (_e) {
+            /* 静默 */
+        }
+        return 'gap-desc';
+    }
+
+    function saveDimSort(v) {
+        try {
+            localStorage.setItem(DIM_SORT_KEY, v);
+        } catch (_e) {
+            /* 静默 */
+        }
+    }
+
+    function loadDimExpanded() {
+        try {
+            return localStorage.getItem(DIM_EXPANDED_KEY) === '1';
+        } catch (_e) {
+            return false;
+        }
+    }
+
+    function saveDimExpanded(v) {
+        try {
+            localStorage.setItem(DIM_EXPANDED_KEY, v ? '1' : '0');
+        } catch (_e) {
+            /* 静默 */
+        }
+    }
+
+    function sortDimList(list, order) {
+        if (order === 'default') {
+            let names;
+            if (_dimension === 'sub') names = App.constants.SUB_ATTRS;
+            else if (_dimension === 'row') names = App.constants.ROW_NAMES;
+            else names = App.constants.ALL_GROUPS.map((g) => g.name);
+            const rank = new Map(names.map((n, i) => [n, i]));
+            list.sort((a, b) => {
+                const ra = rank.has(a.name) ? rank.get(a.name) : 999;
+                const rb = rank.has(b.name) ? rank.get(b.name) : 999;
+                return ra - rb;
+            });
+        } else if (order === 'gap-asc') {
+            list.sort((a, b) => {
+                if (a.none !== b.none) return a.none - b.none;
+                return a.total - b.total;
+            });
+        } else {
+            // gap-desc（默认）
+            list.sort((a, b) => {
+                if (b.none !== a.none) return b.none - a.none;
+                return b.total - a.total;
+            });
+        }
+        return list;
+    }
+
     // ==================== 主模块 ====================
     App.stats = {
         renderStats() {
@@ -285,7 +363,15 @@
                         <section class="stats-block">
                             <div class="stats-block-header">
                                 <span class="stats-block-title">📊 维度明细</span>
-                                <span class="stats-placeholder-note">按未获取降序</span>
+                                <div class="stats-dim-header-actions">
+                                    <select id="statsDimSort" class="stats-toolbar-select stats-dim-sort-select">
+                                        <option value="gap-desc">未获取降序 / 获取升序</option>
+                                        <option value="gap-asc">未获取升序 / 获取降序</option>
+                                        <option value="default">默认顺序</option>
+                                    </select>
+                                    <button type="button" class="btn btn-sm" id="statsDimToggle"
+                                            aria-expanded="false">展开</button>
+                                </div>
                             </div>
                             <div class="stats-dim-tabs" id="statsDimTabs">
                                 <button class="stats-dim-tab active" data-dim="sub">能力值</button>
@@ -383,13 +469,6 @@
             if (_bound) return;
             _bound = true;
 
-            container.addEventListener('change', (e) => {
-                if (e.target.id === 'statsDatasetSelect') {
-                    _datasetKey = e.target.value || null;
-                    this._renderAll();
-                }
-            });
-
             const datasetSel = document.getElementById('statsDatasetSelect');
             if (datasetSel) {
                 App.utils.enableWheelSelect(datasetSel);
@@ -442,6 +521,13 @@
                     return;
                 }
 
+                if (t.id === 'statsDimToggle') {
+                    _dimExpanded = !_dimExpanded;
+                    saveDimExpanded(_dimExpanded);
+                    this._applyDimExpanded();
+                    return;
+                }
+
                 const dimTab = t.closest('.stats-dim-tab');
                 if (dimTab) {
                     _dimension = dimTab.dataset.dim;
@@ -467,6 +553,20 @@
                 if (toggle) {
                     const wrap = toggle.closest('.stats-cell-regions');
                     if (wrap) wrap.classList.toggle('expanded');
+                }
+            });
+
+            container.addEventListener('change', (e) => {
+                if (e.target.id === 'statsDatasetSelect') {
+                    _datasetKey = e.target.value || null;
+                    this._renderAll();
+                    return;
+                }
+                if (e.target.id === 'statsDimSort') {
+                    _dimSort = e.target.value;
+                    saveDimSort(_dimSort);
+                    this._renderSummary();
+                    return;
                 }
             });
 
@@ -544,11 +644,15 @@
         // ---------- 子渲染 ----------
         _renderAll() {
             applyRightWidth(loadRightWidth());
+            _dimSort = loadDimSort();
+            _dimExpanded = loadDimExpanded();
             this._renderDatasetSelect();
             this._renderDatasetRemark();
             this._renderDimTabs();
+            this._renderDimSortSelect();
             this._renderFilterOptions();
             this._renderSummary();
+            this._applyDimExpanded();
             this._renderList();
         },
 
@@ -597,6 +701,21 @@
             document.querySelectorAll('#statsDimTabs .stats-dim-tab').forEach((t) => {
                 t.classList.toggle('active', t.dataset.dim === _dimension);
             });
+        },
+
+        _renderDimSortSelect() {
+            const sel = document.getElementById('statsDimSort');
+            if (sel) sel.value = _dimSort;
+        },
+
+        _applyDimExpanded() {
+            const dimEl = document.getElementById('statsDimBlock');
+            const btn = document.getElementById('statsDimToggle');
+            if (dimEl) dimEl.classList.toggle('is-expanded', _dimExpanded);
+            if (btn) {
+                btn.textContent = _dimExpanded ? '收起' : '展开';
+                btn.setAttribute('aria-expanded', _dimExpanded ? 'true' : 'false');
+            }
         },
 
         _renderFilterOptions() {
@@ -670,6 +789,13 @@
                         else if (status === 'none') b.none++;
                         else if (status === 'partial') b.partial++;
                         else if (status === 'full') b.full++;
+
+                        // 基质口径
+                        const t = cell.t || 0;
+                        const a = cell.a || 0;
+                        b.totalEssence += Math.max(1, t);
+                        if (t > 0) b.ownedEssence += a;
+                        else if (cell.v) b.ownedEssence += 1;
                     }
                 });
             });
@@ -716,27 +842,31 @@
                 </div>
             `;
 
-            const list = Object.values(buckets).sort((a, b) => {
-                if (b.none !== a.none) return b.none - a.none;
-                return b.total - a.total;
-            });
+            const list = sortDimList(Object.values(buckets), _dimSort);
 
             let dimHtml = '';
             list.forEach((b) => {
-                const pct = b.total > 0 ? Math.round(((b.has + b.full) / b.total) * 100) : 0;
+                const missing = b.totalEssence - b.ownedEssence;
+                const pct = b.totalEssence > 0 ? Math.round((b.ownedEssence / b.totalEssence) * 100) : 0;
                 const pctClass = this._progressClass(pct);
                 dimHtml += `
                     <div class="stats-dim-row">
                         <span class="stats-dim-row-name" title="${App.utils.escapeHtml(b.name)}">${App.utils.escapeHtml(b.name)}</span>
-                        <span class="stats-dim-row-gap">未获取 <b>${b.none}</b></span>
+                        <span class="stats-dim-row-gap">已获取 <b class="stat-owned">${b.ownedEssence}</b> / 未获取 <b class="stat-missing">${missing}</b></span>
                         <div class="stats-dim-row-bar">
                             <div class="stats-dim-row-fill ${pctClass}" style="width:${pct}%"></div>
                         </div>
-                        <span class="stats-dim-row-pct">${pct}%</span>
+                        <span class="stats-dim-row-pct" title="${b.ownedEssence} / ${b.totalEssence}">${pct}%</span>
                     </div>
                 `;
             });
             dimEl.innerHTML = dimHtml;
+
+            // 行数 ≤ 5 时隐藏展开按钮（无滚动就不需要）
+            const toggleBtn = document.getElementById('statsDimToggle');
+            if (toggleBtn) {
+                toggleBtn.style.display = list.length > 5 ? '' : 'none';
+            }
 
             this._renderProgressBars(ov);
             this._renderMergedTables(rows);
