@@ -10,8 +10,12 @@
     let _datasetKey = null;
     let _dimension = 'sub';
     const _filters = { sub: new Set(), row: new Set(), group: new Set() };
+    const _ownershipFilter = new Set(['owned', 'unowned']);
     const _listLimit = 150;
     let _bound = false;
+
+    // 切换 tab / 排序时置 true，跳过本次进度动画（一次性消费）
+    let _skipSummaryAnim = false;
 
     const STATUS_TEXT = { has: '已拥有', none: '未获取', partial: '部分获取', full: '全部获取' };
     const STATUS_ORDER = { has: 0, partial: 1, full: 2, none: 3 };
@@ -312,6 +316,104 @@
         return list;
     }
 
+    // 逐帧驱动进度条生长，恒定速度；每条到达自己的目标即停止
+    // speedPctPerSec：每秒生长多少百分比（默认 70 → 满条约 1.43s）
+    function animateBars(rootEl, speedPctPerSec = 70) {
+        if (!rootEl) return;
+        const fills = rootEl.querySelectorAll('[data-target-width]');
+        if (!fills.length) return;
+
+        const speedPerMs = speedPctPerSec / 1000;
+
+        const items = Array.from(fills).map((el) => {
+            const target = parseFloat(el.dataset.targetWidth) || 0;
+            // 初始：0 宽度 + 红色档
+            el.style.width = '0%';
+            el.classList.remove('progress-low', 'progress-mid', 'progress-high');
+            el.classList.add('progress-low');
+            return { el, target };
+        });
+
+        const pickCls = (pct) => (pct >= 70 ? 'progress-high' : pct >= 30 ? 'progress-mid' : 'progress-low');
+
+        const start = performance.now();
+
+        const tick = (now) => {
+            // 时间轴上"已经走了多少百分比"，与目标无关
+            const walked = (now - start) * speedPerMs;
+            let anyRunning = false;
+
+            items.forEach(({ el, target }) => {
+                const cur = Math.min(walked, target);
+                el.style.width = cur.toFixed(3) + '%';
+
+                const cls = pickCls(cur);
+                if (!el.classList.contains(cls)) {
+                    el.classList.remove('progress-low', 'progress-mid', 'progress-high');
+                    el.classList.add(cls);
+                }
+
+                if (cur < target) anyRunning = true;
+            });
+
+            if (anyRunning) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    // 缺口分析动画：颜色 + 数字
+    // 颜色：hue 从 0（红）以恒定速度过渡到目标 hue
+    // 数字：从该单元格所属矩阵的最大值 max 滚动到目标值 v
+    // 两者由同一个 walked 驱动，同步完成
+    // speedDegPerSec：每秒 hue 变化度数（默认 150 → 最大 120° 约 0.8s）
+    function animateHeatmap(rootEl, speedDegPerSec = 150) {
+        if (!rootEl) return;
+        const cells = rootEl.querySelectorAll('.nx-cell[data-hue]');
+        if (!cells.length) return;
+
+        const speedPerMs = speedDegPerSec / 1000;
+
+        const items = Array.from(cells).map((el) => {
+            const hue = parseFloat(el.dataset.hue) || 0;
+            const value = parseFloat(el.dataset.value) || 0;
+            const max = parseFloat(el.dataset.max) || 0;
+            // 初始状态：红色 + 显示 max
+            el.style.background = 'hsl(0, 65%, 45%)';
+            el.style.color = '#fff';
+            el.textContent = max > 0 ? String(Math.round(max)) : '';
+            return { el, hue, value, max };
+        });
+
+        const start = performance.now();
+
+        const tick = (now) => {
+            const walked = (now - start) * speedPerMs;
+            let anyRunning = false;
+
+            items.forEach(({ el, hue, value, max }) => {
+                const cur = Math.min(walked, hue);
+                el.style.background = `hsl(${cur.toFixed(1)}, 65%, 45%)`;
+
+                // 数字：num = max * (1 - walked/120)，clamp 到 [value, max]
+                let num;
+                if (cur >= hue) {
+                    num = value;
+                } else {
+                    num = Math.round(max * (1 - walked / 120));
+                    if (num < value) num = value;
+                    if (num > max) num = max;
+                }
+                const text = num > 0 ? String(num) : '';
+                if (el.textContent !== text) el.textContent = text;
+
+                if (cur < hue) anyRunning = true;
+            });
+
+            if (anyRunning) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
     // ==================== 主模块 ====================
     App.stats = {
         renderStats() {
@@ -433,6 +535,10 @@
                                 <div class="stats-filter-group-title">系列技能</div>
                                 <div class="stats-filter-options" id="statsFilterGroup"></div>
                             </div>
+                            <div class="stats-filter-group">
+                                <div class="stats-filter-group-title">拥有状态</div>
+                                <div class="stats-filter-options" id="statsFilterOwnership"></div>
+                            </div>
 
                             <div class="stats-filter-hint" id="statsFilterHint">未选任何条件，暂不显示结果</div>
                         </section>
@@ -478,7 +584,7 @@
                 const t = e.target;
 
                 if (t.id === 'statsRefreshBtn') {
-                    this._renderAll();
+                    this._refreshWithFeedback(t);
                     return;
                 }
 
@@ -500,13 +606,15 @@
                 }
 
                 if (t.id === 'statsFilterSelectAll') {
-                    // 因 _filters 是 const，整体重新赋值改用 clear + add
                     _filters.sub.clear();
                     App.constants.SUB_ATTRS.forEach((v) => _filters.sub.add(v));
                     _filters.row.clear();
                     App.constants.ROW_NAMES.forEach((v) => _filters.row.add(v));
                     _filters.group.clear();
                     App.constants.ALL_GROUPS.forEach((g) => _filters.group.add(g.name));
+                    _ownershipFilter.clear();
+                    _ownershipFilter.add('owned');
+                    _ownershipFilter.add('unowned');
                     this._renderFilterOptions();
                     this._renderList();
                     return;
@@ -516,6 +624,9 @@
                     _filters.sub.clear();
                     _filters.row.clear();
                     _filters.group.clear();
+                    _ownershipFilter.clear();
+                    _ownershipFilter.add('owned');
+                    _ownershipFilter.add('unowned');
                     this._renderFilterOptions();
                     this._renderList();
                     return;
@@ -531,8 +642,21 @@
                 const dimTab = t.closest('.stats-dim-tab');
                 if (dimTab) {
                     _dimension = dimTab.dataset.dim;
+                    _skipSummaryAnim = true; // ← 切换维度：跳过进度动画
                     this._renderDimTabs();
                     this._renderSummary();
+                    return;
+                }
+
+                // 拥有状态 chip（必须放在通用 .stats-filter-chip 之前）
+                const ownChip = t.closest('[data-ownership]');
+                if (ownChip) {
+                    const v = ownChip.dataset.ownership;
+                    if (_ownershipFilter.has(v)) _ownershipFilter.delete(v);
+                    else _ownershipFilter.add(v);
+                    ownChip.classList.toggle('active', _ownershipFilter.has(v));
+                    this._updateFilterHint();
+                    this._renderList();
                     return;
                 }
 
@@ -556,6 +680,15 @@
                 }
             });
 
+            // 双击缺口分析单元格 → 应用对应维度筛选
+            container.addEventListener('dblclick', (e) => {
+                const cell = e.target.closest('.nx-cell');
+                if (!cell) return;
+                // 防止将来别处 .nx-cell 冒泡命中
+                if (!cell.closest('#statsHeatmapBlock')) return;
+                this._applyHeatmapFilter(cell);
+            });
+
             container.addEventListener('change', (e) => {
                 if (e.target.id === 'statsDatasetSelect') {
                     _datasetKey = e.target.value || null;
@@ -565,6 +698,7 @@
                 if (e.target.id === 'statsDimSort') {
                     _dimSort = e.target.value;
                     saveDimSort(_dimSort);
+                    _skipSummaryAnim = true; // ← 切换排序：跳过进度动画
                     this._renderSummary();
                     return;
                 }
@@ -639,6 +773,50 @@
                     saveRightWidth(DEFAULT_RIGHT);
                 });
             }
+        },
+
+        _refreshWithFeedback(btn) {
+            if (btn.disabled) return;
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '刷新中…';
+
+            // 下一帧再渲染，让"刷新中…"有机会先画出来
+            requestAnimationFrame(() => {
+                let ok = true;
+                try {
+                    this._renderAll();
+                } catch (e) {
+                    ok = false;
+                    if (App.errorHandler && typeof App.errorHandler.report === 'function') {
+                        App.errorHandler.report(e);
+                    }
+                }
+
+                btn.textContent = ok ? '✓ 已刷新' : '✗ 刷新失败';
+
+                // 内容淡入
+                const layout = document.getElementById('statsLayout');
+                if (layout) {
+                    layout.classList.remove('is-refreshing');
+                    void layout.offsetWidth; // 强制重排，重启动画
+                    layout.classList.add('is-refreshing');
+                }
+
+                // Toast（若 App.modal 提供）
+                try {
+                    if (App.modal && typeof App.modal.toast === 'function') {
+                        App.modal.toast(ok ? '统计数据已刷新' : '刷新失败，请查看控制台');
+                    }
+                } catch (_e) {
+                    /* 静默 */
+                }
+
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.disabled = false;
+                }, 900);
+            });
         },
 
         // ---------- 子渲染 ----------
@@ -737,6 +915,21 @@
                 App.constants.ALL_GROUPS.map((g) => g.name),
                 'group'
             );
+
+            // 拥有状态
+            const ownEl = document.getElementById('statsFilterOwnership');
+            if (ownEl) {
+                const ownItems = [
+                    { value: 'owned', label: '已拥有' },
+                    { value: 'unowned', label: '未拥有' }
+                ];
+                ownEl.innerHTML = ownItems
+                    .map((item) => {
+                        const active = _ownershipFilter.has(item.value) ? 'active' : '';
+                        return `<button class="stats-filter-chip ${active}" data-ownership="${item.value}">${item.label}</button>`;
+                    })
+                    .join('');
+            }
             this._updateFilterHint();
         },
 
@@ -751,8 +944,40 @@
                 parts.push(`能力值 ${_filters.sub.size}`);
                 parts.push(`属性 ${_filters.row.size}`);
                 parts.push(`系列技能 ${_filters.group.size}`);
+                if (_ownershipFilter.size === 1) {
+                    parts.push(_ownershipFilter.has('owned') ? '仅已拥有' : '仅未拥有');
+                }
                 el.textContent = `已选：${parts.join(' / ')}`;
             }
+        },
+
+        // 双击缺口分析单元格 → 清空并应用对应维度筛选
+        _applyHeatmapFilter(cell) {
+            const row = cell.dataset.dimRow || '';
+            const group = cell.dataset.dimGroup || '';
+            const sub = cell.dataset.dimSub || '';
+
+            if (!row && !group && !sub) return;
+
+            // 清空三维度筛选，应用本单元格代表的组合
+            _filters.row.clear();
+            _filters.group.clear();
+            _filters.sub.clear();
+
+            if (row) _filters.row.add(row);
+            if (group) _filters.group.add(group);
+            if (sub) _filters.sub.add(sub);
+
+            // 拥有状态保持用户原选择，不重置
+
+            this._renderFilterOptions();
+            this._renderList();
+
+            // 短暂闪烁反馈
+            cell.classList.remove('is-flash');
+            void cell.offsetWidth;
+            cell.classList.add('is-flash');
+            setTimeout(() => cell.classList.remove('is-flash'), 600);
         },
 
         // ---------- 汇总 ----------
@@ -760,6 +985,12 @@
             const overviewEl = document.getElementById('statsOverviewBlock');
             const dimEl = document.getElementById('statsDimBlock');
             if (!overviewEl || !dimEl) return;
+
+            // 切换维度 tab / 排序时跳过底部「进度」卡片的动画（一次性消费）
+            // 维度明细条始终播放动画，不受此标志影响
+            const skipProgressAnim = _skipSummaryAnim;
+            _skipSummaryAnim = false;
+
             const rows = getRowsForStat();
 
             const buckets = {};
@@ -844,23 +1075,29 @@
 
             const list = sortDimList(Object.values(buckets), _dimSort);
 
+            // 维度明细行：始终从 0 动画到目标宽度
             let dimHtml = '';
             list.forEach((b) => {
                 const missing = b.totalEssence - b.ownedEssence;
                 const pct = b.totalEssence > 0 ? Math.round((b.ownedEssence / b.totalEssence) * 100) : 0;
-                const pctClass = this._progressClass(pct);
+
                 dimHtml += `
                     <div class="stats-dim-row">
                         <span class="stats-dim-row-name" title="${App.utils.escapeHtml(b.name)}">${App.utils.escapeHtml(b.name)}</span>
                         <span class="stats-dim-row-gap">已获取 <b class="stat-owned">${b.ownedEssence}</b> / 未获取 <b class="stat-missing">${missing}</b></span>
                         <div class="stats-dim-row-bar">
-                            <div class="stats-dim-row-fill ${pctClass}" style="width:${pct}%"></div>
+                            <div class="stats-dim-row-fill"
+                                 data-target-width="${pct}%"></div>
                         </div>
                         <span class="stats-dim-row-pct" title="${b.ownedEssence} / ${b.totalEssence}">${pct}%</span>
                     </div>
                 `;
             });
+
             dimEl.innerHTML = dimHtml;
+
+            // 维度明细条：始终逐帧生长 + 颜色实时变档
+            animateBars(dimEl, 160);
 
             // 行数 ≤ 5 时隐藏展开按钮（无滚动就不需要）
             const toggleBtn = document.getElementById('statsDimToggle');
@@ -868,7 +1105,8 @@
                 toggleBtn.style.display = list.length > 5 ? '' : 'none';
             }
 
-            this._renderProgressBars(ov);
+            // 底部进度卡片：受 skipProgressAnim 控制
+            this._renderProgressBars(ov, !skipProgressAnim);
             this._renderMergedTables(rows);
             this._renderOverviewDetail(rows);
         },
@@ -953,14 +1191,28 @@
             const maxRowSub = Math.max(1, ...rowSubMatrix.flat());
             const maxGroupSub = Math.max(1, ...groupSubMatrix.flat());
 
-            const cellStyle = (v, max) => {
+            const cellHue = (v, max) => {
                 const ratio = max > 0 ? Math.min(1, Math.max(0, v / max)) : 0;
-                const hue = 120 * (1 - ratio);
-                const bg = `hsl(${hue.toFixed(1)}, 65%, 45%)`;
-                return `background:${bg};color:#fff;`;
+                return 120 * (1 - ratio);
             };
-            const mkCell = (v, max, tip) =>
-                `<td class="nx-cell" style="${cellStyle(v, max)}" title="${App.utils.escapeHtml(tip)}">${v > 0 ? v : ''}</td>`;
+
+            const mkCell = (v, max, tip, dims) => {
+                const hue = cellHue(v, max);
+                const startNum = Math.max(0, Math.round(max));
+                const startText = startNum > 0 ? String(startNum) : '';
+                let dimAttrs = '';
+                if (dims) {
+                    if (dims.row) dimAttrs += ` data-dim-row="${App.utils.escapeHtml(dims.row)}"`;
+                    if (dims.group) dimAttrs += ` data-dim-group="${App.utils.escapeHtml(dims.group)}"`;
+                    if (dims.sub) dimAttrs += ` data-dim-sub="${App.utils.escapeHtml(dims.sub)}"`;
+                }
+                return `<td class="nx-cell"
+                            style="background:hsl(0, 65%, 45%);color:#fff;"
+                            data-hue="${hue.toFixed(1)}"
+                            data-value="${v}"
+                            data-max="${max}"${dimAttrs}
+                            title="${App.utils.escapeHtml(tip)}">${startText}</td>`;
+            };
 
             const seriesNames = groups.map((g) => g.name);
             const attrShort = rowNames.map((r) => ROW_ABBR[r] || r);
@@ -997,7 +1249,8 @@
                     html += mkCell(
                         hmMatrix[r][g],
                         maxHM,
-                        `${rowNames[r]} · ${seriesNames[g]}\n缺口：${hmMatrix[r][g]}`
+                        `${rowNames[r]} · ${seriesNames[g]}\n缺口：${hmMatrix[r][g]}`,
+                        { row: rowNames[r], group: seriesNames[g] }
                     );
                 }
                 html += '<td class="nx-gap"></td>';
@@ -1006,7 +1259,8 @@
                     html += mkCell(
                         rowSubMatrix[a][r],
                         maxRowSub,
-                        `${rowNames[a]} · ${subs[r]}\n缺口：${rowSubMatrix[a][r]}`
+                        `${rowNames[a]} · ${subs[r]}\n缺口：${rowSubMatrix[a][r]}`,
+                        { row: rowNames[a], sub: subs[r] }
                     );
                 }
                 html += '<td class="nx-filler"></td><td class="nx-filler"></td>';
@@ -1017,7 +1271,10 @@
             html += '<tr>';
             html += `<th class="nx-row-head" title="${App.utils.escapeHtml(rowNames[5])}">${App.utils.escapeHtml(attrShort[5])}</th>`;
             for (let g = 0; g < 14; g++) {
-                html += mkCell(hmMatrix[5][g], maxHM, `${rowNames[5]} · ${seriesNames[g]}\n缺口：${hmMatrix[5][g]}`);
+                html += mkCell(hmMatrix[5][g], maxHM, `${rowNames[5]} · ${seriesNames[g]}\n缺口：${hmMatrix[5][g]}`, {
+                    row: rowNames[5],
+                    group: seriesNames[g]
+                });
             }
             html += '<td class="nx-gap"></td>';
             html += '<td class="nx-filler"></td>';
@@ -1028,7 +1285,10 @@
             html += '<tr>';
             html += `<th class="nx-row-head" title="${App.utils.escapeHtml(rowNames[6])}">${App.utils.escapeHtml(attrShort[6])}</th>`;
             for (let g = 0; g < 14; g++) {
-                html += mkCell(hmMatrix[6][g], maxHM, `${rowNames[6]} · ${seriesNames[g]}\n缺口：${hmMatrix[6][g]}`);
+                html += mkCell(hmMatrix[6][g], maxHM, `${rowNames[6]} · ${seriesNames[g]}\n缺口：${hmMatrix[6][g]}`, {
+                    row: rowNames[6],
+                    group: seriesNames[g]
+                });
             }
             html += '<td class="nx-gap"></td>';
             html += '<th class="nx-corner"></th>';
@@ -1046,7 +1306,8 @@
                     html += mkCell(
                         hmMatrix[leftIdx][g],
                         maxHM,
-                        `${rowNames[leftIdx]} · ${seriesNames[g]}\n缺口：${hmMatrix[leftIdx][g]}`
+                        `${rowNames[leftIdx]} · ${seriesNames[g]}\n缺口：${hmMatrix[leftIdx][g]}`,
+                        { row: rowNames[leftIdx], group: seriesNames[g] }
                     );
                 }
                 html += '<td class="nx-gap"></td>';
@@ -1055,7 +1316,8 @@
                     html += mkCell(
                         groupSubMatrix[g][r],
                         maxGroupSub,
-                        `${seriesNames[g]} · ${subs[r]}\n缺口：${groupSubMatrix[g][r]}`
+                        `${seriesNames[g]} · ${subs[r]}\n缺口：${groupSubMatrix[g][r]}`,
+                        { group: seriesNames[g], sub: subs[r] }
                     );
                 }
                 html += '</tr>';
@@ -1072,6 +1334,7 @@
             `;
 
             el.innerHTML = html;
+            animateHeatmap(el);
         },
 
         // ---------- 详情悬浮窗 ----------
@@ -1144,20 +1407,29 @@
         },
 
         // ---------- 进度条 ----------
-        _renderProgressBars(ov) {
+        _renderProgressBars(ov, animate = true) {
             const el = document.getElementById('statsProgressBlock');
             if (!el) return;
 
             const fillPct = ov.totalCells > 0 ? Math.round((ov.filledCells / ov.totalCells) * 100) : 0;
-
             const essencePct = ov.totalEssence > 0 ? Math.round((ov.ownedEssence / ov.totalEssence) * 100) : 0;
+
+            const cls = (p) => this._progressClass(p);
+
+            const mkFill = (pct) => {
+                if (!animate) {
+                    // 不动画：直接落位 + 定档颜色
+                    return `<div class="stats-progress-fill ${cls(pct)}" style="width:${pct}%"></div>`;
+                }
+                // 动画：data-target-width 交给 animateBars
+                return `<div class="stats-progress-fill" data-target-width="${pct}%"></div>`;
+            };
 
             el.innerHTML = `
                 <div class="stats-progress-row">
                     <span class="stats-progress-label">单元格填充率</span>
                     <div class="stats-progress-bar">
-                        <div class="stats-progress-fill ${this._progressClass(fillPct)}"
-                             style="width:${fillPct}%"></div>
+                        ${mkFill(fillPct)}
                     </div>
                     <span class="stats-progress-text">${fmtNum(ov.filledCells)} / ${ov.totalCells}</span>
                     <span class="stats-progress-pct">${fillPct}%</span>
@@ -1165,13 +1437,16 @@
                 <div class="stats-progress-row">
                     <span class="stats-progress-label">基质获取率</span>
                     <div class="stats-progress-bar">
-                        <div class="stats-progress-fill ${this._progressClass(essencePct)}"
-                             style="width:${essencePct}%"></div>
+                        ${mkFill(essencePct)}
                     </div>
                     <span class="stats-progress-text">${ov.ownedEssence} / ${ov.totalEssence}</span>
                     <span class="stats-progress-pct">${essencePct}%</span>
                 </div>
             `;
+
+            if (animate) {
+                animateBars(el, 120);
+            }
         },
 
         _progressClass(pct) {
@@ -1212,11 +1487,20 @@
                     if (_filters.row.size > 0 && !_filters.row.has(row.name)) return;
                     if (_filters.group.size > 0 && !_filters.group.has(names.groupName)) return;
 
+                    const status = getStatus(cell);
+
+                    // 拥有状态筛选：仅当恰好选中一个时才生效
+                    if (_ownershipFilter.size === 1) {
+                        const isOwned = status !== 'none';
+                        if (_ownershipFilter.has('owned') && !isOwned) return;
+                        if (_ownershipFilter.has('unowned') && isOwned) return;
+                    }
+
                     items.push({
                         rowName: row.name,
                         groupName: names.groupName,
                         subName: names.subName,
-                        status: getStatus(cell),
+                        status: status,
                         v: cell.v,
                         t: cell.t || 0,
                         a: cell.a || 0
@@ -1256,9 +1540,9 @@
                 <table class="stats-matrix-table">
                     <thead>
                         <tr>
+                            <th>能力值</th>
                             <th>属性</th>
                             <th>系列技能</th>
-                            <th>能力值</th>
                             <th>状态</th>
                             <th>数值</th>
                             <th>可获取地区 / 刷取方式</th>
@@ -1306,9 +1590,9 @@
 
                 html += `
                     <tr>
+                        <td>${App.utils.escapeHtml(it.subName)}</td>
                         <td>${App.utils.escapeHtml(shortRowName(it.rowName))}</td>
                         <td>${App.utils.escapeHtml(it.groupName)}</td>
-                        <td>${App.utils.escapeHtml(it.subName)}</td>
                         <td><span class="stats-status-tag stats-status-${it.status}">${STATUS_TEXT[it.status]}</span></td>
                         <td>${valueHtml}</td>
                         <td>${regionHtml}</td>

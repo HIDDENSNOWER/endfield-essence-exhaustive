@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.19**
+> 适用版本：**v0.9.20**
 
 ---
 
@@ -21,7 +21,7 @@
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features/region.css` |
 | 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features/unacquired.css` / `dom.js` |
-| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 列表 / 详情窗 / 拖动） | `features/table/stats.js` | `features/stats.css` / `layout.css` |
+| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 拥有状态 / 列表 / 详情窗 / 拖动 / 动画 / 双击筛选） | `features/table/stats.js` | `features/stats.css` / `layout.css` |
 | 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features/acquire-tooltip.css` |
 | 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features/note.css` |
 | 悬浮窗定位工具 | `core/utils.js`（`buildAroundCursor` / `rectsOverlap`） | `note.js` / `cell-acquire-tooltip.js` |
@@ -364,7 +364,7 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 - `App.core.constants.ROW_NAMES = []` 仍可（正常数据操作不受影响）
 - `App.features` / `App.entry` 不冻结（模块可能动态挂载）
 
-### 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强）
+### 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强 · v0.9.20 筛选/动画增强）
 
 **位置**：左侧独立页（`#leftStatsPage`），不再占用右侧面板容器。右侧面板容器原「统计」按钮和面板已移除。
 
@@ -376,8 +376,10 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 - `_datasetKey`：统计面板当前查看的数据集（null = 跟随主界面）
 - `_dimension`：`sub` / `row` / `group`
 - `_filters`：三维度 `Set`，交集逻辑（未选维度 = 该维度不参与筛选；全空 = 不显示结果）
+- `_ownershipFilter`：拥有状态集合，默认 `{'owned', 'unowned'}`（双选 = 不筛选）
 - `_dimSort`：`gap-desc` / `gap-asc` / `default`（持久化 `smarttable_stats_dim_sort`）
 - `_dimExpanded`：维度明细展开状态（持久化 `smarttable_stats_dim_expanded`）
+- `_skipSummaryAnim`：一次性标志，切换维度 tab / 排序时置 true，仅跳过底部进度条动画
 
 **6 项总览口径**（5 种单元格状态 S0~S4）：
 - S0 空：`v='' & t=0` → 未填充
@@ -438,6 +440,66 @@ return 0;
   - 行数 ≤ 5 时按钮自动隐藏（无滚动无意义）
   - **点击处理必须在 `click` 监听器内**（按钮是 click 事件）；误放 `change` 监听器会完全失效
   - 状态持久化到 `smarttable_stats_dim_expanded`
+
+**拥有状态筛选（v0.9.20）**：
+
+- 筛选卡片新增「拥有状态」组，渲染两枚 chip：`已拥有` / `未拥有`
+- 状态存储于 `_ownershipFilter`，默认 `new Set(['owned', 'unowned'])`
+- 语义：
+  - `size === 2`（默认）→ 不筛选
+  - `size === 0`（宽容处理）→ 不筛选
+  - `size === 1` → 仅显示对应类别
+- `isOwned = status !== 'none'`（`has` / `partial` / `full` 均算已拥有）
+- 点击处理必须放在通用 `.stats-filter-chip` 分支**之前**（否则会被吞，导致 `_filters[undefined]` 报错）
+- 全选 / 清空按钮同步重置到双选（保持"不筛选"语义）
+
+**结果列表（v0.9.20）**：
+
+- 列顺序：能力值 → 属性 → 系列技能 → 状态 → 数值 → 可获取地区
+- 表头与行内容同步调整
+- **列自适应**：`.stats-matrix-table { width: max-content; min-width: 100%; table-layout: auto }`；`th/td { white-space: nowrap; padding: 4px 8px }`
+- **水平滚动**：`.stats-list-block { overflow-x: auto }`
+- 地区明细展开后局部换行：`.stats-matrix-table .stats-cell-region-list { white-space: normal; word-break: break-word }`
+
+**刷新反馈（v0.9.20）**：
+
+- `_refreshWithFeedback(btn)`：按钮文案「刷新 → 刷新中… → ✓ 已刷新」；0.9s 后复位
+- 期间 `#statsLayout` 加 `.is-refreshing`，触发 `statsRefreshFlash` 0.5s 淡入
+- 可选 Toast（`App.modal.toast` 存在时）
+
+**进度动画（v0.9.20）**：
+
+- **`animateBars(rootEl, speedPctPerSec = 70)`**：恒定速度驱动进度条
+  - 所有条共享同一时间轴 `walked = (now - start) × speedPctPerSec / 1000`
+  - 每条用 `Math.min(walked, target)` 截断；到位后停止，其他条继续
+  - 每帧按当前宽度重新判定 `progress-low/mid/high` → 颜色实时变档
+  - 维度明细：`animateBars(dimEl, 160)`；底部进度：`animateBars(el, 120)`
+  - **第二参数是「每秒百分比」不是毫秒**；常用值 80~160
+- **`animateHeatmap(rootEl, speedDegPerSec = 150)`**：缺口分析动画
+  - 颜色：`hue = Math.min(walked, targetHue)`，从红到目标色
+  - 数字：`num = max × (1 − walked / 120)`，clamp 到 `[v, max]`
+  - 颜色与数字同一帧到达
+  - **第二参数是「每秒 hue 度数」不是毫秒**；默认 150 → 120° 约 0.8s
+- **`_skipSummaryAnim` 一次性标志**：
+  - 切换维度 tab / 排序时置 `true`
+  - `_renderSummary` 开头消费后置回 `false`
+  - 仅底部进度条跳过动画（`_renderProgressBars(ov, animate)`）；维度明细条始终动画
+  - 刷新 / 切数据集 / 首屏进入时保持 `false`，底部进度条正常播放
+
+**双击缺口分析应用筛选（v0.9.20）**：
+
+- 三类单元格挂载不同 `data-*`：
+  - 左半（`hmMatrix`，属性 × 系列技能）：`data-dim-row` + `data-dim-group`
+  - 右上（`rowSubMatrix`，属性 × 能力值）：`data-dim-row` + `data-dim-sub`
+  - 右下（`groupSubMatrix`，系列技能 × 能力值）：`data-dim-group` + `data-dim-sub`
+- `container` 上委托 `dblclick`：`.nx-cell` 命中 → `_applyHeatmapFilter(cell)`
+- `_applyHeatmapFilter(cell)`：
+  - 读取 `dataset.dimRow` / `dimGroup` / `dimSub`
+  - 清空三维度筛选后写入对应值
+  - `_ownershipFilter` 保持用户原选择
+  - 调 `_renderFilterOptions()` + `_renderList()` 刷新 UI
+  - 单元格加 `.is-flash`，600ms 后移除
+- **不与 resizer 的 dblclick 冲突**：resizer 的 `event.target` 不是 `.nx-cell`，直接 return
 
 ### 未获取统计
 
@@ -567,7 +629,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 测试体系（v0.9.19）
+## 测试体系（v0.9.20）
 
 ### 测试文件分布
 
@@ -600,7 +662,7 @@ return 1;                                                     // 完全空白：
 
 ---
 
-## 工程化与 CI（v0.9.19）
+## 工程化与 CI（v0.9.20）
 
 ### GitHub Actions（`.github/workflows/ci.yml`）
 
@@ -673,16 +735,18 @@ npx lint-staged
 3. 若需要 Ctrl/Cmd 修饰，放在 `const mod = e.ctrlKey || e.metaKey;` 之后
 4. 若需自定义按键，参考 `bindNavKeySettings` 与 `smarttable_cell_nav_keys` 模式
 
-### 新增统计面板子区块（参考 v0.9.18 维度明细增强）
+### 新增统计面板子区块（参考 v0.9.18 维度明细增强 / v0.9.20 拥有状态筛选）
 
 1. **骨架**：`_ensureUI` 里加 `<section class="stats-block">`，标题栏内放操作组
 2. **状态**：模块顶部定义 `const XXX_KEY` + `let _xxx`；配套 `loadXxx()` / `saveXxx()`
 3. **事件**：
    - 点击类 → `container.addEventListener('click', ...)` 内处理（**勿放 change**）
    - 下拉 / 输入类 → `container.addEventListener('change', ...)` 内处理
+   - 双击类 → `container.addEventListener('dblclick', ...)` 内处理
 4. **渲染**：`_renderXxx()` 独立函数；数据准备抽 `sortXxx()` / `calcXxx()`
 5. **加载**：`_renderAll()` 里先 `_xxx = loadXxx()`，再 `_renderXxxSelect()` / `_renderXxx()`
 6. **持久化**：状态改变时立即 `saveXxx()`
+7. **动画**（如需恒定速度生长）：给元素挂 `data-target-width`，调 `animateBars(container, speed)`
 
 ### 新增测试
 
@@ -699,18 +763,18 @@ npx lint-staged
 npm ci && npm run lint && npm test
 
 # 2. 更新版本号（7 文件）
-node bump-version.js 0.9.18
+node bump-version.js 0.9.21
 
 # 3. 更新 README / ARCHITECTURE 版本演进表（手动）
 
 # 4. 提交
 git add -A
-git commit -m "v0.9.18 <主题>"
+git commit -m "v0.9.21 <主题>"
 git push
 
 # 5. 打 tag
-git tag -a v0.9.18 -m "v0.9.18 <主题>"
-git push origin v0.9.18
+git tag -a v0.9.21 -m "v0.9.21 <主题>"
+git push origin v0.9.21
 ```
 
 ### 本地验证
@@ -785,6 +849,15 @@ npm run lint
 | **`index.html` 引用 6 个 CSS 而非旧的 `features.css`** | 拆分为 v0.9.19；若只删了旧文件忘了改引用，页面会裸奔 |
 | **CSS 拆分后 `.gitignore` 可能误伤 `css/features/`** | 有些 gitignore 模板带 `features/` 规则；`git status --short css/` 应显示 6 个新文件 |
 | **`lint-staged` 默认不含 CSS** | v0.9.19 前只处理 js/json/md；若想 CSS 也走 prettier，需在 `package.json` 显式加 `"css/**/*.css": ["prettier --write"]` |
+| **`animateBars` 第二参数是「每秒百分比」不是毫秒** | 传 600/800 会让满条 0.17s 完成；常用值 80~160 |
+| **`animateHeatmap` 第二参数是「每秒 hue 度数」** | 默认 150 → 120° 约 0.8s；不要传毫秒 |
+| **进度条/缺口分析颜色由 JS 逐帧改，非 CSS transition** | `transition: width` 只用于「落位不动画」路径；动画路径必须无 transition 叠加 |
+| **`_skipSummaryAnim` 只在切换 tab/排序时置 true** | 刷新 / 切数据集 / 首屏进入必须保持 false，让底部进度条动画 |
+| **双击缺口分析必须放在 `container` 委托上** | 若绑在 `el`（热力图容器）上，重渲染后监听会丢；委托在稳定的 `container` 上 |
+| **`nx-cell` 的 `data-hue` 需保留小数点** | `toFixed(1)` 与 `animateHeatmap` 内 `parseFloat` 配对；取整会导致终点色差 |
+| **拥有状态 chip 的 `data-ownership` 必须在通用 `.stats-filter-chip` 分支之前拦截** | 否则会被 `_filters[undefined]` 吞掉并抛错 |
+| **拥有状态筛选默认 `size === 2` 即不筛选** | `size === 0` 也视为不筛选（宽容处理），避免「清空」后误显示空结果 |
+| **`_ownershipFilter` 是 `const`** | 全选/清空按钮要用 `clear() + add()`，不能整体重新赋值 |
 
 ---
 
@@ -813,6 +886,7 @@ npm run lint
 | 命名空间冻结 | `App.core` / `App.services` 运行时只读 |
 | CI 依赖扫描 | `npm audit --audit-level=high` 为硬门禁 |
 | 提交前 lint | husky + lint-staged 自动 `eslint --fix` |
+| 动画性能 | 逐帧改 `style.width` / `style.background` + `textContent`，无 DOM 结构变化 |
 
 ---
 
@@ -863,6 +937,18 @@ npm run lint
 | 行数 ≤ 5 时隐藏展开按钮 | 无滚动即无展开意义；避免无功能按钮 |
 | 用 `.is-expanded` 类切换展开 | CSS 与 JS 解耦；一个类切换 `max-height` 与 `overflow` |
 | `statsDimToggle` 用 `click` 事件 | `<button>` 原生触发 click；与 `<select>` 的 change 分离 |
+| 拥有状态 chip 用 `data-ownership` 区分 | 与通用筛选 chip 分开处理，避免 `_filters[undefined]` |
+| 拥有状态默认双选 = 不筛选 | 与三维度「未选 = 不参与」的语义对齐；减少误过滤 |
+| 拥有状态 chip 放在通用筛选分支之前 | 保证 `data-ownership` 有独立处理路径 |
+| 结果列表列自适应（max-content） | 短文本不换行、不压断；内容超宽时滚动 |
+| 结果列表列顺序为能力值优先 | 能力值组合是刷取时首先确定的维度，放最前符合操作直觉 |
+| 恒定速度进度动画（%/s） | 长条晚到位，短条早到位；视觉上节奏统一；比固定时长更有"生长"感 |
+| 颜色在生长过程中实时变档 | 每帧按当前宽度重新判定 class；用户能观察颜色过渡 |
+| 缺口分析数字与颜色同源驱动 | 同一个 `walked` 驱动 hue 与 num；保证同帧到达 |
+| 数字从矩阵最大值滚到目标 | 用 `max × (1 − walked/120)`；与色阶语义对齐 |
+| 缺口分析双击应用筛选 | 从可视矩阵直接跳转到筛选结果，减少手动筛选成本 |
+| 切换 tab/排序跳过底部进度动画 | 数据未变；动画会形成"闪烁"错觉；仅维度明细条保留动画作为视觉反馈 |
+| 刷新按钮文案 + 淡入反馈 | 让"刷新无实感"变成可感知的操作；0.9s 复位避免状态残留 |
 
 ---
 
@@ -916,7 +1002,8 @@ npm run lint
 | v0.9.16 | 工程化收尾 | CI 完整化（双 Node + audit） + 测试补全（+41 用例） + 索引缓存复用 + 命名空间冻结 + husky/lint-staged + lock 同步 |
 | v0.9.17 | 统计面板重写 | 左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除 |
 | v0.9.18 | 统计维度明细增强 | 三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化 |
-| **v0.9.19** | **CSS 模块化拆分** | **features.css 拆为 note / loading / unacquired / region / acquire-tooltip / stats 六文件；清理死代码（三表缺口分析样式）** |
+| v0.9.19 | CSS 模块化拆分 | features.css 拆为 note / loading / unacquired / region / acquire-tooltip / stats 六文件；清理死代码（三表缺口分析样式） |
+| **v0.9.20** | **统计面板增强** | 拥有状态筛选（已拥有 / 未拥有） + 结果列表列顺序（能力值 → 属性 → 系列技能） + 列自适应宽度 + 刷新按钮反馈（文案 + 淡入 + Toast） + 恒定速度进度动画（颜色随宽度实时变档） + 缺口分析颜色与数字同步滚动 + 双击单元格应用筛选 |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

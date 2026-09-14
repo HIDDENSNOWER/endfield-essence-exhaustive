@@ -227,7 +227,6 @@ body.stats-resizing * {
 
 /* ---------- 筛选区 ---------- */
 .stats-filter-group { margin-bottom: 8px; }
-.stats-filter-group:last-of-type { margin-bottom: 0; }
 .stats-filter-group-title {
     font-size: 0.7rem;
     color: var(--text-secondary);
@@ -281,7 +280,7 @@ body.stats-resizing * {
     max-height: calc(100vh - 460px);
     min-height: 220px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     padding-right: 6px;
     scrollbar-gutter: stable;
 }
@@ -299,19 +298,21 @@ body.stats-resizing * {
     color: var(--text-tertiary);
     font-size: 0.68rem;
 }
+
 .stats-matrix-table {
-    width: 100%;
+    width: max-content;       /* 按内容撑开，配合列不换行 */
+    min-width: 100%;          /* 内容不足时至少铺满容器 */
     border-collapse: collapse;
     font-size: 0.7rem;
-    table-layout: fixed;
+    table-layout: auto;
 }
 .stats-matrix-table th,
 .stats-matrix-table td {
-    padding: 4px 6px;
+    padding: 4px 8px;
     border: 1px solid var(--border-muted);
     text-align: left;
     vertical-align: top;
-    word-break: break-all;
+    white-space: nowrap;
     line-height: 1.35;
 }
 .stats-matrix-table th {
@@ -323,12 +324,6 @@ body.stats-resizing * {
     z-index: 1;
     font-size: 0.68rem;
 }
-.stats-matrix-table th:nth-child(1) { width: 15%; }
-.stats-matrix-table th:nth-child(2) { width: 12%; }
-.stats-matrix-table th:nth-child(3) { width: 10%; }
-.stats-matrix-table th:nth-child(4) { width: 11%; }
-.stats-matrix-table th:nth-child(5) { width: 10%; }
-.stats-matrix-table th:nth-child(6) { width: 42%; }
 
 .stats-status-tag {
     display: inline-block;
@@ -372,6 +367,15 @@ body.stats-resizing * {
     max-height: 220px;
     overflow-y: auto;
 }
+
+.stats-matrix-table .stats-cell-region-list {
+    white-space: normal;
+    word-break: break-word;
+}
+.stats-matrix-table .stats-cell-region-methods {
+    white-space: normal;
+}
+
 .stats-cell-regions.expanded .stats-cell-region-list { display: block; }
 .stats-cell-region-item {
     padding: 3px 0;
@@ -409,7 +413,7 @@ body.stats-resizing * {
     }
 }
 
-/* ---------- 底部进度条 ---------- */
+/* ==================== 底部进度条 ==================== */
 #statsProgressBlock {
     display: flex;
     flex-direction: column;
@@ -438,10 +442,10 @@ body.stats-resizing * {
     min-width: 0;
 }
 
+/* 动画：慢速生长（0.8s） */
 .stats-progress-fill {
     height: 100%;
     border-radius: 5px;
-    transition: width 0.3s ease;
 }
 .stats-progress-fill.progress-low  { background: var(--danger-primary); }
 .stats-progress-fill.progress-mid  { background: var(--progress-mid-color, #f0ad4e); }
@@ -609,6 +613,8 @@ body.stats-resizer-locked .stats-resizer-lock {
     font-size: 0.78rem;
     font-weight: 700;
 }
+.stats-dim-row-gap .stat-owned   { color: #52c41a; }
+.stats-dim-row-gap .stat-missing { color: #ff4d4f; }
 
 .stats-dim-row-bar {
     height: 10px;
@@ -618,10 +624,11 @@ body.stats-resizer-locked .stats-resizer-lock {
     border: 1px solid var(--border-muted);
     min-width: 0;
 }
+
+/* 动画：慢速生长（0.6s） */
 .stats-dim-row-fill {
     height: 100%;
     border-radius: 4px;
-    transition: width 0.2s;
 }
 .stats-dim-row-fill.progress-low  { background: var(--danger-primary); }
 .stats-dim-row-fill.progress-mid  { background: var(--progress-mid-color, #f0ad4e); }
@@ -814,7 +821,6 @@ body.stats-resizer-locked .stats-resizer-lock {
     white-space: nowrap;
 }
 
-/* 右侧能力值行头：显示全名，列稍宽 */
 .nx-unified .nx-row-head-sub {
     width: 44px;
     text-align: center;
@@ -873,6 +879,15 @@ body.stats-resizer-locked .stats-resizer-lock {
     white-space: nowrap;
 }
 
+/* 双击缺口分析单元格：闪烁反馈 */
+.nx-unified .nx-cell.is-flash {
+    animation: nxCellFlash 0.5s ease;
+}
+@keyframes nxCellFlash {
+    0%   { outline: 3px solid #fff; outline-offset: -3px; }
+    100% { outline: 3px solid transparent; outline-offset: -3px; }
+}
+
 /* ==================== 维度明细：排序选择器 + 展开/收起 ==================== */
 
 /* 标题栏右侧操作组（排序下拉 + 展开按钮） */
@@ -919,10 +934,19 @@ body.stats-resizer-locked .stats-resizer-lock {
     background: transparent;
 }
 
-/* 维度明细：已获取绿 / 未获取红 */
-.stats-dim-row-gap .stat-owned {
-    color: #52c41a;
+/* ==================== 刷新反馈 ==================== */
+
+/* 内容短暂淡入（0.5s，比进度条快，但仍可感知） */
+.stats-layout.is-refreshing {
+    animation: statsRefreshFlash 0.5s ease;
 }
-.stats-dim-row-gap .stat-missing {
-    color: #ff4d4f;
+@keyframes statsRefreshFlash {
+    0%   { opacity: 0.55; }
+    100% { opacity: 1; }
+}
+
+/* 刷新按钮禁用态（避免连点） */
+#statsRefreshBtn:disabled {
+    opacity: 0.7;
+    cursor: default;
 }
