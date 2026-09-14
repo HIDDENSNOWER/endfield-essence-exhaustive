@@ -63,6 +63,11 @@
                 App.importExport.bindImportExportEvents();
             }
 
+            // 外部数据导入/转换
+            if (App.externalImport && App.externalImport.bindEvents) {
+                App.externalImport.bindEvents();
+            }
+
             // 数据集覆盖/合并预览
             if (App.datasetMerge && App.datasetMerge.bindDatasetMergeEvents) {
                 App.datasetMerge.bindDatasetMergeEvents();
@@ -152,7 +157,7 @@
 
             // 右侧面板切换
             if (dom.sidebarBtns) {
-                dom.sidebarBtns.forEach(btn => {
+                dom.sidebarBtns.forEach((btn) => {
                     btn.addEventListener('click', function () {
                         App.layout.switchPanel(this.dataset.panel);
                     });
@@ -161,7 +166,7 @@
 
             // 左侧面板切换
             if (dom.leftSidebarBtns) {
-                dom.leftSidebarBtns.forEach(btn => {
+                dom.leftSidebarBtns.forEach((btn) => {
                     btn.addEventListener('click', function () {
                         App.layout.switchLeftPanel(this.dataset.leftPanel);
                     });
@@ -189,27 +194,30 @@
 
             // 下拉框滚轮切换
             [
-                dom.inputSubCol, dom.inputRow, dom.inputGroup,
-                dom.recordSubCol, dom.recordRow, dom.recordGroup,
+                dom.inputSubCol,
+                dom.inputRow,
+                dom.inputGroup,
+                dom.recordSubCol,
+                dom.recordRow,
+                dom.recordGroup,
                 dom.datasetSelect
-            ].forEach(select => {
+            ].forEach((select) => {
                 if (select) App.utils.enableWheelSelect(select);
             });
 
             // 单元格高亮更新
-            [
-                dom.inputSubCol, dom.inputRow, dom.inputGroup,
-                dom.recordSubCol, dom.recordRow, dom.recordGroup
-            ].forEach(select => {
-                if (select) {
-                    select.addEventListener('change', function () {
-                        App.tableRenderer.updateHighlightedCell();
-                    });
+            [dom.inputSubCol, dom.inputRow, dom.inputGroup, dom.recordSubCol, dom.recordRow, dom.recordGroup].forEach(
+                (select) => {
+                    if (select) {
+                        select.addEventListener('change', function () {
+                            App.tableRenderer.updateHighlightedCell();
+                        });
+                    }
                 }
-            });
+            );
 
             // 三联输入框滚轮
-            [dom.inputVal1, dom.inputVal2, dom.inputVal3].forEach(input => {
+            [dom.inputVal1, dom.inputVal2, dom.inputVal3].forEach((input) => {
                 if (input) App.utils.enableTripleInputScroll(input);
             });
 
@@ -260,13 +268,15 @@
 
             // 设置弹窗导航
             if (dom.settingsNavBtns) {
-                dom.settingsNavBtns.forEach(btn => {
+                dom.settingsNavBtns.forEach((btn) => {
                     btn.addEventListener('click', function () {
-                        dom.settingsNavBtns.forEach(b => b.classList.remove('active'));
+                        dom.settingsNavBtns.forEach((b) => b.classList.remove('active'));
                         this.classList.add('active');
                         const panelId = this.dataset.settingsPanel;
-                        dom.settingsPanelContents.forEach(p => p.classList.remove('active'));
-                        const targetPanel = document.getElementById('settingsPanel' + panelId.charAt(0).toUpperCase() + panelId.slice(1));
+                        dom.settingsPanelContents.forEach((p) => p.classList.remove('active'));
+                        const targetPanel = document.getElementById(
+                            'settingsPanel' + panelId.charAt(0).toUpperCase() + panelId.slice(1)
+                        );
                         if (targetPanel) targetPanel.classList.add('active');
                         // 切换到方案面板时刷新方案列表
                         if (panelId === 'scheme') {
@@ -315,5 +325,4 @@
             }
         }
     };
-
-})(window.App = window.App || {});
+})((window.App = window.App || {}));

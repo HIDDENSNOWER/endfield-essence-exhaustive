@@ -79,6 +79,7 @@
             // ---------- 数据集管理按钮 ----------
             'btnExport', // 导出按钮
             'btnImport', // 导入按钮
+            'btnImportExternal', // 导入/转换外部数据按钮
             'btnNewDataset', // 新建数据集按钮
             'btnRename', // 重命名数据集按钮
             'btnDeleteDataset', // 删除数据集按钮
@@ -381,7 +382,20 @@
             'noteSearchInput', // 备注搜索输入框
             'noteSearchCount', // 匹配数量显示
             'btnNoteSearchPrev', // 上一个匹配按钮
-            'btnNoteSearchNext' // 下一个匹配按钮
+            'btnNoteSearchNext', // 下一个匹配按钮
+
+            // ---------- 外部数据导入 ----------
+            'modalExternalImport', // 弹窗遮罩
+            'btnCloseExternalImport',
+            'btnExtImportPickFile',
+            'extImportFile',
+            'extImportFileName',
+            'extImportPaste',
+            'extImportDatasetName',
+            'extImportPreview',
+            'btnExtImportPreview',
+            'btnCancelExternalImport',
+            'btnConfirmExternalImport'
         ];
 
         // =========================================================================

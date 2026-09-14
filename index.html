@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.20</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.21</title>
 
     <!-- 内容安全策略（CSP） -->
     <meta http-equiv="Content-Security-Policy"
@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="css/features/region.css">
     <link rel="stylesheet" href="css/features/acquire-tooltip.css">
     <link rel="stylesheet" href="css/features/stats.css">
+    <link rel="stylesheet" href="css/features/external-import.css">
     <!-- 设置弹窗样式（拆分模块） -->
     <link rel="stylesheet" href="css/settings/settings-base.css">
     <link rel="stylesheet" href="css/settings/settings-table.css">
@@ -260,6 +261,7 @@
                     <button class="btn btn-sm" id="btnRename" title="重命名当前数据集">重命名</button>
                     <button class="btn btn-sm btn-danger" id="btnDeleteDataset" title="删除当前数据集">删除</button>
                 </div>
+                <button class="btn btn-sm btn-block" id="btnImportExternal" title="从外部基质识别工具导入日志并转换为数据集">导入/转换外部数据</button>
                 <button class="btn btn-sm btn-block" id="btnResetSync">重置同步</button>
                 <button class="btn btn-sm btn-block" id="btnSyncTFromDefault" title="将默认数据集的重复数(t)同步到当前数据集">同步默认数据</button>
 
@@ -424,8 +426,8 @@
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.20(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.20("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.21(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.21("裂隙填充"更新)
         </button>
     </footer>
 
@@ -614,6 +616,139 @@
                 <div id="mergeCellDetail" style="display:none; margin-top:8px; padding:8px 10px; border:1px solid var(--border-color,#444); border-radius:6px; background-color:var(--bg-hover); max-height:160px; overflow:auto;"></div>
             </div>
             <div class="modal-footer"><button class="btn" id="btnCancelMerge">取消</button><button class="btn btn-primary" id="btnConfirmMerge">确认应用</button></div>
+        </div>
+    </div>
+
+    <!-- 导入/转换外部数据弹窗 -->
+    <div class="modal-overlay" id="modalExternalImport" style="display:none;">
+        <div class="modal" style="max-width:640px;">
+            <div class="modal-header">
+                <span>📥 导入/转换外部数据</span>
+                <button class="btn-icon btn-sm" id="btnCloseExternalImport" style="border:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="padding:10px 12px; border:1px solid var(--border-default); border-radius:6px; background:var(--bg-secondary); font-size:0.82rem; line-height:1.8;">
+                    <div style="font-weight:600; margin-bottom:4px;">📖 日志来源：终末地基质妙妙小工具</div>
+                    <div style="color:var(--text-secondary);">
+                        本功能用于将「终末地基质妙妙小工具」的识别日志转换为当前项目的数据集。
+                        尚未安装的话，请先下载并运行该工具，扫描基质后再回到此处导入日志。
+                    </div>
+                    <div style="margin-top:6px;">
+                        <a href="https://ef.yituliu.cn/resources/essence-recognizer"
+                           target="_blank" rel="noopener noreferrer"
+                           style="color:var(--accent-primary); text-decoration:underline;">官网（下载最新版）</a>
+                        <span style="color:var(--text-tertiary); margin:0 6px;">·</span>
+                        <a href="https://github.com/Logical-Byte/endfield-essence-recognizer"
+                           target="_blank" rel="noopener noreferrer"
+                           style="color:var(--accent-primary); text-decoration:underline;">项目地址（GitHub）</a>
+                    </div>
+                </div>
+                <!-- 导入引导（折叠） -->
+                <details class="ext-guide" id="extImportGuide">
+                    <summary>
+                        <span>📖 导入引导</span>
+                        <span class="ext-guide-hint">（从下载小工具到导入数据的 11 步流程）</span>
+                    </summary>
+                    <ol class="ext-guide-steps">
+
+                        <li>
+                            <div class="ext-guide-step-title">点击下载并安装「终末地基质妙妙小工具」</div>
+                            <div class="ext-guide-step-desc">点击上方「官网（下载最新版）」，进入下载页面。</div>
+                            <img src="assets/guide/01-open-link.png" alt="点击下载链接" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">在下载页点击「点击下载」</div>
+                            <div class="ext-guide-step-desc">下载 <code>endfield-essence-recognizer-v1.2.0-windows.zip</code>。</div>
+                            <img src="assets/guide/02-download.png" alt="点击下载" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">解压下载完成的文件</div>
+                            <div class="ext-guide-step-desc">右键 zip → <b>解压到当前文件夹</b>。不会解压的请自行查找教程。</div>
+                            <img src="assets/guide/03-unzip.png" alt="解压" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">打开小工具的「设置」</div>
+                            <div class="ext-guide-step-desc">运行 <code>endfield-essence-recognizer.exe</code>，左侧导航点击「<b>设置</b>」。</div>
+                            <img src="assets/guide/04-open-settings.png" alt="打开设置" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">取消勾选全部武器</div>
+                            <div class="ext-guide-step-desc">在「将以下武器所对应的基质视为宝藏」区块下，把稀有度与武器类型的勾选<b>全部取消</b>。这样所有基质都会被识别为养成材料，便于 EEE 完整记录。</div>
+                            <img src="assets/guide/05-uncheck-all.png" alt="取消勾选全部武器" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">宝藏 / 养成材料均选「不去动他」</div>
+                            <div class="ext-guide-step-desc">在「遇到宝藏基质或养成材料时，该如何操作？」区块，两栏都选「<b>不主动他</b>」，其余设置保持默认。</div>
+                            <img src="assets/guide/06-keep-default.png" alt="两者均选不主动他" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">打开日志文件夹</div>
+                            <div class="ext-guide-step-desc">切到左侧「日志」页，点击右上角「<b>打开日志文件夹</b>」。无论是否运行过扫描，都建议先打开一次以确认路径。</div>
+                            <img src="assets/guide/07-open-logs.png" alt="打开日志文件夹" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">删除旧的日志文件</div>
+                            <div class="ext-guide-step-desc">删除上一次扫描生成的 <code>log_*.log</code>。若提示无法删除，先关闭小工具再删除，避免新旧日志混在一起。</div>
+                            <img src="assets/guide/08-delete-old.png" alt="删除旧日志" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">扫描游戏内所有基质</div>
+                            <div class="ext-guide-step-desc">按小工具教程，在游戏内用快捷键 <code>[</code> / <code>]</code> 扫描基质。扫描过程中日志会实时写入，结束后回到 EEE。</div>
+                            <img src="assets/guide/09-scan.png" alt="扫描基质" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">回到 EEE，选择日志文件</div>
+                            <div class="ext-guide-step-desc">在下方「日志文件」中点击「<b>选择日志文件…</b>」，选中刚才生成的 <code>log_*.log</code>。</div>
+                            <img src="assets/guide/10-select-log.png" alt="选择日志文件" loading="lazy">
+                        </li>
+
+                        <li>
+                            <div class="ext-guide-step-title">预览并导入为新数据集</div>
+                            <div class="ext-guide-step-desc">点击「预览」核对映射结果，确认无误后点「<b>导入为新数据集</b>」完成转换。</div>
+                            <img src="assets/guide/11-import.png" alt="导入为新数据集" loading="lazy">
+                        </li>
+
+                    </ol>
+                    <p class="ext-guide-note">
+                        提示：若日志文件被小工具占用导致读取失败，请先关闭小工具再重试。
+                    </p>
+                </details>
+                <div class="form-group" style="margin-top:14px;">
+                    <label>日志文件</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="btn btn-sm" id="btnExtImportPickFile">选择日志文件…</button>
+                        <span id="extImportFileName" style="font-size:0.82rem; color:var(--text-secondary);">未选择</span>
+                    </div>
+                    <input type="file" id="extImportFile" accept=".log,.txt,text/plain" style="display:none;">
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>或 直接粘贴日志内容</label>
+                    <textarea id="extImportPaste" placeholder="在此粘贴日志文本…" style="width:100%; height:110px; resize:vertical; font-family:monospace; font-size:0.75rem;"></textarea>
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>数据集名称</label>
+                    <input type="text" id="extImportDatasetName" maxlength="50" placeholder="留空则自动命名" style="width:100%;">
+                </div>
+                <div id="extImportPreview" style="margin-top:12px; padding:8px 10px; border:1px solid var(--border-default); border-radius:6px; background:var(--bg-secondary); font-size:0.82rem; line-height:1.6; max-height:220px; overflow:auto; display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btnExtImportPreview">预览</button>
+                <button class="btn" id="btnCancelExternalImport">取消</button>
+                <button class="btn btn-primary" id="btnConfirmExternalImport" disabled>导入为新数据集</button>
+            </div>
         </div>
     </div>
 
@@ -971,7 +1106,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.20("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.21("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -1087,6 +1222,7 @@
     <script defer src="js/features/data/dataset-remark.js"></script>
     <script defer src="js/features/data/import-export.js"></script>
     <script defer src="js/features/data/dataset-merge.js"></script>
+    <script defer src="js/features/data/external-import.js"></script>
     <script defer src="js/features/data/region-manager.js"></script>
     <script defer src="js/features/data/default-loader.js"></script>
 

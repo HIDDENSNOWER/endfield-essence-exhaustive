@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.20**
+> 适用版本：**v0.9.21**
 
 ---
 
@@ -18,10 +18,11 @@
 | 明暗主题 | `features/preferences/theme.js` | `base.css` |
 | 数据集 CRUD / 备注 | `features/data/dataset-manager.js` / `dataset-remark.js` | `dom.js` |
 | 导入 / 导出 / 合并 | `features/data/import-export.js` / `dataset-merge.js` | `lib/jszip.min.js` |
+| 外部日志导入 / 转换 | `features/data/external-import.js` | `features/table/stats.js` / `core/dom.js` / `events.js` / `css/features/external-import.css` |
 | 默认数据集加载 | `features/data/default-loader.js` | `data/data.json` |
 | 地区增删改 / 悬停高亮 | `features/data/region-manager.js` | `dom.js` / `features/region.css` |
 | 未获取统计 / 筛选 / 进度条 / 检索 / 模式 / 双击锁定 | `features/table/unacquired.js` | `features/unacquired.css` / `dom.js` |
-| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 拥有状态 / 列表 / 详情窗 / 拖动 / 动画 / 双击筛选） | `features/table/stats.js` | `features/stats.css` / `layout.css` |
+| 统计信息面板（总览 / 进度 / 维度明细 / 排序 / 展开 / 缺口分析 / 筛选 / 拥有状态 / 列表 / 详情窗 / 拖动 / 动画 / 双击筛选 / 基质总数） | `features/table/stats.js` | `features/stats.css` / `layout.css` |
 | 可获取地点悬浮窗（主窗） | `features/table/cell-acquire-tooltip.js` | `features/acquire-tooltip.css` |
 | 单元格备注悬浮窗（从窗） | `features/note/note.js` | `features/note.css` |
 | 悬浮窗定位工具 | `core/utils.js`（`buildAroundCursor` / `rectsOverlap`） | `note.js` / `cell-acquire-tooltip.js` |
@@ -36,8 +37,10 @@
 | 备注 / 悬浮框 / 图片查看样式 | `css/features/note.css` | — |
 | 加载指示器样式 | `css/features/loading.css` | — |
 | 地区卡片 / 收集进度条样式 | `css/features/region.css` | — |
+| 外部导入引导样式 | `css/features/external-import.css` | `index.html`（`modalExternalImport`） |
 | CI / 提交前 hook | `.github/workflows/ci.yml` / `.husky/pre-commit` / `package.json`（`lint-staged`） | — |
 | 版本号一键更新 | `bump-version.js` | 7 文件（含 `package-lock.json`） |
+
 ---
 
 ## 30 秒速览
@@ -60,9 +63,9 @@
 ```
 
 - **依赖规则**：上层可依赖下层，下层不可依赖上层；同层可互调
-- **规模**：52 个自写源文件 / 约 16,000 行
+- **规模**：53 个自写源文件 / 约 16,600 行
 - **形态**：纯前端 SPA，无框架 / 无构建 / 无后端
-- **CSS**：模块化拆分——`base` / `layout` / `components` + `features/`（6 文件）+ `settings/`
+- **CSS**：模块化拆分——`base` / `layout` / `components` + `features/`（7 文件）+ `settings/`
 - **持久化**：localStorage（数据 / 设置 / 地区 / 导航按键 / 统计面板状态）+ IndexedDB（图片）
 - **外部依赖**：仅 `jszip.min.js`
 - **开发依赖**：eslint / prettier / jsdom / husky / lint-staged
@@ -110,7 +113,7 @@
 ### 功能层 `features/`
 | 子目录 | 模块 |
 |--------|------|
-| data | `datasetManager` / `datasetRemark` / `importExport` / `datasetMerge` / `defaultLoader` / `cacheClear` / `regionManager` |
+| data | `datasetManager` / `datasetRemark` / `importExport` / `datasetMerge` / `defaultLoader` / `cacheClear` / `regionManager` / `externalImport` |
 | table | `tableRenderer` / `rowFilter` / `stats` / `noteSearch` / `cellTooltip` / `unacquired` / `cellAcquireTooltip` / `cellHighlighter` |
 | cell | `cellValue` / `cellRecord` / `history` |
 | preferences | `theme` / `tableStyle` / `colorPreview` / `interfaceColors` / `schemeManager` / `stateColorSchemeManager` / `storageManager` |
@@ -150,7 +153,7 @@
 14.   updateDatasetRemark()
 15.   updateLockedUI()
 16.   restoreRightPanelState()
-17.   events.bindAllEvents()
+17.   events.bindAllEvents()    ← 含 externalImport.bindEvents()
 17.5  namespace.init()          构建分层视图（幂等；末尾冻结 core / services）
 17.6  keyboard.init()           键盘快捷键（含导航按键设置绑定）
 18.   layout.switchPanel('input')
@@ -164,6 +167,7 @@
 - `keyboard.init()` 依赖 `history` / `modal` / `tableRenderer` 就绪
 - 异步默认数据加载前记录数据集键，返回时校验（竞态防护）
 - `keyboard.init()` 的 `bindNavKeySettings` 依赖 `index.html` 中的 `.key-capture-input` 已渲染
+- `externalImport.bindEvents()` 依赖 `dom.js` 已缓存 `btnImportExternal` 等 id
 
 ---
 
@@ -206,7 +210,7 @@
 
 | 模式 | 位置 |
 |------|------|
-| 集中绑定 | `events.js` `bindAllEvents()`（主流，18+ 模块） |
+| 集中绑定 | `events.js` `bindAllEvents()`（主流，19+ 模块） |
 | 模块自绑 | `note.js` `initNoteFeature()` / `cell-acquire-tooltip.js` `init()` / `keyboard.js` `init()` / `stats.js` `_bindEvents()` |
 
 ### 键盘导航
@@ -364,7 +368,77 @@ App.utils.getColumnIndex(groupIdx, subIdx)
 - `App.core.constants.ROW_NAMES = []` 仍可（正常数据操作不受影响）
 - `App.features` / `App.entry` 不冻结（模块可能动态挂载）
 
-### 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强 · v0.9.20 筛选/动画增强）
+### 外部数据导入（v0.9.21）
+
+**入口**：数据管理面板「导入/转换外部数据」按钮 → `modalExternalImport` 弹窗。
+
+**输入源**：`endfield-essence-recognizer`（终末地基质妙妙小工具，AGPL-3.0）生成的 `log_*.log`。
+
+**日志关键行**：
+
+```
+[INFO]    已识别当前基质，属性: A、B、C, 稀有度: R, 未弃用, 已锁定
+[WARNING] 这个基质虽然匹配武器X（N★ 类型），但…因此这个基质是养成材料。   ← 实装
+[SUCCESS] 这个基质是养成材料，它不匹配任何已实装武器。                     ← 非实装
+```
+
+- A = 能力值（敏捷 / 力量 / 意志 / 智识 / 主能力）
+- B = 属性（`ROW_NAMES` 中 12 项之一）
+- C = 系列技能（`ALL_GROUPS` 中 14 项之一）
+- 三词条可带 `+N` 等级后缀；无后缀按满级 `6` 计
+
+**解析流程**（`parseLog`）：
+
+1. 逐行扫描
+2. 命中 `已识别当前基质` 正则 → 建立 pending 条目，同时提取三词条等级拼成 `vStr`（如 `"321"`）
+3. 后续行若含 `虽然匹配武器` → 标记 pending 条目的 `isImplemented = true`
+4. 下一条 `已识别` 前若没命中 `虽然匹配武器` → 视为非实装
+
+**映射**（`resolveEntries`）：
+
+- 通过 `findIndexByName` 在 `SUB_ATTRS` / `ROW_NAMES` / `ALL_GROUPS` 中匹配（容忍 `"XX"` / `"XX提升"` 两种写法）
+- 匹配失败 → 计入 `unresolved`，预览时展示前 5 条
+
+**聚合**（`buildRows`）：
+
+| data.json 该格 | 日志识别 | 结果 |
+|---|---|---|
+| `t > 0` | 实装 | `a += 1` |
+| `t > 0` | 非实装 | `a += 1`（不写 `v`） |
+| `t = 0` | 实装 | `a += 1` |
+| `t = 0` | 非实装 | `v = max(v, vStr)` |
+
+- `t` 直接取自 `data/data.json` 的基准，不累加
+- 基准通过 `fetch('data/data.json', { cache: 'no-store' })` 读取，加载一次后缓存到 `_baseRows`
+- 加载失败 → `_baseRows = null`，`t` 基准按 0 处理（预览面板明确提示）
+
+**落库**（`_save`）：
+
+- 归一化：`rawRows.map(row => ({ name, data: row.data.map(App.utils.normalizeCell) }))`
+  - `a ≤ t` 夹紧（避免 `t=0`、`a=3` 的不一致状态）
+  - `v` 修剪、`note` 结构补齐
+- 与 `import-export.js` 的 `proceedImport` 保持一致
+- 通过 `App.storage.setJSON(<数据集名>, rows)` 落入现有数据集体系
+
+**预览面板**（`preview`）：
+
+- 显示：日志条目数 / 实装条数 / 非实装条数 / 命中格数 / 未映射条数（前 5 条明细）/ t 基准加载状态 / 示例条目（实装 3 条 + 非实装 2 条）
+- 点「导入为新数据集」前必须先预览一次（`_lastPreview` 非空）
+
+**引导 UI**：
+
+- `<details class="ext-guide">` 折叠，内含 `<ol class="ext-guide-steps">` 11 步
+- 步骤高度固定（`max-height: 320px`），内部滚动，`<summary>` 常驻可见
+- 图片懒加载（`loading="lazy"`），折叠时不请求
+- 图片存 `assets/guide/*.png`（11 张）
+- 样式全在 `css/features/external-import.css`
+
+**数据契约**：
+
+- 不新增 localStorage 键
+- 不使用 `version: '2.0'` 导出文件格式（那是 `import-export.js` 的范围）
+
+### 统计面板（v0.9.17 重写 · v0.9.18 维度明细增强 · v0.9.20 筛选/动画增强 · v0.9.21 基质总数）
 
 **位置**：左侧独立页（`#leftStatsPage`），不再占用右侧面板容器。右侧面板容器原「统计」按钮和面板已移除。
 
@@ -460,6 +534,14 @@ return 0;
 - **列自适应**：`.stats-matrix-table { width: max-content; min-width: 100%; table-layout: auto }`；`th/td { white-space: nowrap; padding: 4px 8px }`
 - **水平滚动**：`.stats-list-block { overflow-x: auto }`
 - 地区明细展开后局部换行：`.stats-matrix-table .stats-cell-region-list { white-space: normal; word-break: break-word }`
+
+**基质总数（v0.9.21）**：
+
+- 列表头部文案：`符合条件的基质：n 项 · 共 N 基质`
+- `n = items.length`（命中的格数）
+- `N = items.reduce((sum, it) => sum + Math.max(1, it.t || 0), 0)`（基质口径）
+- 与总览「总基质数」、详情窗、维度明细进度条口径一致
+- 位置：`_renderList` 里 `const shown = items.slice(0, _listLimit);` 之后
 
 **刷新反馈（v0.9.20）**：
 
@@ -617,6 +699,8 @@ return 1;                                                     // 完全空白：
 | `smarttable_stats_dim_expanded` | 维度明细展开状态（`'0'` / `'1'`） |
 | `<数据集名>` | 该数据集的行数据 |
 
+**外部导入（v0.9.21）不新增存储键**：转换结果通过 `App.storage.setJSON(<数据集名>, rows)` 落入现有数据集体系；`data/data.json` 仅作为 `t` 的只读基准被 `fetch` 读取。
+
 ### sessionStorage / IndexedDB
 
 - sessionStorage：`smarttable_about_shown`（首访标记）
@@ -645,6 +729,8 @@ return 1;                                                     // 完全空白：
 | `test/note.test.js`（jsdom） | 8 | `App.note.positionNoteTooltip` 主从定位 |
 | `test/unacquired.test.js`（jsdom） | 12 | `App.unacquired` 模式切换 / 双击锁定 |
 | **合计** | **164** | — |
+
+> 外部导入模块（`external-import.js`）的纯函数（`parseLog` / `findIndexByName` / `buildRows`）暂无对应测试；后续如需补充，参考「新增测试」一节。注意 `_loadBaseRows` 依赖 `fetch`，测试时应 stub `_baseRows`。
 
 ### jsdom 使用规范
 
@@ -735,7 +821,7 @@ npx lint-staged
 3. 若需要 Ctrl/Cmd 修饰，放在 `const mod = e.ctrlKey || e.metaKey;` 之后
 4. 若需自定义按键，参考 `bindNavKeySettings` 与 `smarttable_cell_nav_keys` 模式
 
-### 新增统计面板子区块（参考 v0.9.18 维度明细增强 / v0.9.20 拥有状态筛选）
+### 新增统计面板子区块（参考 v0.9.18 维度明细增强 / v0.9.20 拥有状态筛选 / v0.9.21 基质总数）
 
 1. **骨架**：`_ensureUI` 里加 `<section class="stats-block">`，标题栏内放操作组
 2. **状态**：模块顶部定义 `const XXX_KEY` + `let _xxx`；配套 `loadXxx()` / `saveXxx()`
@@ -747,6 +833,15 @@ npx lint-staged
 5. **加载**：`_renderAll()` 里先 `_xxx = loadXxx()`，再 `_renderXxxSelect()` / `_renderXxx()`
 6. **持久化**：状态改变时立即 `saveXxx()`
 7. **动画**（如需恒定速度生长）：给元素挂 `data-target-width`，调 `animateBars(container, speed)`
+8. **口径一致**：如需基质计数，用 `Σ max(1, t)`（与总览 / 详情窗 / 维度明细进度条一致）
+
+### 扩展外部导入
+
+1. **新增工具格式**：在 `external-import.js` 内新增 `parseXxxLog(text)` 独立函数，返回与 `parseLog` 相同的条目结构（`{ subAttrRaw, rowRaw, groupRaw, vStr, isImplemented, raw }`）
+2. **新增词条映射**：若工具的术语与本项目不一致，扩展 `findIndexByName` 或为每个工具维护独立映射表
+3. **新增预览项**：在 `preview()` 的 `html` 拼接里加一行；`_lastPreview` 结构保持不变
+4. **落库必过 `normalizeCell`**：`_save` 里 `rawRows.map(row => ({ name, data: row.data.map(App.utils.normalizeCell) }))` 保持不变
+5. **新增引导步骤**：`index.html` 的 `<ol class="ext-guide-steps">` 加 `<li>`，图片放 `assets/guide/`，`loading="lazy"`
 
 ### 新增测试
 
@@ -763,18 +858,18 @@ npx lint-staged
 npm ci && npm run lint && npm test
 
 # 2. 更新版本号（7 文件）
-node bump-version.js 0.9.21
+node bump-version.js 0.9.22
 
 # 3. 更新 README / ARCHITECTURE 版本演进表（手动）
 
 # 4. 提交
 git add -A
-git commit -m "v0.9.21 <主题>"
+git commit -m "v0.9.22 <主题>"
 git push
 
 # 5. 打 tag
-git tag -a v0.9.21 -m "v0.9.21 <主题>"
-git push origin v0.9.21
+git tag -a v0.9.22 -m "v0.9.22 <主题>"
+git push origin v0.9.22
 ```
 
 ### 本地验证
@@ -846,8 +941,8 @@ npm run lint
 | **`#statsDimBlock` 与 `.is-expanded` 成对** | 展开时用 `.is-expanded` 覆盖 `max-height` / `overflow-y`；缺 CSS 则展开无效 |
 | **维度明细固定 5 行依赖 `min-height: 26px`** | 行高漂移会导致视窗切行；改字号 / padding 需同步调整 `#statsDimBlock` 的 `max-height` |
 | **维度明细行有 `border-top` 时 `box-sizing`** | 必须 `box-sizing: border-box`，否则 `min-height` 会被 border 撑大 |
-| **`index.html` 引用 6 个 CSS 而非旧的 `features.css`** | 拆分为 v0.9.19；若只删了旧文件忘了改引用，页面会裸奔 |
-| **CSS 拆分后 `.gitignore` 可能误伤 `css/features/`** | 有些 gitignore 模板带 `features/` 规则；`git status --short css/` 应显示 6 个新文件 |
+| **`index.html` 引用 7 个 CSS 而非旧的 `features.css`** | 拆分为 v0.9.19；v0.9.21 新增 `external-import.css`；若只删了旧文件忘了改引用，页面会裸奔 |
+| **CSS 拆分后 `.gitignore` 可能误伤 `css/features/`** | 有些 gitignore 模板带 `features/` 规则；`git status --short css/` 应显示 7 个新文件 |
 | **`lint-staged` 默认不含 CSS** | v0.9.19 前只处理 js/json/md；若想 CSS 也走 prettier，需在 `package.json` 显式加 `"css/**/*.css": ["prettier --write"]` |
 | **`animateBars` 第二参数是「每秒百分比」不是毫秒** | 传 600/800 会让满条 0.17s 完成；常用值 80~160 |
 | **`animateHeatmap` 第二参数是「每秒 hue 度数」** | 默认 150 → 120° 约 0.8s；不要传毫秒 |
@@ -858,6 +953,15 @@ npm run lint
 | **拥有状态 chip 的 `data-ownership` 必须在通用 `.stats-filter-chip` 分支之前拦截** | 否则会被 `_filters[undefined]` 吞掉并抛错 |
 | **拥有状态筛选默认 `size === 2` 即不筛选** | `size === 0` 也视为不筛选（宽容处理），避免「清空」后误显示空结果 |
 | **`_ownershipFilter` 是 `const`** | 全选/清空按钮要用 `clear() + add()`，不能整体重新赋值 |
+| **外部导入依赖 `data/data.json` 可访问** | `fetch('data/data.json')`，`file://` 下会被协议/CSP 拦截；HTTP 环境无问题 |
+| **外部导入结果必须过 `normalizeCell`** | `buildRows` 可能产出 `a > t`（日志命中多次实装但 `data.json` 中 `t=0`）；`_save` 里统一 `App.utils.normalizeCell` 夹紧 |
+| **`external-import.js` 的 `bindEvents` 非幂等** | 内部无 `_bound` 标志；在 `events.js` 里只调用一次，避免重复引入脚本或重复调用 |
+| **引导截图路径大小写敏感** | `assets/guide/*.png` 在 Linux / GitHub Pages 上区分大小写；重命名时留意 |
+| **`external-import.css` 必须在 `<head>` 引入** | 放在 `<body>` 里虽合法但违反项目约定，且首次加载顺序不可控 |
+| **`extImportOnlyPristine` 已废弃** | 规则改为「两类都记录」后，该复选框无对应逻辑；HTML 与 `dom.js` 的 `ids` 里均不应再出现 |
+| **外部导入不新增 localStorage 键** | 结果通过 `App.storage.setJSON(<数据集名>, rows)` 落入现有数据集体系；`data/data.json` 仅作为 `t` 的只读基准 |
+| **日志「实装 / 非实装」判定靠 `虽然匹配武器`** | 逐行累积：识别行之后、下一条识别行之前，若出现该关键词，则本条为实装 |
+| **无 `+N` 后缀的词条按满级 6 计** | 识别器偶有等级识别失败的情况；按 `1` 或跳过会导致 `v` 偏差 |
 
 ---
 
@@ -884,6 +988,8 @@ npm run lint
 | 键盘导航隔离 | 弹窗打开 / 焦点在输入框时自动跳过 |
 | 自定义按键回退 | localStorage 读取失败时用默认方向键 |
 | 命名空间冻结 | `App.core` / `App.services` 运行时只读 |
+| 外部导入来源隔离 | 仅解析日志文本，不复制/链接/分发外部程序代码 |
+| 外部导入归一化 | 结果过 `normalizeCell`，防止 `a > t` 的不一致状态 |
 | CI 依赖扫描 | `npm audit --audit-level=high` 为硬门禁 |
 | 提交前 lint | husky + lint-staged 自动 `eslint --fix` |
 | 动画性能 | 逐帧改 `style.width` / `style.background` + `textContent`，无 DOM 结构变化 |
@@ -949,6 +1055,16 @@ npm run lint
 | 缺口分析双击应用筛选 | 从可视矩阵直接跳转到筛选结果，减少手动筛选成本 |
 | 切换 tab/排序跳过底部进度动画 | 数据未变；动画会形成"闪烁"错觉；仅维度明细条保留动画作为视觉反馈 |
 | 刷新按钮文案 + 淡入反馈 | 让"刷新无实感"变成可感知的操作；0.9s 复位避免状态残留 |
+| 统计列表加「共 N 基质」 | 格数（n 项）+ 基质数（N）两个口径并排显示，避免用户误把格数当基质数 |
+| 外部导入以 `data.json` 为 `t` 基准而非累加 | `data.json` 是实装数据的权威来源；重复数不应由识别日志决定 |
+| 非实装只写 `v` 不动 `t` | 识别日志中非实装条目不含重复数信息；写 `t` 会污染基准 |
+| 实装与非实装两条流水线互不干扰 | 规则清晰、可分别调试；一条解析出错不影响另一条 |
+| 外部导入结果必过 `normalizeCell` | 与 `import-export.js` 的 `proceedImport` 保持一致；统一执行 `a ≤ t` 夹紧 |
+| 引导用原生 `<details>` 而非自定义 JS | 零 JS，键盘 / A11y 由浏览器原生支持；不干扰弹窗焦点陷阱 |
+| 引导图片懒加载 | 折叠时不请求；展开后才加载；11 张图不拖慢弹窗首开 |
+| 引导列表固定高度 + 内部滚动 | `<summary>` 常驻可见，用户随时能折叠；`<ol>` 独立滚动 |
+| 外部工具引导 11 步内嵌弹窗 | 用户不需要来回切换文档；流程闭合（下载 → 设置 → 扫描 → 导入） |
+| 外部导入不新增存储键 | 复用数据集体系；减少维护面 |
 
 ---
 
@@ -1003,7 +1119,8 @@ npm run lint
 | v0.9.17 | 统计面板重写 | 左侧独立页 + 数据集切换 + 三维度 + 三交叉表缺口分析（连续色阶 + 底部标尺） + 详情悬浮窗 + 右列可拖动 + jszip SRI 去除 |
 | v0.9.18 | 统计维度明细增强 | 三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化 |
 | v0.9.19 | CSS 模块化拆分 | features.css 拆为 note / loading / unacquired / region / acquire-tooltip / stats 六文件；清理死代码（三表缺口分析样式） |
-| **v0.9.20** | **统计面板增强** | 拥有状态筛选（已拥有 / 未拥有） + 结果列表列顺序（能力值 → 属性 → 系列技能） + 列自适应宽度 + 刷新按钮反馈（文案 + 淡入 + Toast） + 恒定速度进度动画（颜色随宽度实时变档） + 缺口分析颜色与数字同步滚动 + 双击单元格应用筛选 |
+| v0.9.20 | 统计面板增强 | 拥有状态筛选（已拥有 / 未拥有） + 结果列表列顺序（能力值 → 属性 → 系列技能） + 列自适应宽度 + 刷新按钮反馈（文案 + 淡入 + Toast） + 恒定速度进度动画（颜色随宽度实时变档） + 缺口分析颜色与数字同步滚动 + 双击单元格应用筛选 |
+| **v0.9.21** | **外部数据导入** | 「导入/转换外部数据」按钮 + 终末地基质妙妙小工具日志解析（实装 `a+1` / 非实装写 `v` / `t` 从 `data.json` 读） + `normalizeCell` 归一化 + 11 步图文引导 + `stats.js` 列表显示「共 N 基质」 + 引导区样式外置为 `external-import.css`（第 7 个 features 文件） + 引导图 `assets/guide/` |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

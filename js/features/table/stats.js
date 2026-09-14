@@ -1518,9 +1518,12 @@
 
             const shown = items.slice(0, _listLimit);
 
+            // 基质总数：与总览同口径 Σ max(1, t)
+            const totalEssence = items.reduce((sum, it) => sum + Math.max(1, it.t || 0), 0);
+
             let html = `
                 <div class="stats-list-header">
-                    <span>符合条件的基质：<b>${items.length}</b> 项</span>
+                    <span>符合条件的基质：<b>${items.length}</b> 项 · 共 <b>${totalEssence}</b> 基质</span>
                     ${items.length > _listLimit ? `<span class="stats-list-limit">（仅显示前 ${_listLimit} 项）</span>` : ''}
                 </div>
             `;

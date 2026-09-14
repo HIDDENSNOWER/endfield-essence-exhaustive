@@ -1,0 +1,124 @@
+/* ==================== 外部导入弹窗 · 引导区 ==================== */
+.ext-guide {
+    margin-top: 12px;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    font-size: 0.82rem;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.ext-guide > summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    user-select: none;
+    list-style: none;
+    box-sizing: border-box;
+}
+.ext-guide > summary::-webkit-details-marker { display: none; }
+.ext-guide > summary::marker { content: ''; }
+
+.ext-guide > summary::before {
+    content: '▸';
+    display: inline-block;
+    line-height: 1;
+    margin-right: 6px;
+    color: var(--text-tertiary);
+    transition: transform 0.15s ease;
+}
+.ext-guide[open] > summary::before {
+    transform: rotate(90deg);
+}
+.ext-guide > summary:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: -2px;
+}
+
+.ext-guide-hint {
+    font-weight: 400;
+    color: var(--text-tertiary);
+    margin-left: 6px;
+}
+
+.ext-guide-steps {
+    margin: 0;
+    padding: 4px 14px 4px 30px;
+    border-top: 1px solid var(--border-muted);
+    line-height: 1.65;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    box-sizing: border-box;
+}
+
+.ext-guide-steps::-webkit-scrollbar { width: 6px; }
+.ext-guide-steps::-webkit-scrollbar-track { background: transparent; }
+.ext-guide-steps::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(128, 128, 128, 0.4));
+    border-radius: 3px;
+}
+.ext-guide-steps::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(128, 128, 128, 0.6));
+}
+
+.ext-guide-steps > li {
+    margin: 10px 0;
+    color: var(--text-primary);
+}
+.ext-guide-steps > li::marker {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.ext-guide-step-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.ext-guide-step-desc {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+}
+
+.ext-guide-steps img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 6px 0;
+    border: 1px solid var(--border-muted);
+    border-radius: 4px;
+    background: var(--bg-primary);
+}
+
+.ext-guide-steps code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+}
+
+.ext-guide-note {
+    margin: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-muted);
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+/* ==================== 小屏适配 ==================== */
+@media (max-height: 800px) {
+    .ext-guide-steps { max-height: 220px; }
+}
+@media (max-height: 640px) {
+    .ext-guide-steps { max-height: 160px; }
+}
+
+/* ==================== 动效偏好 ==================== */
+@media (prefers-reduced-motion: reduce) {
+    .ext-guide > summary::before { transition: none; }
+}
