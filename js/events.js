@@ -68,6 +68,11 @@
                 App.externalImport.bindEvents();
             }
 
+            // 重复基质提示悬浮窗
+            if (App.datasetDuplicates && App.datasetDuplicates.bindEvents) {
+                App.datasetDuplicates.bindEvents();
+            }
+
             // 数据集覆盖/合并预览
             if (App.datasetMerge && App.datasetMerge.bindDatasetMergeEvents) {
                 App.datasetMerge.bindDatasetMergeEvents();

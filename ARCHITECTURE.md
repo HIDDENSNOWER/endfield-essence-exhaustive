@@ -1,7 +1,7 @@
 # ARCHITECTURE · 开发者文档
 
 > EEE 项目内部结构、模块依赖与扩展指南。
-> 适用版本：**v0.9.21**
+> 适用版本：**v0.9.22**
 
 ---
 
@@ -40,6 +40,7 @@
 | 外部导入引导样式 | `css/features/external-import.css` | `index.html`（`modalExternalImport`） |
 | CI / 提交前 hook | `.github/workflows/ci.yml` / `.husky/pre-commit` / `package.json`（`lint-staged`） | — |
 | 版本号一键更新 | `bump-version.js` | 7 文件（含 `package-lock.json`） |
+| 重复基质提示悬浮窗 | `features/data/dataset-duplicates.js` | `index.html` / `core/dom.js` / `events.js` / `features/data/dataset-manager.js` / `css/features/external-import.css` |
 
 ---
 
@@ -113,7 +114,7 @@
 ### 功能层 `features/`
 | 子目录 | 模块 |
 |--------|------|
-| data | `datasetManager` / `datasetRemark` / `importExport` / `datasetMerge` / `defaultLoader` / `cacheClear` / `regionManager` / `externalImport` |
+| data | `datasetManager` / `datasetRemark` / `importExport` / `datasetMerge` / `defaultLoader` / `cacheClear` / `regionManager` / `externalImport` / `datasetDuplicates` |
 | table | `tableRenderer` / `rowFilter` / `stats` / `noteSearch` / `cellTooltip` / `unacquired` / `cellAcquireTooltip` / `cellHighlighter` |
 | cell | `cellValue` / `cellRecord` / `history` |
 | preferences | `theme` / `tableStyle` / `colorPreview` / `interfaceColors` / `schemeManager` / `stateColorSchemeManager` / `storageManager` |
@@ -698,6 +699,7 @@ return 1;                                                     // 完全空白：
 | `smarttable_stats_dim_sort` | 维度明细排序（`gap-desc` / `gap-asc` / `default`） |
 | `smarttable_stats_dim_expanded` | 维度明细展开状态（`'0'` / `'1'`） |
 | `<数据集名>` | 该数据集的行数据 |
+| `smarttable_dataset_import_meta` | `{ [数据集名]: { importedAt, normalDuplicates[], implementedOverflows[] } }`（外部导入的重复提示记录；仅提示，不参与数据表） |
 
 **外部导入（v0.9.21）不新增存储键**：转换结果通过 `App.storage.setJSON(<数据集名>, rows)` 落入现有数据集体系；`data/data.json` 仅作为 `t` 的只读基准被 `fetch` 读取。
 
@@ -962,6 +964,9 @@ npm run lint
 | **外部导入不新增 localStorage 键** | 结果通过 `App.storage.setJSON(<数据集名>, rows)` 落入现有数据集体系；`data/data.json` 仅作为 `t` 的只读基准 |
 | **日志「实装 / 非实装」判定靠 `虽然匹配武器`** | 逐行累积：识别行之后、下一条识别行之前，若出现该关键词，则本条为实装 |
 | **无 `+N` 后缀的词条按满级 6 计** | 识别器偶有等级识别失败的情况；按 `1` 或跳过会导致 `v` 偏差 |
+| **重复提示仅操作 meta，不动数据表** | `dataset-duplicates.js` 的 `clearSelected` 只改 `smarttable_dataset_import_meta`；数据表 (`App.state.rows` / 数据集键) 全程不碰 |
+| **`datasetDuplicates.render()` 必须挂在 `updateLockedUI()` 里** | `init()` 流程中 `updateDatasetDisplay()` 不一定会被调用；挂 `updateLockedUI()` 才能保证刷新后按钮按数据正确显隐 |
+| **`dataset-duplicates.js` 的 `bindEvents()` 在 `events.js` 调用一次** | 内部无 `_bound` 标志，避免重复引入脚本或重复调用 |
 
 ---
 
@@ -1120,7 +1125,8 @@ npm run lint
 | v0.9.18 | 统计维度明细增强 | 三维度排序切换（未获取降序 / 升序 / 默认顺序） + 基质口径（已获取绿 / 未获取红，与总览一致） + 固定 5 行视窗 + 滚轮 + 展开/收起按钮 + 排序与展开状态持久化 |
 | v0.9.19 | CSS 模块化拆分 | features.css 拆为 note / loading / unacquired / region / acquire-tooltip / stats 六文件；清理死代码（三表缺口分析样式） |
 | v0.9.20 | 统计面板增强 | 拥有状态筛选（已拥有 / 未拥有） + 结果列表列顺序（能力值 → 属性 → 系列技能） + 列自适应宽度 + 刷新按钮反馈（文案 + 淡入 + Toast） + 恒定速度进度动画（颜色随宽度实时变档） + 缺口分析颜色与数字同步滚动 + 双击单元格应用筛选 |
-| **v0.9.21** | **外部数据导入** | 「导入/转换外部数据」按钮 + 终末地基质妙妙小工具日志解析（实装 `a+1` / 非实装写 `v` / `t` 从 `data.json` 读） + `normalizeCell` 归一化 + 11 步图文引导 + `stats.js` 列表显示「共 N 基质」 + 引导区样式外置为 `external-import.css`（第 7 个 features 文件） + 引导图 `assets/guide/` |
+| v0.9.21 | 外部数据导入 | 「导入/转换外部数据」按钮 + 终末地基质妙妙小工具日志解析（实装 `a+1` / 非实装写 `v` / `t` 从 `data.json` 读） + `normalizeCell` 归一化 + 11 步图文引导 + `stats.js` 列表显示「共 N 基质」 + 引导区样式外置为 `external-import.css`（第 7 个 features 文件） + 引导图 `assets/guide/` |
+| **v0.9.22** | **重复基质提示** | 数据管理面板新增「⚠️ 重复基质提示」按钮 + 固定高度悬浮窗（520×420，居中） + 条目复选框（整行可点） + 底部「清除勾选」 + `smarttable_dataset_import_meta` 独立存储（不改数据表） + 切换数据集自动切换 + 刷新后保留 + 删除数据集时清理 meta |
 
 **版本约定**：
 - `index.html`（4 处：title / 底部按钮 title 属性 / 底部按钮文本 / 关于弹窗）

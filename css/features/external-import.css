@@ -122,3 +122,132 @@
 @media (prefers-reduced-motion: reduce) {
     .ext-guide > summary::before { transition: none; }
 }
+
+/* ==================== 重复基质提示悬浮窗 ==================== */
+.dataset-dup-floating {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    max-width: calc(100vw - 40px);
+    height: 420px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    z-index: 900;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.dataset-dup-floating-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-default);
+    flex-shrink: 0;
+}
+
+.dataset-dup-floating-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.88rem;
+}
+
+.dataset-dup-floating-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 12px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+.dataset-dup-floating-body::-webkit-scrollbar { width: 6px; }
+.dataset-dup-floating-body::-webkit-scrollbar-track { background: transparent; }
+.dataset-dup-floating-body::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(128, 128, 128, 0.4));
+    border-radius: 3px;
+}
+
+.dataset-dup-floating-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-default);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.dataset-dup-floating-section { margin-bottom: 12px; }
+.dataset-dup-floating-section:last-child { margin-bottom: 0; }
+.dataset-dup-floating-section-title {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-muted);
+}
+
+.dataset-dup-floating-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding: 5px 6px;
+    line-height: 1.5;
+    border-bottom: 1px dashed var(--border-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.12s ease;
+}
+.dataset-dup-floating-item:hover { background: var(--bg-hover); }
+.dataset-dup-floating-item:last-child { border-bottom: none; }
+.dataset-dup-floating-item:has(.dup-item-checkbox:checked) {
+    background: var(--bg-tertiary);
+}
+
+.dup-item-checkbox {
+    flex-shrink: 0;
+    margin: 0 6px 0 0;
+    cursor: pointer;
+    accent-color: var(--accent-primary, #4a9eff);
+}
+
+.dataset-dup-floating-cell {
+    color: var(--text-primary);
+    min-width: 180px;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.dataset-dup-floating-meta {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.dataset-dup-floating-values {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+    flex: 1 1 100%;
+    padding-left: 4px;
+}
+.dataset-dup-keep {
+    color: #52c41a;
+    font-weight: 600;
+}
+.dataset-dup-discard {
+    color: #ff4d4f;
+    opacity: 0.75;
+    text-decoration: line-through;
+}

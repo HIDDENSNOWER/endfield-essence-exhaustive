@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>终末地基质穷举数据记录与统计工具ver.0.9.21</title>
+    <title>终末地基质穷举数据记录与统计工具ver.0.9.22</title>
 
     <!-- 内容安全策略（CSP） -->
     <meta http-equiv="Content-Security-Policy"
@@ -264,6 +264,7 @@
                 <button class="btn btn-sm btn-block" id="btnImportExternal" title="从外部基质识别工具导入日志并转换为数据集">导入/转换外部数据</button>
                 <button class="btn btn-sm btn-block" id="btnResetSync">重置同步</button>
                 <button class="btn btn-sm btn-block" id="btnSyncTFromDefault" title="将默认数据集的重复数(t)同步到当前数据集">同步默认数据</button>
+                <button class="btn btn-sm btn-block" id="btnDatasetDup" style="display:none;">⚠️ 重复基质提示</button>
 
                 <div class="panel-title" style="margin-top: 8px;">📥 数据输入</div>
                 <div class="form-group">
@@ -423,11 +424,23 @@
         </div>
     </div>
 
+    <!-- ==================== 重复基质提示悬浮窗 ==================== -->
+    <div id="datasetDupFloating" class="dataset-dup-floating" style="display:none;">
+        <div class="dataset-dup-floating-header">
+            <span class="dataset-dup-floating-title">⚠️ 重复基质提示</span>
+            <button class="btn-icon btn-sm" id="btnCloseDatasetDup" style="border:none;" title="关闭">✕</button>
+        </div>
+        <div class="dataset-dup-floating-body" id="datasetDupFloatingBody"></div>
+        <div class="dataset-dup-floating-footer">
+            <button class="btn btn-sm btn-primary" id="btnDatasetDupClear">清除勾选</button>
+        </div>
+    </div>
+
     <!-- ==================== 底部版本信息 ==================== -->
     <footer class="app-footer">
         <button class="footer-version-btn" id="btnVersionInfo"
-            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.21(&quot;裂隙填充&quot;更新)">
-            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.21("裂隙填充"更新)
+            title="Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.22(&quot;裂隙填充&quot;更新)">
+            Endfield-Essence-Exhaustive // EEE-终末地基质穷举数据记录与统计工具 // ver.0.9.22("裂隙填充"更新)
         </button>
     </footer>
 
@@ -1106,7 +1119,7 @@
                 <div class="version-info-content">
                     <div class="version-title-lg">Endfield-Essence-Exhaustive</div>
                     <div class="version-title-md">EEE-终末地基质穷举数据记录与统计工具</div>
-                    <div class="version-ver">ver.0.9.21("裂隙填充"更新)</div>
+                    <div class="version-ver">ver.0.9.22("裂隙填充"更新)</div>
                     <hr class="version-divider">
                     <div class="version-contact-label">建议与反馈渠道</div>
                     <div class="version-email">邮箱：binjianxuewu@outlook.com</div>
@@ -1223,6 +1236,7 @@
     <script defer src="js/features/data/import-export.js"></script>
     <script defer src="js/features/data/dataset-merge.js"></script>
     <script defer src="js/features/data/external-import.js"></script>
+    <script defer src="js/features/data/dataset-duplicates.js"></script>
     <script defer src="js/features/data/region-manager.js"></script>
     <script defer src="js/features/data/default-loader.js"></script>
 

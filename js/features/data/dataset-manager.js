@@ -58,6 +58,9 @@
          */
         updateDatasetDisplay() {
             App.dom.datasetName.textContent = App.storage.loadCurrentDatasetKey();
+            if (App.datasetDuplicates && App.datasetDuplicates.render) {
+                App.datasetDuplicates.render();
+            }
         },
 
         /**
@@ -323,6 +326,11 @@
             if (dom.btnSyncTFromDefault) {
                 dom.btnSyncTFromDefault.disabled = locked;
             }
+
+            // 刷新 / 首次加载时也刷新「重复基质提示」按钮显隐
+            if (App.datasetDuplicates && App.datasetDuplicates.render) {
+                App.datasetDuplicates.render();
+            }
         },
 
         /**
@@ -465,6 +473,9 @@
             // 删除数据与备注（清理孤儿备注）
             App.storage.remove(currentKey);
             App.storage.removeDatasetKey(currentKey);
+            if (App.datasetDuplicates && App.datasetDuplicates.clear) {
+                App.datasetDuplicates.clear(currentKey);
+            }
             const remarks = App.storage.getDatasetRemarks();
             if (remarks[currentKey] !== undefined) {
                 delete remarks[currentKey];

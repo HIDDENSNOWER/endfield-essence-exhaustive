@@ -145,6 +145,88 @@
             return { resolved, unresolved };
         },
 
+        /**
+         * 按单元格检测重复 / 超额
+         *
+         * 普通基质（data.json 该格 t=0，日志非实装命中 N 次）：
+         *   - 保留 vStr 最大的 1 个，其余 N-1 个列出
+         *
+         * 实装基质（日志实装命中 N 次，data.json 该格 t=T）：
+         *   - 保留前 T 个（T=0 时全部为超额），超出 N-T 个列出
+         */
+        detectDuplicates(implemented, normal) {
+            const ROW = App.constants.ROW_NAMES || [];
+            const GROUP = getGroupNames();
+            const SUB = App.constants.SUB_ATTRS || [];
+            const base = this._baseRows;
+
+            const getBaseT = (rowIdx, groupIdx, subIdx) => {
+                if (!base || !base[rowIdx] || !Array.isArray(base[rowIdx].data)) return 0;
+                const colIdx = App.utils.getColumnIndex(groupIdx, subIdx);
+                if (colIdx < 0) return 0;
+                const cell = base[rowIdx].data[colIdx];
+                return cell ? (Number(cell.t) || 0) : 0;
+            };
+
+            // 按格分组
+            const groupBy = (list) => {
+                const m = new Map();
+                for (const r of list) {
+                    const key = `${r.rowIdx}_${r.groupIdx}_${r.subIdx}`;
+                    if (!m.has(key)) {
+                        m.set(key, { rowIdx: r.rowIdx, groupIdx: r.groupIdx, subIdx: r.subIdx, items: [] });
+                    }
+                    m.get(key).items.push(r.vStr || '');
+                }
+                return m;
+            };
+
+            const impByCell = groupBy(implemented);
+            const norByCell = groupBy(normal);
+
+            // 普通基质：data.json t=0 且非实装命中 ≥ 2
+            const normalDuplicates = [];
+            for (const g of norByCell.values()) {
+                if (g.items.length <= 1) continue;
+                const baseT = getBaseT(g.rowIdx, g.groupIdx, g.subIdx);
+                if (baseT > 0) continue; // data.json 已实装，非实装命中会被当实装处理
+
+                const sorted = g.items.slice().sort((a, b) => (b > a ? 1 : b < a ? -1 : 0));
+                const keep = sorted[0];
+                const keepIdx = g.items.indexOf(keep);
+                normalDuplicates.push({
+                    rowIdx: g.rowIdx, groupIdx: g.groupIdx, subIdx: g.subIdx,
+                    total: g.items.length,
+                    all: g.items,
+                    keepIdx,
+                    rowName: ROW[g.rowIdx] || '?',
+                    groupName: GROUP[g.groupIdx] || '?',
+                    subName: SUB[g.subIdx] || '?'
+                });
+            }
+
+            // 实装基质：实装命中 N > data.json t=T
+            const implementedOverflows = [];
+            for (const g of impByCell.values()) {
+                const baseT = getBaseT(g.rowIdx, g.groupIdx, g.subIdx);
+                const N = g.items.length;
+                if (N <= baseT) continue; // 未超额
+
+                implementedOverflows.push({
+                    rowIdx: g.rowIdx, groupIdx: g.groupIdx, subIdx: g.subIdx,
+                    total: N,
+                    baseT,
+                    all: g.items,
+                    keepCount: baseT,
+                    rowName: ROW[g.rowIdx] || '?',
+                    groupName: GROUP[g.groupIdx] || '?',
+                    subName: SUB[g.subIdx] || '?'
+                });
+            }
+
+            return { normalDuplicates, implementedOverflows };
+        },
+
         // ============ 聚合 ============
         /**
          * 生成 12 × 70 的 rows：
@@ -294,6 +376,68 @@
             }
         },
 
+        // ============ 重复 / 超额渲染 ============
+        _renderDuplicateSection(dupData) {
+            const { normalDuplicates, implementedOverflows } = dupData;
+            if (normalDuplicates.length === 0 && implementedOverflows.length === 0) return '';
+
+            const shortRow = (s) => (s.endsWith('提升') ? s.slice(0, -2) : s);
+
+            const hints = [];
+            if (normalDuplicates.length > 0) hints.push(`普通基质重复 ${normalDuplicates.length} 处`);
+            if (implementedOverflows.length > 0) hints.push(`实装超额 ${implementedOverflows.length} 处`);
+
+            let html = '<details class="ext-dup" open>';
+            html += '<summary><span>⚠️ 重复基质提示</span>';
+            html += `<span class="ext-dup-hint">（${hints.join(' · ')}）</span></summary>`;
+            html += '<div class="ext-dup-body">';
+
+            if (normalDuplicates.length > 0) {
+                html += '<div class="ext-dup-section">';
+                html += '<div class="ext-dup-section-title">普通基质 · 保留 v 最大的 1 个，其余重复：</div>';
+                for (const d of normalDuplicates) {
+                    const path = `${d.subName} - ${shortRow(d.rowName)} - ${d.groupName}`;
+                    const values = d.all
+                        .map((v, i) =>
+                            i === d.keepIdx
+                                ? `<b class="ext-dup-keep">${App.utils.escapeHtml(v)}</b>`
+                                : `<s class="ext-dup-discard">${App.utils.escapeHtml(v)}</s>`
+                        )
+                        .join(' - ');
+                    html += '<div class="ext-dup-item">';
+                    html += `<span class="ext-dup-cell">${App.utils.escapeHtml(path)}</span>`;
+                    html += `<span class="ext-dup-meta">${d.total} 个</span>`;
+                    html += `<span class="ext-dup-values">${values}</span>`;
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            if (implementedOverflows.length > 0) {
+                html += '<div class="ext-dup-section">';
+                html += '<div class="ext-dup-section-title">实装基质 · 保留 t 个，超出：</div>';
+                for (const d of implementedOverflows) {
+                    const path = `${d.subName} - ${shortRow(d.rowName)} - ${d.groupName}`;
+                    const values = d.all
+                        .map((v, i) =>
+                            i < d.keepCount
+                                ? `<b class="ext-dup-keep">${App.utils.escapeHtml(v)}</b>`
+                                : `<s class="ext-dup-discard">${App.utils.escapeHtml(v)}</s>`
+                        )
+                        .join(' - ');
+                    html += '<div class="ext-dup-item">';
+                    html += `<span class="ext-dup-cell">${App.utils.escapeHtml(path)}</span>`;
+                    html += `<span class="ext-dup-meta">${d.total} 个 · t=${d.baseT} · 超出 ${d.total - d.baseT}</span>`;
+                    html += `<span class="ext-dup-values">${values}</span>`;
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            html += '</div></details>';
+            return html;
+        },
+
         // ============ 导入 ============
         confirm() {
             const d = App.dom;
@@ -344,6 +488,15 @@
                 name: row.name,
                 data: row.data.map((cell) => App.utils.normalizeCell(cell))
             }));
+
+            // 2.5) 检测重复并持久化（写数据集之前）
+            if (App.datasetDuplicates && App.datasetDuplicates.save) {
+                const dupData = this.detectDuplicates(
+                    this._lastPreview.implemented,
+                    this._lastPreview.normal
+                );
+                App.datasetDuplicates.save(name, dupData);
+            }
 
             // 3) 持久化与状态写入
             App.storage.saveCurrentDatasetKey(name);

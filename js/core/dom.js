@@ -87,6 +87,11 @@
             'datasetName', // 当前数据集名称显示
             'datasetSelect', // 数据集切换下拉框
             'btnSyncTFromDefault', // 同步默认数据的 t 值和备注按钮
+            'btnDatasetDup', // 重复基质提示按钮
+            'datasetDupFloating', // 重复基质悬浮窗
+            'btnCloseDatasetDup', // 悬浮窗关闭按钮
+            'datasetDupFloatingBody', // 悬浮窗内容容器
+            'btnDatasetDupClear', // 清除勾选按钮
 
             // ---------- 数值对比弹窗 ----------
             'modalCompare', // 数值对比弹窗遮罩
